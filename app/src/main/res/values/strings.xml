@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Nope Remote</string>
+
+    <string name="title_activity_remote_control">RemoteControlActivity</string>
+    <string name="title_activity_add_remote">AddRemoteActivity</string>
+    <string name="title_activity_custom_remote">CustomRemoteActivity</string>
+
+    <string name="shared_pref_remote_data">com.monuk7735.nope.remote.remote_data</string>
+    <string name="pref_remote_data_available_remotes">pref_available_remotes</string>
+    <string name="title_activity_splash_screen">SplashScreenActivity</string>
+    <string name="title_activity_settings">SettingsActivity</string>
+
+<!--    Preferences-->
+    <string name="shared_pref_app_settings">SHARED_PREF_APP_SETTINGS</string>
+    <string name="pref_settings_vibration">APP_SETTINGS_VIBRATE_ON_TOUCH</string>
+
+</resources>
