@@ -7,15 +7,28 @@ import android.os.Vibrator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,17 +37,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.monuk7735.nope.remote.composables.*
+import com.monuk7735.nope.remote.composables.ActionButton
+import com.monuk7735.nope.remote.composables.AppBar
+import com.monuk7735.nope.remote.composables.FlowParent
+import com.monuk7735.nope.remote.composables.RemoteParent
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.viewmodels.HomeActivityViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @ExperimentalFoundationApi
-@ExperimentalMaterial3Api
-@ExperimentalComposeUiApi
+@OptIn(ExperimentalMaterial3Api::class)
 class HomeActivity : ComponentActivity() {
 
     private lateinit var viewModel: HomeActivityViewModel
@@ -42,9 +58,8 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModel = ViewModelProvider(this).get(HomeActivityViewModel::class.java)
+        viewModel = ViewModelProvider(this)[HomeActivityViewModel::class.java]
 
-        setTheme(R.style.Theme_NopeRemote)
         setContent {
             NopeRemoteTheme {
                 Root()
@@ -52,6 +67,7 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalComposeUiApi::class)
     @Composable
     fun Root() {
         val (selectedTab, setSelectedTab) = remember {
@@ -74,16 +90,6 @@ class HomeActivity : ComponentActivity() {
                             }
                         }
                     )
-//                    OverFlowActionButton(
-//                        name = "Test",
-//                        icon = Icons.Outlined.MoreVert,
-//                        onClick = {
-//                            startActivity(it)
-//                        },
-//                        overFlowItems = mapOf(
-//                            "Settings" to Intent(this@HomeActivity, SettingsActivity::class.java)
-//                        )
-//                    )
                 }
             },
             content = { innerPadding ->
@@ -106,7 +112,7 @@ class HomeActivity : ComponentActivity() {
                         items(allRemotes.size) { i ->
                             RemoteParent(
                                 modifier = Modifier
-                                    .padding(2.dp)
+                                    .padding(3.dp)
                                     .fillMaxWidth()
                                     .height(80.dp),
                                 name = allRemotes[i].name,
@@ -135,7 +141,7 @@ class HomeActivity : ComponentActivity() {
                         items(allFlows.size) { i ->
                             FlowParent(
                                 modifier = Modifier
-                                    .padding(2.dp)
+                                    .padding(3.dp)
                                     .fillMaxWidth()
                                     .height(80.dp),
                                 name = allFlows[i].name,
@@ -167,7 +173,6 @@ class HomeActivity : ComponentActivity() {
                                         .padding(10.dp),
                                     text = "Tap Flow to transmit",
                                     textAlign = TextAlign.Center,
-//                                    color = MaterialTheme.colors.onPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -175,7 +180,9 @@ class HomeActivity : ComponentActivity() {
                 }
             },
             bottomBar = {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
                     NavigationBarItem(
                         selected = selectedTab == 0,
                         onClick = {
@@ -184,7 +191,8 @@ class HomeActivity : ComponentActivity() {
                         label = {
                             Text(
                                 text = "Remotes",
-//                                fontWeight = FontWeight.Bold
+                                fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 15.sp
                             )
                         },
                         icon = {
@@ -202,7 +210,8 @@ class HomeActivity : ComponentActivity() {
                         label = {
                             Text(
                                 text = "Flows",
-//                                fontWeight = FontWeight.Bold
+                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 15.sp
                             )
                         },
                         icon = {
@@ -210,47 +219,30 @@ class HomeActivity : ComponentActivity() {
                                 painter = painterResource(id = R.drawable.ic_ir_flow),
                                 contentDescription = "Flows"
                             )
-                        }
+                        },
                     )
                 }
             },
             floatingActionButton = {
-                when (selectedTab) {
-                    0 -> ExtendedFloatingActionButton(
-                        text = {
-                            Text(text = "Add Remote")
-                        },
-                        onClick = {
-                            startActivity(
-                                Intent(
-                                    this@HomeActivity,
-                                    AddRemoteActivity::class.java
-                                )
+                ExtendedFloatingActionButton(
+                    text = {
+                        Text(text = if (selectedTab == 0) "Add Remote" else "Add Flow")
+                    },
+                    onClick = {
+                        startActivity(
+                            Intent(
+                                this@HomeActivity,
+                                if (selectedTab == 0) AddRemoteActivity::class.java else AddEditFlowActivity::class.java
                             )
-                        },
-                        icon = {
-                            Icon(imageVector = Icons.Outlined.Add,
-                                contentDescription = "Add Remote")
-                        }
-                    )
-                    1 -> ExtendedFloatingActionButton(
-                        text = {
-                            Text(text = "Create Flow")
-                        },
-                        onClick = {
-                            startActivity(
-                                Intent(
-                                    this@HomeActivity,
-                                    AddEditFlowActivity::class.java
-                                )
-                            )
-                        },
-                        icon = {
-                            Icon(imageVector = Icons.Outlined.Add,
-                                contentDescription = "Create Flow")
-                        }
-                    )
-                }
+                        )
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Add,
+                            contentDescription = if (selectedTab == 0) "Add Remote" else "Add Flow"
+                        )
+                    }
+                )
             }
         )
     }

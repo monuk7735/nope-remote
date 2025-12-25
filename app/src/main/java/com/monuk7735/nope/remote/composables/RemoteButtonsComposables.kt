@@ -5,18 +5,25 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.GridCells
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyVerticalGrid
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -34,56 +41,6 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import com.monuk7735.nope.remote.R
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import com.monuk7735.nope.remote.ui.theme.icons.Digit_0
-
-//@Composable
-//fun RemoteButtonPairUpDown(
-//    buttonName: String,
-//    upRemoteButtonModel: RemoteButtonModel,
-//    downRemoteButtonModel: RemoteButtonModel,
-//) {
-//    Column(
-//        modifier = Modifier
-//            .size(
-//                width = 50.dp,
-//                height = 120.dp
-//            )
-//            .background(MaterialTheme.colors.surface, CircleShape),
-//        horizontalAlignment = Alignment.CenterHorizontally,
-//        verticalArrangement = Arrangement.SpaceEvenly
-//    ) {
-//        Icon(
-//            imageVector = upRemoteButtonModel.remoteButtonInfo.getIcon(),
-//            contentDescription = "$buttonName Up",
-//            modifier = Modifier
-//                .clip(RoundedCornerShape(50.dp))
-//                .clickable {
-//                    upRemoteButtonModel.transmit()
-//                }
-//                .weight(1f)
-//
-//                .fillMaxWidth()
-//                .padding(10.dp)
-//
-//        )
-//        Text(
-//            text = buttonName.uppercase(),
-//            textAlign = TextAlign.Center,
-//            modifier = Modifier.fillMaxWidth()
-//        )
-//        Icon(
-//            imageVector = downRemoteButtonModel.remoteButtonInfo.getIcon(),
-//            contentDescription = "$buttonName Down",
-//            modifier = Modifier
-//                .clip(RoundedCornerShape(50.dp))
-//                .clickable {
-//                    downRemoteButtonModel.transmit()
-//                }
-//                .weight(1f)
-//                .fillMaxWidth()
-//                .padding(10.dp)
-//        )
-//    }
-//}
 
 @ExperimentalComposeUiApi
 @Composable
@@ -154,9 +111,6 @@ fun RemoteButtonSingleEditable(
 
                             prevX = event.rawX
                             prevY = event.rawY
-
-//                        if(abs(localOffSetX - layoutLimits.bottomCenter.x) < 10f)
-//                            localOffSetX = layoutLimits.bottomCenter.x
                         }
                     }
                     return@pointerInteropFilter true
@@ -176,13 +130,10 @@ fun RemoteButtonSingleEditable(
                 .padding(22.dp),
             imageVector = icon,
             contentDescription = name,
-//            tint = MaterialTheme.colors.onPrimary
         )
         Icon(
             modifier = Modifier
-                .clickable {
-                    onRemove()
-                }
+                .clickable { onRemove() }
                 .padding(5.dp)
                 .size(20.dp)
                 .constrainAs(delIcon) {
@@ -220,9 +171,7 @@ fun RemoteButtonSingle(
             .size(size)
             .padding(5.dp)
             .clip(RoundedCornerShape(50.dp))
-            .clickable {
-                onClick()
-            }
+            .clickable { onClick() }
             .background(
                 MaterialTheme.colorScheme.primaryContainer
             )
@@ -260,7 +209,7 @@ fun RemoteButtonExtra(
                 .size(size)
                 .padding(5.dp)
                 .clip(RoundedCornerShape(50.dp))
-                .clickable(extraButtons?.size ?: 0 > 0) {
+                .clickable(extraButtons?.isNotEmpty() ?: false) {
                     dialogVisible = true
                 }
                 .background(
@@ -277,15 +226,13 @@ fun RemoteButtonExtra(
         }
     if (dialogVisible)
         Dialog(
-            onDismissRequest = {
-                dialogVisible = false
-            }
+            onDismissRequest = { dialogVisible = false }
         ) {
             Card(
                 modifier = Modifier.padding(10.dp)
             ) {
                 LazyVerticalGrid(
-                    cells = GridCells.Adaptive(150.dp),
+                    columns = GridCells.Adaptive(150.dp),
                     content = {
                         if (extraButtons == null) {
                             return@LazyVerticalGrid
@@ -301,22 +248,6 @@ fun RemoteButtonExtra(
                         }
                     }
                 )
-//                LazyColumn(
-//                    modifier = Modifier
-//                ) {
-//                    if (extraButtons == null) {
-//                        return@LazyColumn
-//                    }
-//
-//                    items(extraButtons.size) { index ->
-//                        RemoteButtonOverflow(
-//                            remoteButtonModel = extraButtons[index],
-//                            onClick = {
-//                                onClick(extraButtons[index])
-//                            }
-//                        )
-//                    }
-//                }
             }
         }
 }
@@ -329,10 +260,7 @@ fun RemoteButtonOverflow(
 ) {
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .clickable {
-                onClick()
-            }
+            .clickable { onClick() }
             .padding(10.dp)
             .padding(
                 top = 5.dp,
@@ -371,7 +299,7 @@ fun RemoteButtonDigits(
                 .size(size)
                 .padding(5.dp)
                 .clip(RoundedCornerShape(50.dp))
-                .clickable(digitButtons?.size ?: 0 > 0) {
+                .clickable(digitButtons?.isNotEmpty() ?: false) {
                     dialogVisible = true
                 }
                 .background(
@@ -388,16 +316,14 @@ fun RemoteButtonDigits(
         }
     if (dialogVisible)
         Dialog(
-            onDismissRequest = {
-                dialogVisible = false
-            }
+            onDismissRequest = { dialogVisible = false }
         ) {
             Card(
                 modifier = Modifier.padding(1.dp)
             ) {
                 LazyVerticalGrid(
                     modifier = Modifier.padding(5.dp),
-                    cells = GridCells.Fixed(3),
+                    columns = GridCells.Fixed(3),
                     content = {
                         if (digitButtons == null) {
                             return@LazyVerticalGrid
@@ -430,114 +356,3 @@ fun RemoteButtonDigits(
             }
         }
 }
-
-//@Composable
-//fun DPadSingle(
-//    modifier: Modifier = Modifier,
-//    icon: ImageVector,
-//    name: String,
-//) {
-//    Box(
-//        modifier = modifier,
-//        contentAlignment = Alignment.Center
-//    ) {
-//        Icon(imageVector = icon, contentDescription = name)
-//    }
-//}
-//
-//@Composable
-//fun RemoteButtonDPad(
-//    modifier: Modifier = Modifier,
-//    upRemoteButtonModel: RemoteButtonModel,
-//    downRemoteButtonModel: RemoteButtonModel,
-//    leftRemoteButtonModel: RemoteButtonModel,
-//    rightRemoteButtonModel: RemoteButtonModel,
-//    okRemoteButtonModel: RemoteButtonModel,
-//) {
-//    Box(
-//        modifier = modifier,
-//        contentAlignment = Alignment.Center
-//    ) {
-//        ConstraintLayout(
-//            modifier = Modifier
-//                .wrapContentSize()
-//        ) {
-//            val buttonModifier = Modifier
-//                .size(60.dp)
-//                .padding(5.dp)
-//                .background(MaterialTheme.colors.surface, RoundedCornerShape(5.dp))
-//            val (up, down, left, right, ok) = createRefs()
-//
-//            DPadSingle(
-//                modifier = buttonModifier
-//                    .constrainAs(ok) {
-//                        top.linkTo(parent.top)
-//                        bottom.linkTo(parent.bottom)
-//                        start.linkTo(parent.start)
-//                        end.linkTo(parent.end)
-//                    }
-//                    .clickable {
-//                        okRemoteButtonModel.transmit()
-//                    },
-//                icon = okRemoteButtonModel.remoteButtonInfo.getIcon(),
-//                name = "OK"
-//            )
-//            DPadSingle(
-//                modifier = buttonModifier
-//                    .constrainAs(left) {
-//                        top.linkTo(ok.top)
-//                        bottom.linkTo(ok.bottom)
-//                        start.linkTo(parent.start)
-//                        end.linkTo(ok.start)
-//                    }
-//                    .clickable {
-//                        leftRemoteButtonModel.transmit()
-//                    },
-//                icon = leftRemoteButtonModel.remoteButtonInfo.getIcon(),
-//                name = "LEFT"
-//            )
-//            DPadSingle(
-//                modifier = buttonModifier
-//                    .constrainAs(right) {
-//                        top.linkTo(ok.top)
-//                        bottom.linkTo(ok.bottom)
-//                        start.linkTo(ok.end)
-//                        end.linkTo(parent.end)
-//                    }
-//                    .clickable {
-//                        rightRemoteButtonModel.transmit()
-//                    },
-//                icon = rightRemoteButtonModel.remoteButtonInfo.getIcon(),
-//                name = "RIGHT"
-//            )
-//            DPadSingle(
-//                modifier = buttonModifier
-//                    .constrainAs(up) {
-//                        top.linkTo(parent.top)
-//                        bottom.linkTo(ok.top)
-//                        start.linkTo(ok.start)
-//                        end.linkTo(ok.end)
-//                    }
-//                    .clickable {
-//                        upRemoteButtonModel.transmit()
-//                    },
-//                icon = upRemoteButtonModel.remoteButtonInfo.getIcon(),
-//                name = "UP"
-//            )
-//            DPadSingle(
-//                modifier = buttonModifier
-//                    .constrainAs(down) {
-//                        top.linkTo(ok.bottom)
-//                        bottom.linkTo(parent.bottom)
-//                        start.linkTo(ok.start)
-//                        end.linkTo(ok.end)
-//                    }
-//                    .clickable {
-//                        downRemoteButtonModel.transmit()
-//                    },
-//                icon = downRemoteButtonModel.remoteButtonInfo.getIcon(),
-//                name = "DOWN"
-//            )
-//        }
-//    }
-//}

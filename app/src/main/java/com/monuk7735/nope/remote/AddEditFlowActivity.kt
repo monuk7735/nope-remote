@@ -8,8 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.TextField
-import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -17,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.monuk7735.nope.remote.composables.ActionButton
@@ -38,7 +35,7 @@ class AddEditFlowActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModel = ViewModelProvider(this).get(AddEditFlowViewModel::class.java)
+        viewModel = ViewModelProvider(this)[AddEditFlowViewModel::class.java]
 
         val flowDataDBModel: FlowDataDBModel =
             intent.getParcelableExtra("flow_data") ?: FlowDataDBModel(0, "", listOf())
@@ -161,7 +158,7 @@ class AddEditFlowActivity : ComponentActivity() {
                             .padding(5.dp)
                             .fillMaxWidth()
                     ) {
-                        TextField(
+                        OutlinedTextField(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(4.dp))
                                 .fillMaxWidth(),
@@ -172,19 +169,12 @@ class AddEditFlowActivity : ComponentActivity() {
                             label = {
                                 Text(
                                     text = "Flow Name",
-//                                    style = TextStyle(
-//                                        color = MaterialTheme.colors.onPrimary
-//                                    )
                                 )
                             },
                             singleLine = true,
                             leadingIcon = {
                                 Icon(imageVector = Icons.Outlined.Edit, contentDescription = "")
                             },
-                            colors = TextFieldDefaults.textFieldColors(
-                                backgroundColor = MaterialTheme.colorScheme.surface,
-                                disabledLabelColor = MaterialTheme.colorScheme.onPrimary
-                            ),
                         )
                     }
                 }

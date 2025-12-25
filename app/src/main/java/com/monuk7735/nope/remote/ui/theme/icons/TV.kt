@@ -1,20 +1,19 @@
 package com.monuk7735.nope.remote.ui.theme.icons
 
-import androidx.compose.material.Icon
+import androidx.compose.material3.Icon
 import androidx.compose.material.icons.materialIcon
 import androidx.compose.material.icons.materialPath
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 
-internal val TV: ImageVector
+val TV: ImageVector
     get() {
-        if (tv != null) {
-            return tv!!
+        if (_tv != null) {
+            return _tv!!
         }
-        tv = materialIcon(name = "TV") {
+        _tv = materialIcon(name = "TV") {
             materialPath {
-
                 moveTo(4f,5f)
                 horizontalLineToRelative(16f)
                 verticalLineToRelative(12f)
@@ -33,17 +32,15 @@ internal val TV: ImageVector
                 horizontalLineToRelative(-7f)
                 verticalLineToRelative(-1f)
                 close()
-
-
             }
         }
-        return tv!!
+        return _tv!!
     }
 
-private var tv: ImageVector? = null
+private var _tv: ImageVector? = null
 
 @Preview(showBackground = true)
 @Composable
-fun tv(){
+fun TvPreview(){
     Icon(imageVector = TV, contentDescription = "")
 }

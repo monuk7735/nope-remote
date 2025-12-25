@@ -1,6 +1,10 @@
 package com.monuk7735.nope.remote.infrared.patterns
 
-enum class IRPatternType {
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+enum class IRPatternType : Parcelable {
     Cycles,
     Intervals
 }

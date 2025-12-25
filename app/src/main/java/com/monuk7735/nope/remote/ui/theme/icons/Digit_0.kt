@@ -1,12 +1,12 @@
 package com.monuk7735.nope.remote.ui.theme.icons
 
-import androidx.compose.material.Icon
+import androidx.compose.material3.Icon
 import androidx.compose.material.icons.materialIcon
 import androidx.compose.material.icons.materialPath
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 
 val Digit_0: ImageVector
     get() {
@@ -90,3 +90,11 @@ val Digit_4: ImageVector
     }
 
 private var digit4: ImageVector? = null
+
+@Preview
+@Composable
+fun MyIconPreview() {
+    NopeRemoteTheme {
+        Icon(imageVector = Digit_0, contentDescription = null)
+    }
+}

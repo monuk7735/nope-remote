@@ -1,10 +1,19 @@
 package com.monuk7735.nope.remote.ui.theme
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 private val LightThemeColorScheme = lightColorScheme(
 
@@ -63,82 +72,35 @@ private val DarkThemeColorScheme = darkColorScheme(
     inverseSurface = md_theme_dark_inverseSurface,
 )
 
-//private val DarkColorPalette = darkColors(
-//    primary = DarkPrimary,
-//    onPrimary = DarkOnPrimary,
-//    primaryVariant = DarkPrimaryLight,
-//    secondary = DarkPrimary,
-//    onSecondary = DarkOnPrimary,
-//    secondaryVariant = DarkPrimaryLight,
-//    background = DarkPrimaryDark,
-//    onBackground = DarkOnPrimary,
-//    surface = DarkPrimaryLight,
-//    onSurface = DarkOnPrimary,
-//)
-
-//private val LightColorPalette = lightColors(
-//    primary = LightPrimary,
-//    onPrimary = LightOnPrimary,
-//    primaryVariant = LightPrimaryLight,
-//    secondary = LightPrimary,
-//    onSecondary = LightOnPrimary,
-//    secondaryVariant = LightPrimaryLight,
-//    background = LightPrimaryDark,
-//    onBackground = LightOnPrimary,
-//    surface = LightPrimaryLight,
-//    onSurface = LightOnPrimary
-//)
-//
-//@Composable
-//fun NopeRemoteTheme(
-//    darkTheme: Boolean = isSystemInDarkTheme(),
-//    content: @Composable() () -> Unit,
-//) {
-//    val colors = if (darkTheme) {
-//        DarkColorPalette
-//    } else {
-//        LightColorPalette
-//    }
-//
-//    androidx.compose.material.MaterialTheme(
-//        colors = colors,
-//        typography = Typography,
-//        shapes = Shapes,
-//        content = content
-//    )
-//}
-
 @Composable
 fun NopeRemoteTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable() () -> Unit,
 ) {
-    val colors = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val context = LocalContext.current
-        if (!useDarkTheme) {
-            dynamicLightColorScheme(context)
-        } else {
-            dynamicDarkColorScheme(context)
+    val colorScheme = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (useDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-    } else {
-        if (!useDarkTheme) {
-            LightThemeColorScheme
-        } else {
-            DarkThemeColorScheme
+        useDarkTheme -> DarkThemeColorScheme
+        else -> LightThemeColorScheme
+    }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.background.toArgb()
+            window.navigationBarColor = colorScheme.surface.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !useDarkTheme
         }
     }
 
-//    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
     MaterialTheme(
-        colorScheme = colors,
+        colorScheme = colorScheme,
         typography = AppTypography,
         content = content
     )
-//    else
-//        androidx.compose.material.MaterialTheme(
-//            colors = if (!useDarkTheme) LightColorPalette else DarkColorPalette,
-//            shapes = Shapes,
-//            typography = Typography,
-//            content = content
-//        )
+
 }

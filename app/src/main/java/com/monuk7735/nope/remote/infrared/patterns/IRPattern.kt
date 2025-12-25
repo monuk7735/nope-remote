@@ -1,6 +1,10 @@
 package com.monuk7735.nope.remote.infrared.patterns
 
-class IRPattern(irPatternType: IRPatternType, val frequency: Int, data: IntArray) {
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+class IRPattern(val irPatternType: IRPatternType, val frequency: Int, val data: IntArray) : Parcelable {
 
     var intervals = IntArray(data.size)
     var cycles = IntArray(data.size)

@@ -13,7 +13,8 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
         RemoteDataDBModel::class,
         FlowDataDBModel::class
     ],
-    version = 1
+    version = 1,
+    exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class RemoteDatabase : RoomDatabase() {
@@ -45,7 +46,6 @@ abstract class RemoteDatabase : RoomDatabase() {
                 return instance
             }
         }
-
     }
 
 }

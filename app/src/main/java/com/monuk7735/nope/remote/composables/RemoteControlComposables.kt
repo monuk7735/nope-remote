@@ -1,24 +1,26 @@
 package com.monuk7735.nope.remote.composables
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 
 @ExperimentalFoundationApi
@@ -160,13 +162,19 @@ fun RemoteControlSettings(
                 }
             )
         },
-        content = {
+        content = { paddingValues ->
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
             ) {
                 val modifier = Modifier
                     .padding(10.dp)
                     .fillMaxWidth()
+
+                var deleteDialogVisible by remember {
+                    mutableStateOf(false)
+                }
 
                 OutlinedTextField(
                     modifier = modifier,
@@ -193,8 +201,7 @@ fun RemoteControlSettings(
                 Button(
                     modifier = modifier,
                     onClick = {
-                        if (remoteDataModel != null)
-                            onDelete(remoteDataModel)
+                        deleteDialogVisible = true;
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
@@ -205,6 +212,43 @@ fun RemoteControlSettings(
                         text = "Delete Remote"
                     )
                 }
+
+                if (deleteDialogVisible)
+                    Dialog(
+                        onDismissRequest = {
+                            deleteDialogVisible = false
+                        }
+                    ) {
+                        Card {
+                            Column(
+                                modifier = Modifier
+                                    .padding(20.dp)
+                                    .width(200.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Are you sure?",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = MaterialTheme.typography.titleLarge.fontSize
+                                )
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Button(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = {
+                                        if (remoteDataModel != null)
+                                            onDelete(remoteDataModel)
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Yes",
+                                    )
+                                }
+                            }
+                        }
+                    }
             }
         }
     )

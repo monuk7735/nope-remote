@@ -1,20 +1,10 @@
 package com.monuk7735.nope.remote.composables
 
 import android.content.Intent
-import androidx.compose.animation.core.DecayAnimationSpec
-import androidx.compose.animation.core.animateDecay
-import androidx.compose.animation.defaultDecayAnimationSpec
-import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +22,7 @@ fun AppBar(
     title: String = "Title",
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    SmallTopAppBar(
+    TopAppBar(
         title = {
             Text(
                 text = title,
@@ -115,13 +105,14 @@ fun OverFlowActionButton(
     ) {
         overFlowItems.forEach {
             DropdownMenuItem(
+                text = {
+                    Text(text = it.key)
+                },
                 onClick = {
                     visibile = false
                     onClick(it.value)
                 }
-            ) {
-                Text(text = it.key)
-            }
+            )
         }
     }
 }
@@ -143,7 +134,8 @@ fun LoadingDialog(
                     Spacer(modifier = Modifier.width(20.dp))
                     Text(
                         text = "Loading",
-                        fontWeight = FontWeight.Bold)
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

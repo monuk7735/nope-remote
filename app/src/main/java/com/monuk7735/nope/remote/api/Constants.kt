@@ -2,7 +2,7 @@ package com.monuk7735.nope.remote.api
 
 class Constants {
     companion object{
-        const val BASE_URL = "https://irdb.monuk7735.cf/api/v1/"
-//        const val BASE_URL = "https://1cd9-117-237-207-45.ngrok.io/api/v1/"
+        const val BASE_URL = "https://cdn.jsdelivr.net/gh/probonopd/irdb@master/codes/"
+//        const val BASE_URL = " https://5635-49-39-60-116.ngrok.io/api/v1/"
     }
 }

@@ -1,20 +1,33 @@
 package com.monuk7735.nope.remote.composables
 
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -36,12 +49,9 @@ fun FlowUnitComposable(
 ) {
     Card(
         modifier = Modifier
-            .clickable {
-                onClick()
-            }
+            .clickable { onClick() }
             .padding(5.dp),
-        backgroundColor = MaterialTheme.colorScheme.surface,
-        elevation = 2.dp
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -54,10 +64,7 @@ fun FlowUnitComposable(
             Column {
                 Icon(
                     modifier = Modifier
-                        .clickable
-                            (index > 0) {
-                            onMoveUp()
-                        }
+                        .clickable(index > 0) { onMoveUp() }
                         .fillMaxHeight(0.5f)
                         .padding(15.dp),
                     imageVector = Icons.Outlined.KeyboardArrowUp,
@@ -65,10 +72,7 @@ fun FlowUnitComposable(
                 )
                 Icon(
                     modifier = Modifier
-                        .clickable
-                            (index + 1 < size) {
-                            onMoveDown()
-                        }
+                        .clickable(index + 1 < size) { onMoveDown() }
                         .fillMaxHeight(0.5f)
                         .padding(15.dp),
                     imageVector = Icons.Outlined.KeyboardArrowDown,
@@ -101,31 +105,19 @@ fun AddFlowUnitDialog(
     var selectedButton: RemoteButtonDBModel? by remember {
         mutableStateOf(
             if (flowTransmit != null && selectedRemoteDB != null)
-                selectedRemoteDB!!.getByName(
-                    flowTransmit.sourceButtonName
-                )
+                selectedRemoteDB!!.getByName(flowTransmit.sourceButtonName)
             else null
         )
     }
 
     Dialog(
-        onDismissRequest = {
-            onDismiss()
-        },
-        properties = DialogProperties(
-
-        ),
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(),
     ) {
         Card {
             Column(
-                modifier = Modifier
-//                .background(
-//                    MaterialTheme.colors.surface,
-//                    RoundedCornerShape(4.dp)
-//                )
-                    .padding(20.dp)
+                modifier = Modifier.padding(20.dp)
             ) {
-//            val allRemotes = viewModel.allRemotes.observeAsState().value
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -138,9 +130,7 @@ fun AddFlowUnitDialog(
                         }
                         Row(
                             modifier = Modifier
-                                .clickable {
-                                    remoteNameExpanded = !remoteNameExpanded
-                                }
+                                .clickable { remoteNameExpanded = !remoteNameExpanded }
                                 .padding(15.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.End
@@ -154,17 +144,17 @@ fun AddFlowUnitDialog(
                         DropdownMenu(
                             modifier = Modifier,
                             expanded = remoteNameExpanded,
-                            onDismissRequest = {
-                                remoteNameExpanded = false
-                            }) {
+                            onDismissRequest = { remoteNameExpanded = false })
+                        {
                             allRemotes?.forEach {
-                                DropdownMenuItem(onClick = {
-                                    remoteNameExpanded = false
-                                    selectedRemoteDB = it
-                                    selectedButton = null
-                                }) {
-                                    Text(text = it.name)
-                                }
+                                DropdownMenuItem(
+                                    onClick = {
+                                        remoteNameExpanded = false
+                                        selectedRemoteDB = it
+                                        selectedButton = null
+                                    },
+                                    text = { Text(text = it.name) }
+                                )
                             }
                         }
                     }
@@ -182,9 +172,7 @@ fun AddFlowUnitDialog(
                         }
                         Row(
                             modifier = Modifier
-                                .clickable {
-                                    isButtonNameExpanded = !isButtonNameExpanded
-                                }
+                                .clickable { isButtonNameExpanded = !isButtonNameExpanded }
                                 .padding(15.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.End
@@ -198,24 +186,25 @@ fun AddFlowUnitDialog(
                         DropdownMenu(
                             modifier = Modifier,
                             expanded = isButtonNameExpanded,
-                            onDismissRequest = {
-                                isButtonNameExpanded = false
-                            }) {
+                            onDismissRequest = { isButtonNameExpanded = false })
+                        {
                             selectedRemoteDB?.onScreenRemoteButtonDBS?.forEach {
-                                DropdownMenuItem(onClick = {
-                                    isButtonNameExpanded = false
-                                    selectedButton = it
-                                }) {
-                                    Text(text = it.name)
-                                }
+                                DropdownMenuItem(
+                                    onClick = {
+                                        isButtonNameExpanded = false
+                                        selectedButton = it
+                                    },
+                                    text = { Text(text = it.name) }
+                                )
                             }
                             selectedRemoteDB?.offScreenRemoteButtonDBS?.forEach {
-                                DropdownMenuItem(onClick = {
-                                    isButtonNameExpanded = false
-                                    selectedButton = it
-                                }) {
-                                    Text(text = it.name)
-                                }
+                                DropdownMenuItem(
+                                    onClick = {
+                                        isButtonNameExpanded = false
+                                        selectedButton = it
+                                    },
+                                    text = { Text(text = it.name) }
+                                )
                             }
                         }
                     }
@@ -228,12 +217,10 @@ fun AddFlowUnitDialog(
                     if (flowTransmit != null)
                         ElevatedButton(
                             modifier = Modifier,
-                            onClick = {
-                                onDelete()
-                            },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        )
+                            onClick = onDelete,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
                         ) {
                             Text(text = "Delete")
                         }

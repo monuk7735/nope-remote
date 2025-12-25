@@ -3,21 +3,35 @@ package com.monuk7735.nope.remote.composables
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Card
-import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.outlined.KeyboardArrowRight
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.boundsInWindow
@@ -29,7 +43,7 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
-import java.util.*
+import java.util.Date
 
 @ExperimentalMaterial3Api
 @Composable
@@ -43,10 +57,11 @@ fun ListTypes(
                 title = if (allTypes == null) "Loading..." else "Types"
             )
         },
-        content = {
+        content = { paddingValues ->
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(paddingValues)
                     .padding(5.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -59,14 +74,12 @@ fun ListTypes(
                     return@LazyColumn
                 }
 
-                items(allTypes.sortedBy {
-                    it.type[0]
-                }) { type ->
+                items(allTypes.sortedBy { it.type[0] }) {
                     DeviceTypeComposable(
-                        name = type.type,
-                        icon = type.getIcon(),
+                        name = it.type,
+                        icon = it.getIcon(),
                         onClick = {
-                            onOneClicked(type.type)
+                            onOneClicked(it.type)
                         }
                     )
                 }
@@ -89,31 +102,31 @@ fun ListBrands(
                 title = allBrands?.get(0)?.type ?: "Loading...",
             )
         },
-        content = {
+        content = { paddingValues ->
             if (allBrands == null) {
                 LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(paddingValues)
+
                 )
                 return@Scaffold
             }
 
             val groupedSortedList = allBrands
-                .sortedBy {
-                    it.brand
-                }
-                .groupBy {
-                    it.brand[0]
-                }
+                .sortedBy { it.brand }
+                .groupBy { it.brand[0] }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxHeight()
+                    .padding(paddingValues)
                     .padding(5.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
 
                 for (key in groupedSortedList.keys) {
                     stickyHeader {
-                        Surface() {
+                        Surface {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -139,7 +152,6 @@ fun ListBrands(
 
 @ExperimentalFoundationApi
 @ExperimentalMaterial3Api
-@ExperimentalComposeUiApi
 @Composable
 fun ListCodes(
     allCodes: List<DeviceCodesRetrofitModel>?,
@@ -196,7 +208,7 @@ fun ListCodes(
                 title = if (allCodes == null) "Loading..." else "${allCodes[selected].type} - ${allCodes[selected].brand}"
             )
         },
-        content = {
+        content = { paddingValues ->
             if (allCodes == null) {
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth()
@@ -204,12 +216,12 @@ fun ListCodes(
                 return@Scaffold
             }
             var layoutLimits by remember {
-                mutableStateOf(Rect(Offset.Zero, 0f))
+                mutableStateOf(Rect.Zero)
             }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(it)
+                    .padding(paddingValues)
                     .onGloballyPositioned { coordinates ->
                         layoutLimits = coordinates.boundsInWindow()
                     }
@@ -226,17 +238,7 @@ fun ListCodes(
                     modifier = Modifier
                         .weight(1 / 3f)
                         .fillMaxHeight()
-//                        .background(
-//                            if (leftEnabled)
-//                                MaterialTheme.colors.primary
-//                            else
-//                                Color.Gray
-//                        )
-                        .clickable(
-                            enabled = leftEnabled
-                        ) {
-                            selected--
-                        }
+                        .clickable(enabled = leftEnabled) { selected-- }
                         .padding(15.dp),
                     imageVector = Icons.Outlined.KeyboardArrowLeft,
                     contentDescription = "Prev"
@@ -260,38 +262,18 @@ fun ListCodes(
                         imageVector = Icons.Outlined.Done,
                         contentDescription = "Done"
                     )
-                    Text(text = "${selected + 1}/${allCodes?.size}")
+                    allCodes?.let { Text(text = "${selected + 1}/${it.size}") }
                 }
                 Icon(
                     modifier = Modifier
                         .weight(1 / 3f)
                         .fillMaxHeight()
-//                        .background(
-//                            if (rightEnabled)
-//                                MaterialTheme.colors.primary
-//                            else
-//                                Color.Gray
-//                        )
-                        .clickable(
-                            enabled = rightEnabled,
-                            onClickLabel = "Next"
-                        ) {
-                            selected++
-                        }
+                        .clickable(enabled = rightEnabled) { selected++ }
                         .padding(15.dp),
                     imageVector = Icons.Outlined.KeyboardArrowRight,
                     contentDescription = "Next"
                 )
             }
-//            Row(
-//                modifier = Modifier
-//                    .height(60.dp)
-//                    .background(MaterialTheme.colorScheme.primary),
-//                verticalAlignment = Alignment.CenterVertically,
-//                horizontalArrangement = Arrangement.SpaceEvenly
-//            ) {
-//
-//            }
         }
     )
 }
@@ -305,10 +287,8 @@ fun DeviceTypeComposable(
     Card(
         modifier = Modifier
             .padding(5.dp)
-            .clickable {
-                onClick()
-            }
-            .fillMaxWidth()
+            .clickable { onClick() }
+            .fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier
@@ -333,10 +313,8 @@ fun DeviceBrandComposable(
     Card(
         modifier = Modifier
             .padding(5.dp)
-            .clickable {
-                onClick()
-            }
-            .fillMaxWidth()
+            .clickable { onClick() }
+            .fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier

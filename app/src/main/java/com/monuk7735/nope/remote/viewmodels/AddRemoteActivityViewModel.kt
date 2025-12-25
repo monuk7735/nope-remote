@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
 import com.monuk7735.nope.remote.api.RetrofitInstance
 import com.monuk7735.nope.remote.database.RemoteDatabase
 import com.monuk7735.nope.remote.infrared.IRController
@@ -35,10 +36,10 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
         getTypes()
     }
 
-    fun getTypes() {
+    private fun getTypes() {
         viewModelScope.launch {
             val response = RetrofitInstance.api.getTypes()
-            Log.d("monumonu", "getTypes: WasSuccessful? ${response.isSuccessful}")
+            Log.d("monumonu", "getTypes: WasSuccessful? ${Gson().toJson(response.body())}")
             if (response.isSuccessful && response.body() != null)
                 types.value = response.body()
         }

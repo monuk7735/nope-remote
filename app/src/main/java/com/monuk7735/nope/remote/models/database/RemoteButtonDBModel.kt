@@ -1,5 +1,6 @@
 package com.monuk7735.nope.remote.models.database
 
+import android.os.Parcelable
 import android.os.Vibrator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -7,13 +8,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.infrared.patterns.IRPattern
 import com.monuk7735.nope.remote.ui.theme.icons.*
+import kotlinx.parcelize.Parcelize
 
-class RemoteButtonDBModel(
+@Parcelize
+data class RemoteButtonDBModel(
     var offsetX: Float,
     var offsetY: Float,
     val name: String,
     val irPattern: IRPattern,
-) {
+) : Parcelable {
     fun getIcon(): ImageVector {
         return when (name) {
             "BACK" -> Icons.Outlined.ArrowBack

@@ -1,0 +1,65 @@
+# Gradle files
+.gradle/
+build/
+
+# Android/Android Studio
+*.iml
+.idea/
+.DS_Store
+/local.properties
+.cxx/
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Log files
+*.log
+
+# Android Studio Navigation editor temp files
+.navigation/
+
+# Captures
+captures/
+*.hprof
+
+# External native build folder generated in Android Studio 2.2 and later
+.externalNativeBuild
+.cxx/
+
+# Keystore files
+*.jks
+*.keystore
+*.pem
+*.p12
+*.key
+*.pfx
+
+# Google Services (e.g. APIs or Firebase)
+google-services.json
+
+# JetBrains IDE
+.idea/
+*.iws
+*.iph
+*.ipp
+
+# VS Code
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Kotlin
+.kotlin/

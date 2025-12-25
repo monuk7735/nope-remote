@@ -29,7 +29,7 @@ class AddRemoteActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModel = ViewModelProvider(this).get(AddRemoteActivityViewModel::class.java)
+        viewModel = ViewModelProvider(this)[AddRemoteActivityViewModel::class.java]
 
         setContent {
             NopeRemoteTheme {

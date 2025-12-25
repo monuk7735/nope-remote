@@ -2,11 +2,12 @@ package com.monuk7735.nope.remote.composables
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Card
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowRight
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,8 +24,8 @@ fun RemoteParent(
 ) {
     Card(
         modifier = modifier,
-        backgroundColor = MaterialTheme.colorScheme.surface,
-        elevation = 2.dp
+        elevation = CardDefaults.elevatedCardElevation(4.dp),
+        shape = RoundedCornerShape(5.dp)
     ) {
         Row(
             modifier = Modifier
@@ -55,8 +56,8 @@ fun FlowParent(
 ) {
     Card(
         modifier = modifier,
-        backgroundColor = MaterialTheme.colorScheme.surface,
-        elevation = 2.dp
+        elevation = CardDefaults.elevatedCardElevation(4.dp),
+        shape = RoundedCornerShape(5.dp)
     ) {
         Row(
             modifier = Modifier
