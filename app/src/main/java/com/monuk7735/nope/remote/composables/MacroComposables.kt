@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material3.ButtonDefaults
@@ -40,12 +43,11 @@ import com.monuk7735.nope.remote.viewmodels.AddEditMacroViewModel
 
 @Composable
 fun MacroUnitComposable(
-    text: String,
-    index: Int,
-    size: Int,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
+    macroTransmit: MacroTransmit,
+    remoteData: RemoteDataDBModel?,
+    onDelete: () -> Unit,
     onClick: () -> Unit,
+    dragModifier: Modifier = Modifier // New modifier for drag handle
 ) {
     Card(
         modifier = Modifier
@@ -55,28 +57,58 @@ fun MacroUnitComposable(
     ) {
         Row(
             modifier = Modifier
-                .padding(start = 20.dp)
+                .padding(start = 20.dp, top = 10.dp, bottom = 10.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = text)
-            Column {
-                Icon(
-                    modifier = Modifier
-                        .clickable(index > 0) { onMoveUp() }
-                        .fillMaxHeight(0.5f)
-                        .padding(15.dp),
-                    imageVector = Icons.Outlined.KeyboardArrowUp,
-                    contentDescription = "Move Up"
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = macroTransmit.sourceButtonName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                if (remoteData != null) {
+                    Text(
+                        text = "${remoteData.brand} ${remoteData.type}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = remoteData.name,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                } else {
+                    Text(
+                        text = "Unknown Remote",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Icon(
                     modifier = Modifier
-                        .clickable(index + 1 < size) { onMoveDown() }
-                        .fillMaxHeight(0.5f)
+                        .clickable { onDelete() }
                         .padding(15.dp),
-                    imageVector = Icons.Outlined.KeyboardArrowDown,
-                    contentDescription = "Move Down"
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.error
+                )
+                
+                // Drag Handle
+                Icon(
+                    modifier = dragModifier
+                        .padding(15.dp),
+                    imageVector = Icons.Outlined.DragHandle,
+                    contentDescription = "Drag to Reorder",
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -114,31 +146,50 @@ fun AddMacroUnitDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(),
     ) {
-        Card {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
+            elevation = CardDefaults.cardElevation(6.dp)
+        ) {
             Column(
-                modifier = Modifier.padding(20.dp)
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Remote")
+                Text(
+                    text = if (macroTransmit != null) "Edit Command" else "Add Command",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                // Remote Selection
+                Column {
+                    Text(
+                        text = "Remote",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Box {
                         var remoteNameExpanded by remember {
                             mutableStateOf(false)
                         }
                         Row(
                             modifier = Modifier
+                                .fillMaxWidth()
                                 .clickable { remoteNameExpanded = !remoteNameExpanded }
-                                .padding(15.dp),
+                                .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = selectedRemoteDB?.name ?: "Remote")
+                            Text(
+                                text = selectedRemoteDB?.name ?: "Select Remote",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                             Icon(
                                 imageVector = Icons.Outlined.ArrowDropDown,
-                                contentDescription = ""
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         DropdownMenu(
@@ -160,27 +211,34 @@ fun AddMacroUnitDialog(
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Button")
+                // Button Selection
+                Column {
+                    Text(
+                        text = "Button",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Box {
                         var isButtonNameExpanded by remember {
                             mutableStateOf(false)
                         }
                         Row(
                             modifier = Modifier
+                                .fillMaxWidth()
                                 .clickable { isButtonNameExpanded = !isButtonNameExpanded }
-                                .padding(15.dp),
+                                .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = selectedButton?.name ?: "Button")
+                            Text(
+                                text = selectedButton?.name ?: "Select Button",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                             Icon(
                                 imageVector = Icons.Outlined.ArrowDropDown,
-                                contentDescription = ""
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         DropdownMenu(
@@ -209,23 +267,32 @@ fun AddMacroUnitDialog(
                         }
                     }
                 }
+
+                // Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (macroTransmit != null)
-                        ElevatedButton(
-                            modifier = Modifier,
+                    if (macroTransmit != null) {
+                        androidx.compose.material3.TextButton(
                             onClick = onDelete,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
                             )
                         ) {
                             Text(text = "Delete")
                         }
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                    
+                    androidx.compose.material3.TextButton(
+                        onClick = onDismiss
+                    ) {
+                        Text(text = "Cancel")
+                    }
 
-                    ElevatedButton(
+                    androidx.compose.material3.TextButton(
                         onClick = {
                             val tempSelectedRemote = selectedRemoteDB
                             val tempSelectedButton = selectedButton
@@ -258,7 +325,7 @@ fun AddMacroUnitDialog(
                             }
                         }
                     ) {
-                        Text(text = "Done")
+                        Text(text = if (macroTransmit != null) "Update" else "Add")
                     }
                 }
             }
