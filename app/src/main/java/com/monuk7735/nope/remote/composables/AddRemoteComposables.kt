@@ -53,12 +53,16 @@ import androidx.compose.material3.OutlinedTextField
 fun ListTypes(
     allTypes: List<DeviceTypesRetrofitModel>?,
     onOneClicked: (type: String) -> Unit,
-    onSearch: (String) -> Unit
+    onSearch: (String) -> Unit,
+    onBack: () -> Unit
 ) {
     Scaffold(
         topBar = {
             AppBar(
-                title = if (allTypes == null) "Loading..." else "Types"
+                title = if (allTypes == null) "Loading..." else "Types",
+                onBack = {
+                    onBack()
+                }
             )
         },
         content = { paddingValues ->
@@ -107,13 +111,17 @@ fun ListTypes(
 fun ListBrands(
     allBrands: List<DeviceBrandsRetrofitModel>?,
     onOneClicked: (type: String, brand: String) -> Unit,
-    onSearch: (String) -> Unit
+    onSearch: (String) -> Unit,
+    onBack: () -> Unit
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AppBar(
                 title = allBrands?.get(0)?.type ?: "Loading...",
+                onBack = {
+                    onBack()
+                }
             )
         },
         content = { paddingValues ->
@@ -180,6 +188,7 @@ fun ListBrands(
 fun ListCodes(
     allCodes: List<DeviceCodesRetrofitModel>?,
     onSave: (remoteDataDBModel: RemoteDataDBModel) -> Unit,
+    onBack: () -> Unit
 ) {
     var selected by remember {
         mutableStateOf(0)
@@ -235,7 +244,10 @@ fun ListCodes(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AppBar(
-                title = if (allCodes.isNullOrEmpty()) "Loading..." else "${allCodes[selected].type} - ${allCodes[selected].brand}"
+                title = if (allCodes.isNullOrEmpty()) "Loading..." else "${allCodes[selected].type} - ${allCodes[selected].brand}",
+                onBack = {
+                    onBack()
+                }
             )
         },
         content = { paddingValues ->

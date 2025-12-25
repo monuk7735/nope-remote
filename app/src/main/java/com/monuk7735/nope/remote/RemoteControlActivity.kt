@@ -83,6 +83,9 @@ class RemoteControlActivity : ComponentActivity() {
                     remoteDataModel = liveRemote,
                     onEditRemoteSettings = {
                         navController.navigate(RemoteControlNavigation.RemoteControlSettings.route)
+                    },
+                    onBack = {
+                        finish()
                     }
                 )
             }
@@ -103,6 +106,9 @@ class RemoteControlActivity : ComponentActivity() {
                     onDelete = {
                         viewModel.deleteRemote(it)
                         finish()
+                    },
+                    onBack = {
+                        navController.popBackStack()
                     }
                 )
             }
@@ -114,6 +120,9 @@ class RemoteControlActivity : ComponentActivity() {
                     remoteDataModel = remoteData,
                     onSaveLayout = {
                         viewModel.updateRemote(it)
+                        navController.popBackStack()
+                    },
+                    onBack = {
                         navController.popBackStack()
                     }
                 )

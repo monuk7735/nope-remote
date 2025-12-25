@@ -19,53 +19,51 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.monuk7735.nope.remote.composables.ActionButton
-import com.monuk7735.nope.remote.composables.AddFlowUnitDialog
-import com.monuk7735.nope.remote.composables.FlowUnitComposable
-import com.monuk7735.nope.remote.models.custom.flows.FlowTransmit
-import com.monuk7735.nope.remote.models.database.FlowDataDBModel
+import com.monuk7735.nope.remote.composables.AddMacroUnitDialog
+import com.monuk7735.nope.remote.composables.MacroUnitComposable
+import com.monuk7735.nope.remote.models.custom.macros.MacroTransmit
+import com.monuk7735.nope.remote.models.database.MacroDataDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
-import com.monuk7735.nope.remote.viewmodels.AddEditFlowViewModel
+import com.monuk7735.nope.remote.viewmodels.AddEditMacroViewModel
 
 @ExperimentalMaterial3Api
-class AddEditFlowActivity : ComponentActivity() {
+class AddEditMacroActivity : ComponentActivity() {
 
-    private lateinit var viewModel: AddEditFlowViewModel
+    private lateinit var viewModel: AddEditMacroViewModel
 
-    private var editingFlow = false
+    private var editingMacro = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModel = ViewModelProvider(this)[AddEditFlowViewModel::class.java]
+        viewModel = ViewModelProvider(this)[AddEditMacroViewModel::class.java]
 
-        val flowDataDBModel: FlowDataDBModel =
+        val macroDataDBModel: MacroDataDBModel =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra("flow_data", FlowDataDBModel::class.java)
+                intent.getParcelableExtra("macro_data", MacroDataDBModel::class.java)
             } else {
-                intent.getParcelableExtra("flow_data")
-            } ?: FlowDataDBModel(0, "", listOf())
+                intent.getParcelableExtra("macro_data")
+            } ?: MacroDataDBModel(0, "", listOf())
 
-        editingFlow = flowDataDBModel.id != 0
+        editingMacro = macroDataDBModel.id != 0
 
         setContent {
             NopeRemoteTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    AddEditRemoteRoot(flowDataDBModel)
+                    AddEditMacroRoot(macroDataDBModel)
                 }
             }
         }
     }
 
     @Composable
-    fun AddEditRemoteRoot(flowDataDBModel: FlowDataDBModel) {
+    fun AddEditMacroRoot(macroDataDBModel: MacroDataDBModel) {
 
-        val allFlowUnits: MutableList<FlowTransmit> = remember {
+        val allMacroUnits: MutableList<MacroTransmit> = remember {
             mutableStateListOf()
         }
 
-
-
-        allFlowUnits.addAll(flowDataDBModel.flowUnits)
+        allMacroUnits.addAll(macroDataDBModel.macroUnits)
 
         var index: Int by remember {
             mutableStateOf(0)
@@ -75,22 +73,25 @@ class AddEditFlowActivity : ComponentActivity() {
             mutableStateOf(false)
         }
 
-        var flowName by remember {
-            mutableStateOf(flowDataDBModel.name)
+        var macroName by remember {
+            mutableStateOf(macroDataDBModel.name)
         }
 
         Scaffold(
             topBar = {
                 com.monuk7735.nope.remote.composables.AppBar(
-                    title = stringResource(id = R.string.app_name)
+                    title = if (editingMacro) "Edit Macro" else "Add Macro",
+                    onBack = {
+                        finish()
+                    }
                 ) {
-                    if (editingFlow)
+                    if (editingMacro)
                         ActionButton(
                             name = "Delete",
                             icon = Icons.Outlined.Delete,
                             onClick = {
-                                viewModel.deleteFlow(
-                                    flowDataDBModel
+                                viewModel.deleteMacro(
+                                    macroDataDBModel
                                 )
                                 finish()
                             })
@@ -98,17 +99,17 @@ class AddEditFlowActivity : ComponentActivity() {
                         name = "Save",
                         icon = Icons.Outlined.Done,
                         onClick = {
-                            if (flowName.isEmpty()) {
+                            if (macroName.isEmpty()) {
                                 Toast
                                     .makeText(
                                         applicationContext,
-                                        "Empty flow name",
+                                        "Empty macro name",
                                         Toast.LENGTH_SHORT
                                     )
                                     .show()
                                 return@ActionButton
                             }
-                            if (allFlowUnits.size == 0) {
+                            if (allMacroUnits.size == 0) {
                                 Toast
                                     .makeText(
                                         applicationContext,
@@ -118,20 +119,20 @@ class AddEditFlowActivity : ComponentActivity() {
                                     .show()
                                 return@ActionButton
                             }
-                            if (editingFlow)
-                                viewModel.updateFlow(
-                                    FlowDataDBModel(
-                                        id = flowDataDBModel.id,
-                                        name = flowName,
-                                        flowUnits = allFlowUnits
+                            if (editingMacro)
+                                viewModel.updateMacro(
+                                    MacroDataDBModel(
+                                        id = macroDataDBModel.id,
+                                        name = macroName,
+                                        macroUnits = allMacroUnits
                                     )
                                 )
                             else
-                                viewModel.addFlow(
-                                    FlowDataDBModel(
+                                viewModel.addMacro(
+                                    MacroDataDBModel(
                                         id = 0,
-                                        name = flowName,
-                                        flowUnits = allFlowUnits
+                                        name = macroName,
+                                        macroUnits = allMacroUnits
                                     )
                                 )
                             finish()
@@ -167,13 +168,13 @@ class AddEditFlowActivity : ComponentActivity() {
                             modifier = Modifier
                                 .clip(RoundedCornerShape(4.dp))
                                 .fillMaxWidth(),
-                            value = flowName,
+                            value = macroName,
                             onValueChange = { newValue ->
-                                flowName = newValue
+                                macroName = newValue
                             },
                             label = {
                                 Text(
-                                    text = "Flow Name",
+                                    text = "Macro Name",
                                 )
                             },
                             singleLine = true,
@@ -183,20 +184,20 @@ class AddEditFlowActivity : ComponentActivity() {
                         )
                     }
                 }
-                items(allFlowUnits.size) { i ->
-                    FlowUnitComposable(
-                        text = allFlowUnits[i].name,
+                items(allMacroUnits.size) { i ->
+                    MacroUnitComposable(
+                        text = allMacroUnits[i].name,
                         index = i,
-                        size = allFlowUnits.size,
+                        size = allMacroUnits.size,
                         onClick = {
                             index = i
                             dialogVisible = true
                         },
                         onMoveDown = {
-                            allFlowUnits.add(i + 1, allFlowUnits.removeAt(i))
+                            allMacroUnits.add(i + 1, allMacroUnits.removeAt(i))
                         },
                         onMoveUp = {
-                            allFlowUnits.add(i - 1, allFlowUnits.removeAt(i))
+                            allMacroUnits.add(i - 1, allMacroUnits.removeAt(i))
                         }
                     )
                 }
@@ -205,23 +206,23 @@ class AddEditFlowActivity : ComponentActivity() {
 
             // Dialog
             if (dialogVisible)
-                AddFlowUnitDialog(
+                AddMacroUnitDialog(
                     viewModel = viewModel,
-                    flowTransmit = if (index >= 0 && index < allFlowUnits.size) allFlowUnits[index] else null,
+                    macroTransmit = if (index >= 0 && index < allMacroUnits.size) allMacroUnits[index] else null,
                     onDismiss = {
                         dialogVisible = false
                     },
                     onDelete = {
-                        allFlowUnits.remove(allFlowUnits[index])
+                        allMacroUnits.remove(allMacroUnits[index])
                         dialogVisible = false
                     },
-                    onAdd = { flowTransmit ->
-                        allFlowUnits.add(flowTransmit)
+                    onAdd = { macroTransmit ->
+                        allMacroUnits.add(macroTransmit)
                         dialogVisible = false
                     },
-                    onUpdate = { flowTransmit, index ->
-                        allFlowUnits.removeAt(index)
-                        allFlowUnits.add(index, flowTransmit)
+                    onUpdate = { macroTransmit, index ->
+                        allMacroUnits.removeAt(index)
+                        allMacroUnits.add(index, macroTransmit)
                         dialogVisible = false
                     },
                     index = index

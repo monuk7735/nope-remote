@@ -3,7 +3,7 @@ package com.monuk7735.nope.remote.database
 import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.monuk7735.nope.remote.models.custom.flows.FlowTransmit
+import com.monuk7735.nope.remote.models.custom.macros.MacroTransmit
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import java.util.*
 
@@ -22,13 +22,13 @@ class Converters {
     }
 
     @TypeConverter
-    fun fromListOfFlowTransmit(data: List<FlowTransmit>): String {
+    fun fromListOfMacroTransmit(data: List<MacroTransmit>): String {
         return gson.toJson(data)
     }
 
     @TypeConverter
-    fun toListOfFlowTransmit(data: String): List<FlowTransmit> {
-        return gson.fromJson(data, object : TypeToken<List<FlowTransmit>>() {}.type)
+    fun toListOfMacroTransmit(data: String): List<MacroTransmit> {
+        return gson.fromJson(data, object : TypeToken<List<MacroTransmit>>() {}.type)
     }
 
     @TypeConverter

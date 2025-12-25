@@ -59,7 +59,10 @@ class AddRemoteActivity : ComponentActivity() {
                         viewModel.getBrands(type)
                         navController.navigate(AddRemoteNavigation.ListBrands.route)
                     },
-                    onSearch = { viewModel.filterTypes(it) }
+                    onSearch = { viewModel.filterTypes(it) },
+                    onBack = {
+                        finish()
+                    }
                 )
             }
             composable(
@@ -71,7 +74,10 @@ class AddRemoteActivity : ComponentActivity() {
                         viewModel.getCodes(type, brand)
                         navController.navigate(AddRemoteNavigation.ListCodes.route)
                     },
-                    onSearch = { viewModel.filterBrands(it) }
+                    onSearch = { viewModel.filterBrands(it) },
+                    onBack = {
+                        navController.popBackStack()
+                    }
                 )
             }
             composable(
@@ -82,6 +88,9 @@ class AddRemoteActivity : ComponentActivity() {
                     onSave = {
                         viewModel.saveRemote(it)
                         finish()
+                    },
+                    onBack = {
+                        navController.popBackStack()
                     }
                 )
             }

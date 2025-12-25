@@ -29,6 +29,7 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 fun RemoteControl(
     remoteDataModel: RemoteDataDBModel?,
     onEditRemoteSettings: () -> Unit,
+    onBack: () -> Unit
 ) {
     var layoutLimits by remember {
         mutableStateOf(Rect(Offset.Zero, 0f))
@@ -38,6 +39,7 @@ fun RemoteControl(
         topBar = {
             AppBar(
                 title = "${remoteDataModel?.name}",
+                onBack = onBack,
                 actions = {
                     ActionButton(
                         name = "Settings",
@@ -75,6 +77,7 @@ fun RemoteControl(
 fun RemoteControlEditLayout(
     remoteDataModel: RemoteDataDBModel?,
     onSaveLayout: (remoteDataModel: RemoteDataDBModel) -> Unit,
+    onBack: () -> Unit
 ) {
 
     var localRemoteDataDBModel = remoteDataModel?.copy()
@@ -87,6 +90,7 @@ fun RemoteControlEditLayout(
         topBar = {
             AppBar(
                 title = "Editing ${remoteDataModel?.name}",
+                onBack = onBack,
                 actions = {
                     ActionButton(
                         name = "Save",
@@ -128,6 +132,7 @@ fun RemoteControlSettings(
     onEditLayout: () -> Unit,
     onSave: (remoteDataModel: RemoteDataDBModel) -> Unit,
     onDelete: (remoteDataModel: RemoteDataDBModel) -> Unit,
+    onBack: () -> Unit
 ) {
     var remoteName by remember {
         mutableStateOf(remoteDataModel?.name ?: "")
@@ -141,6 +146,7 @@ fun RemoteControlSettings(
         topBar = {
             AppBar(
                 title = "${remoteDataModel?.name} Settings",
+                onBack = onBack,
                 actions = {
                     ActionButton(
                         name = "",

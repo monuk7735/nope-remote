@@ -33,13 +33,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.monuk7735.nope.remote.models.custom.flows.FlowTransmit
+import com.monuk7735.nope.remote.models.custom.macros.MacroTransmit
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
-import com.monuk7735.nope.remote.viewmodels.AddEditFlowViewModel
+import com.monuk7735.nope.remote.viewmodels.AddEditMacroViewModel
 
 @Composable
-fun FlowUnitComposable(
+fun MacroUnitComposable(
     text: String,
     index: Int,
     size: Int,
@@ -84,12 +84,12 @@ fun FlowUnitComposable(
 }
 
 @Composable
-fun AddFlowUnitDialog(
-    viewModel: AddEditFlowViewModel,
-    flowTransmit: FlowTransmit?,
+fun AddMacroUnitDialog(
+    viewModel: AddEditMacroViewModel,
+    macroTransmit: MacroTransmit?,
     index: Int,
-    onAdd: (flowTransmit: FlowTransmit) -> Unit,
-    onUpdate: (flowTransmit: FlowTransmit, index: Int) -> Unit,
+    onAdd: (macroTransmit: MacroTransmit) -> Unit,
+    onUpdate: (macroTransmit: MacroTransmit, index: Int) -> Unit,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -97,15 +97,15 @@ fun AddFlowUnitDialog(
 
     var selectedRemoteDB: RemoteDataDBModel? by remember {
         mutableStateOf(
-            if (flowTransmit != null) viewModel.getRemote(flowTransmit.sourceRemoteId)
+            if (macroTransmit != null) viewModel.getRemote(macroTransmit.sourceRemoteId)
             else null
         )
     }
 
     var selectedButton: RemoteButtonDBModel? by remember {
         mutableStateOf(
-            if (flowTransmit != null && selectedRemoteDB != null)
-                selectedRemoteDB!!.getByName(flowTransmit.sourceButtonName)
+            if (macroTransmit != null && selectedRemoteDB != null)
+                selectedRemoteDB!!.getByName(macroTransmit.sourceButtonName)
             else null
         )
     }
@@ -214,7 +214,7 @@ fun AddFlowUnitDialog(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (flowTransmit != null)
+                    if (macroTransmit != null)
                         ElevatedButton(
                             modifier = Modifier,
                             onClick = onDelete,
@@ -236,9 +236,9 @@ fun AddFlowUnitDialog(
                                     Toast.LENGTH_SHORT
                                 ).show()
                             else {
-                                if (flowTransmit != null) {
+                                if (macroTransmit != null) {
                                     onUpdate(
-                                        FlowTransmit(
+                                        MacroTransmit(
                                             name = "${tempSelectedRemote.brand}-${tempSelectedButton.name}",
                                             irPattern = tempSelectedButton.irPattern,
                                             sourceRemoteId = tempSelectedRemote.id,
@@ -248,7 +248,7 @@ fun AddFlowUnitDialog(
                                     )
                                 } else
                                     onAdd(
-                                        FlowTransmit(
+                                        MacroTransmit(
                                             name = "${tempSelectedRemote.brand}-${tempSelectedButton.name}",
                                             irPattern = tempSelectedButton.irPattern,
                                             sourceRemoteId = tempSelectedRemote.id,

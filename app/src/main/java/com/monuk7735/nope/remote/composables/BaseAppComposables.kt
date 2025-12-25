@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
@@ -20,6 +22,7 @@ import androidx.compose.ui.window.Dialog
 @Composable
 fun AppBar(
     title: String = "Title",
+    onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     TopAppBar(
@@ -28,6 +31,16 @@ fun AppBar(
                 text = title,
 //                fontWeight = FontWeight.Bold
             )
+        },
+        navigationIcon = {
+            if (onBack != null) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+            }
         },
         actions = actions,
     )

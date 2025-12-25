@@ -2,13 +2,18 @@ package com.monuk7735.nope.remote.models.database
 
 import android.os.Parcelable
 import android.os.Vibrator
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.ui.graphics.vector.ImageVector
 import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.infrared.patterns.IRPattern
 import com.monuk7735.nope.remote.ui.theme.icons.*
 import kotlinx.parcelize.Parcelize
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Input
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @Parcelize
 data class RemoteButtonDBModel(
@@ -18,25 +23,77 @@ data class RemoteButtonDBModel(
     val irPattern: IRPattern,
 ) : Parcelable {
     fun getIcon(): ImageVector {
-        return when (name) {
-            "BACK" -> Icons.Outlined.ArrowBack
-//            "CHANNEL DOWN" -> Icons.Outlined.KeyboardArrowDown
-//            "CHANNEL UP" -> Icons.Outlined.KeyboardArrowUp
-            "DIGIT 0" -> Digit_0
-            "DIGIT 4" -> Digit_4
-            "POWER TOGGLE" -> Power
-            "EXIT" -> Exit
-            "CURSOR LEFT" -> Icons.Outlined.KeyboardArrowLeft
-            "CURSOR RIGHT" -> Icons.Outlined.KeyboardArrowRight
-            "CURSOR UP" -> Icons.Outlined.KeyboardArrowUp
-            "CURSOR DOWN" -> Icons.Outlined.KeyboardArrowDown
-            "CURSOR ENTER" -> Icons.Outlined.Check
-            "MENU" -> Icons.Outlined.Menu
-            "VOLUME UP" -> Add
-            "VOLUME DOWN" -> Subtract
-            "FAVORITE" -> Icons.Outlined.FavoriteBorder
+        val n = name.uppercase()
+        return when {
+            // Specific overrides for risky partial matches
+            n.contains("SETUP") -> Icons.Outlined.Settings
 
-            else -> Icons.Outlined.DateRange
+            // Navigation & UI
+            (n.contains("BACK") && !n.contains("PLAYBACK")) || n.contains("RETURN") || n.contains("PREV") && !n.contains("SKIP") -> Icons.AutoMirrored.Outlined.ArrowBack
+            n.contains("EXIT") || n.contains("CLOSE") || n.contains("CANCEL") -> Icons.Outlined.Close
+            n.contains("MENU") -> Icons.Outlined.Menu
+            n.contains("HOME") -> Icons.Outlined.Home
+            n.contains("INFO") || n.contains("DISPLAY") || n.contains("DISP") -> Icons.Outlined.Info
+            n.contains("GUIDE") || n.contains("EPG") -> Icons.Outlined.Map
+            n.contains("SETTING") || n.contains("TOOL") || n.contains("OPTION") -> Icons.Outlined.Settings
+            n.contains("SEARCH") && !n.contains("RESEARCH") -> Icons.Outlined.Search
+
+            // Directions
+            n == "UP" || n.contains("CURSOR UP") || n.contains("DIRECTION UP") || n.contains("ARROW UP") -> Icons.Outlined.KeyboardArrowUp
+            n == "DOWN" || n.contains("CURSOR DOWN") || n.contains("DIRECTION DOWN") || n.contains("ARROW DOWN") -> Icons.Outlined.KeyboardArrowDown
+            n == "LEFT" || n.contains("CURSOR LEFT") || n.contains("DIRECTION LEFT") || n.contains("ARROW LEFT") -> Icons.AutoMirrored.Outlined.KeyboardArrowLeft
+            n == "RIGHT" || n.contains("CURSOR RIGHT") || n.contains("DIRECTION RIGHT") || n.contains("ARROW RIGHT") -> Icons.AutoMirrored.Outlined.KeyboardArrowRight
+            n.contains("OK") || n.contains("ENTER") || n.contains("SELECT") -> Icons.Outlined.CheckCircle
+
+            // Power
+            n.contains("POWER") || n.contains("PWR") -> Icons.Outlined.PowerSettingsNew
+
+            // Volume
+            n.contains("MUTE") -> Icons.Outlined.VolumeOff
+            (n.contains("VOL") && (n.contains("+") || n.contains("UP") || n.contains("INC"))) -> Icons.Outlined.VolumeUp
+            (n.contains("VOL") && (n.contains("-") || n.contains("DOWN") || n.contains("DN") || n.contains("DEC"))) -> Icons.Outlined.VolumeDown
+
+            // Channel / Page
+            (n.contains("CH") || n.contains("CHAN") || n.contains("PROG") || n.contains("PAGE")) && (n.contains("+") || n.contains("UP") || n.contains("INC") || n.contains("NEXT")) -> Icons.Outlined.ArrowCircleUp
+            (n.contains("CH") || n.contains("CHAN") || n.contains("PROG") || n.contains("PAGE")) && (n.contains("-") || n.contains("DOWN") || n.contains("DN") || n.contains("DEC") || n.contains("PREV")) -> Icons.Outlined.ArrowCircleDown
+
+            // Fallback Navigation
+            n.contains("UP") && !n.contains("VOL") && !n.contains("CH") && !n.contains("PAGE") -> Icons.Outlined.KeyboardArrowUp
+            (n.contains("DOWN") || n.contains("DN")) && !n.contains("VOL") && !n.contains("CH") && !n.contains("PAGE") -> Icons.Outlined.KeyboardArrowDown
+            n.contains("LEFT") -> Icons.AutoMirrored.Outlined.KeyboardArrowLeft
+            n.contains("RIGHT") && !n.contains("BRIGHT") && !n.contains("LIGHT") -> Icons.AutoMirrored.Outlined.KeyboardArrowRight
+
+            // Media
+            n.contains("PLAY") && !n.contains("DISPLAY") -> Icons.Outlined.PlayArrow
+            n.contains("PAUSE") -> Icons.Outlined.Pause
+            n.contains("STOP") -> Icons.Outlined.Stop
+            n.contains("REW") || n.contains("REV") -> Icons.Outlined.FastRewind
+            n.contains("FWD") || n.contains("FORWARD") -> Icons.Outlined.FastForward
+            n.contains("NEXT") || n.contains("SKIP") -> Icons.Outlined.SkipNext
+            n.contains("REC") && !n.contains("RECENT") -> Icons.Outlined.FiberManualRecord
+
+            // Inputs
+            n.contains("INPUT") || n.contains("SOURCE") || n.contains("HDMI") || n.contains("AV") || n.contains("AUX") -> Icons.AutoMirrored.Outlined.Input
+
+            // Colors
+            n.contains("RED") && !n.contains("REDUCE") -> Icons.Outlined.Circle
+            n.contains("GREEN") -> Icons.Outlined.Circle
+            n.contains("YELLOW") -> Icons.Outlined.Circle
+            n.contains("BLUE") -> Icons.Outlined.Circle
+
+            // Digits
+            n == "1" || n.contains("DIGIT 1") || n.contains("NUMBER 1") || n.contains("KEY 1") -> Icons.Outlined.Filter1
+            n == "2" || n.contains("DIGIT 2") || n.contains("NUMBER 2") || n.contains("KEY 2") -> Icons.Outlined.Filter2
+            n == "3" || n.contains("DIGIT 3") || n.contains("NUMBER 3") || n.contains("KEY 3") -> Icons.Outlined.Filter3
+            n == "4" || n.contains("DIGIT 4") || n.contains("NUMBER 4") || n.contains("KEY 4") -> Icons.Outlined.Filter4
+            n == "5" || n.contains("DIGIT 5") || n.contains("NUMBER 5") || n.contains("KEY 5") -> Icons.Outlined.Filter5
+            n == "6" || n.contains("DIGIT 6") || n.contains("NUMBER 6") || n.contains("KEY 6") -> Icons.Outlined.Filter6
+            n == "7" || n.contains("DIGIT 7") || n.contains("NUMBER 7") || n.contains("KEY 7") -> Icons.Outlined.Filter7
+            n == "8" || n.contains("DIGIT 8") || n.contains("NUMBER 8") || n.contains("KEY 8") -> Icons.Outlined.Filter8
+            n == "9" || n.contains("DIGIT 9") || n.contains("NUMBER 9") || n.contains("KEY 9") -> Icons.Outlined.Filter9
+            n == "0" || n.contains("DIGIT 0") || n.contains("NUMBER 0") || n.contains("KEY 0") -> Digit_0
+
+            else -> Icons.Outlined.DeveloperBoard
         }
     }
 

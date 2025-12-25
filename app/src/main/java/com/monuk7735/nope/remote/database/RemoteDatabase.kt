@@ -5,15 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.monuk7735.nope.remote.models.database.FlowDataDBModel
+import com.monuk7735.nope.remote.models.database.MacroDataDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 
 @Database(
     entities = [
         RemoteDataDBModel::class,
-        FlowDataDBModel::class
+        MacroDataDBModel::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -21,7 +21,7 @@ abstract class RemoteDatabase : RoomDatabase() {
 
     abstract fun remoteDao(): RemoteDao
 
-    abstract fun flowDao(): FlowDao
+    abstract fun macroDao(): MacroDao
 
     companion object {
 

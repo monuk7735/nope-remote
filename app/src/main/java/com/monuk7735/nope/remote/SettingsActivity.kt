@@ -43,7 +43,8 @@ class SettingsActivity : ComponentActivity() {
         Scaffold(
             topBar = {
                 AppBar(
-                    title = "Settings"
+                    title = "Settings",
+                    onBack = { finish() }
                 )
             },
             content = { padding ->

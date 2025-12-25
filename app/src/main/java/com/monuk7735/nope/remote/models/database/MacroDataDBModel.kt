@@ -5,23 +5,23 @@ import android.os.Vibrator
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.monuk7735.nope.remote.infrared.IRController
-import com.monuk7735.nope.remote.models.custom.flows.FlowTransmit
+import com.monuk7735.nope.remote.models.custom.macros.MacroTransmit
 import kotlinx.coroutines.delay
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-@Entity(tableName = "flows")
-data class FlowDataDBModel(
+@Entity(tableName = "macros")
+data class MacroDataDBModel(
     @PrimaryKey(autoGenerate = true)
     val id: Int,
     val name: String,
-    val flowUnits: List<FlowTransmit>
+    val macroUnits: List<MacroTransmit>
 ) : Parcelable {
     suspend fun execute(
         irController: IRController,
         vibrator: Vibrator,
     ) {
-        flowUnits.forEach {
+        macroUnits.forEach {
             irController.transmit(
                 it.irPattern,
                 vibrator

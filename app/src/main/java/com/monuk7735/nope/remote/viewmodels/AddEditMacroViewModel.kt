@@ -8,14 +8,14 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
 import com.monuk7735.nope.remote.database.RemoteDatabase
 import com.monuk7735.nope.remote.infrared.IRController
-import com.monuk7735.nope.remote.models.database.FlowDataDBModel
+import com.monuk7735.nope.remote.models.database.MacroDataDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
-import com.monuk7735.nope.remote.repository.FlowDataRepository
+import com.monuk7735.nope.remote.repository.MacroDataRepository
 import com.monuk7735.nope.remote.repository.RemoteDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class AddEditFlowViewModel(application: Application) : AndroidViewModel(application) {
+class AddEditMacroViewModel(application: Application) : AndroidViewModel(application) {
 
     val irController =
         IRController(application.getSystemService(Context.CONSUMER_IR_SERVICE) as ConsumerIrManager)
@@ -24,8 +24,8 @@ class AddEditFlowViewModel(application: Application) : AndroidViewModel(applicat
         remoteDao = RemoteDatabase.getDatabase(application).remoteDao()
     )
 
-    private val flowDataRepository: FlowDataRepository = FlowDataRepository(
-        flowDao = RemoteDatabase.getDatabase(application).flowDao()
+    private val macroDataRepository: MacroDataRepository = MacroDataRepository(
+        macroDao = RemoteDatabase.getDatabase(application).macroDao()
     )
 
     val allRemotes: LiveData<List<RemoteDataDBModel>> = remoteDataRepository.allRemotes
@@ -38,38 +38,22 @@ class AddEditFlowViewModel(application: Application) : AndroidViewModel(applicat
         return null
     }
 
-    fun addFlow(flowDataDBModel: FlowDataDBModel) {
+    fun addMacro(macroDataDBModel: MacroDataDBModel) {
         viewModelScope.launch(Dispatchers.IO) {
-            flowDataRepository.addFlow(flowDataDBModel)
+            macroDataRepository.addMacro(macroDataDBModel)
         }
     }
 
-    fun deleteFlow(flowDataDBModel: FlowDataDBModel) {
+    fun deleteMacro(macroDataDBModel: MacroDataDBModel) {
         viewModelScope.launch(Dispatchers.IO) {
-            flowDataRepository.deleteFlow(flowDataDBModel)
+            macroDataRepository.deleteMacro(macroDataDBModel)
         }
     }
 
-    fun updateFlow(flowDataDBModel: FlowDataDBModel){
+    fun updateMacro(macroDataDBModel: MacroDataDBModel){
         viewModelScope.launch(Dispatchers.IO) {
-            flowDataRepository.updateFlow(flowDataDBModel)
+            macroDataRepository.updateMacro(macroDataDBModel)
         }
     }
-
-//    val remotesInfoRepository = RemotesInfoRepository(sharedPreferences)
-
-//    fun getAllRemotesInfo(): ArrayList<RemoteDataModel> {
-//        return remotesInfoRepository.allRemotesData
-//    }
-
-//    fun getRemoteModel(uid: String): RemoteModel {
-//        return RemoteDataRepository(
-//            irController = IRController(
-//                consumerIrManager = consumerIrManager
-//            ),
-//            sharedPreferences = sharedPreferences,
-//            remoteUID = uid
-//        ).remoteModel
-//    }
 
 }

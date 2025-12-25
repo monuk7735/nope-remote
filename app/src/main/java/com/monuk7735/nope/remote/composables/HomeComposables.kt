@@ -12,8 +12,38 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun EmptyState(
+    modifier: Modifier = Modifier,
+    text: String,
+    icon: ImageVector
+) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null, // Decorative icon
+            modifier = Modifier.size(120.dp),
+            tint = Color.LightGray
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = text,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.LightGray
+        )
+    }
+}
 
 @Composable
 fun RemoteParent(
@@ -48,7 +78,7 @@ fun RemoteParent(
 }
 
 @Composable
-fun FlowParent(
+fun MacroParent(
     modifier: Modifier = Modifier,
     name: String,
     onExecute: () -> Unit,
