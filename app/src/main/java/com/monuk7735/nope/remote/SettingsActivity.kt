@@ -15,9 +15,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
 import com.monuk7735.nope.remote.composables.AppBar
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.monuk7735.nope.remote.composables.SwitchPreference
-import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.viewmodels.SettingsActivityViewModel
+import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 
 @ExperimentalMaterial3Api
 class SettingsActivity : ComponentActivity() {
@@ -40,26 +43,83 @@ class SettingsActivity : ComponentActivity() {
 
     @Composable
     fun SettingsRoot() {
-        Scaffold(
-            topBar = {
-                AppBar(
-                    title = "Settings",
-                    onBack = { finish() }
-                )
+        val vibrate by viewModel.vibrateSettingsValue.observeAsState(true)
+        val darkMode by viewModel.darkModeSettingsValue.observeAsState(0)
+        val dynamicColor by viewModel.dynamicColorSettingsValue.observeAsState(true)
+
+        NopeRemoteTheme(
+            useDarkTheme = when (darkMode) {
+                1 -> false // Light
+                2 -> true // Dark
+                else -> isSystemInDarkTheme() // System
             },
-            content = { padding ->
-                Column(modifier = Modifier.padding(padding)) {
-                    SwitchPreference(
-                        title = "Vibrate",
-                        summary = "Vibrate on touch",
-                        value = viewModel.vibrateSettingsValue.observeAsState().value ?: true,
-                        onValueChange = {
-                            viewModel.vibrateSettingsValue.value = it
-                            viewModel.saveSettings(applicationContext)
-                        }
+            useDynamicColors = dynamicColor
+        ) {
+            Scaffold(
+                topBar = {
+                    AppBar(
+                        title = "Settings",
+                        onBack = { finish() }
                     )
+                },
+                content = { padding ->
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        modifier = Modifier
+                            .padding(padding)
+                            .fillMaxSize()
+                    ) {
+                        item {
+                            com.monuk7735.nope.remote.composables.SettingsGroup(title = "General") {
+                                SwitchPreference(
+                                    title = "Vibrate",
+                                    summary = "Vibrate on button press",
+                                    value = vibrate,
+                                    onValueChange = {
+                                        viewModel.vibrateSettingsValue.value = it
+                                        viewModel.saveSettings(applicationContext)
+                                    }
+                                )
+                            }
+                        }
+
+                        item {
+                            com.monuk7735.nope.remote.composables.SettingsGroup(title = "Appearance") {
+                                val darkModeOptions = listOf("System Default", "Light", "Dark")
+                                com.monuk7735.nope.remote.composables.SingleChoicePreference(
+                                    title = "Dark Mode",
+                                    summary = darkModeOptions.getOrElse(darkMode) { "System Default" },
+                                    options = darkModeOptions,
+                                    selectedOption = darkMode,
+                                    onOptionSelected = {
+                                        viewModel.darkModeSettingsValue.value = it
+                                        viewModel.saveSettings(applicationContext)
+                                    }
+                                )
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                                    SwitchPreference(
+                                        title = "Dynamic Color",
+                                        summary = "Use wallpaper colors",
+                                        value = dynamicColor,
+                                        onValueChange = {
+                                            viewModel.dynamicColorSettingsValue.value = it
+                                            viewModel.saveSettings(applicationContext)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        item {
+                            com.monuk7735.nope.remote.composables.SettingsGroup(title = "About") {
+                                com.monuk7735.nope.remote.composables.InfoPreference(
+                                    title = "App Version",
+                                    value = BuildConfig.VERSION_NAME
+                                )
+                            }
+                        }
+                    }
                 }
-            }
-        )
+            )
+        }
     }
 }

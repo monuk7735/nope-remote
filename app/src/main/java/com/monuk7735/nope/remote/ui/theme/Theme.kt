@@ -13,7 +13,91 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import android.content.Context
 import androidx.core.view.WindowCompat
+import com.monuk7735.nope.remote.R
+
+data class ThemeSettings(
+    val useDarkTheme: Boolean,
+    val useDynamicColors: Boolean
+)
+
+@Composable
+fun rememberThemeSettings(): ThemeSettings {
+    val context = LocalContext.current
+    val sharedPrefs = remember {
+        context.getSharedPreferences(
+            context.getString(R.string.shared_pref_app_settings),
+            Context.MODE_PRIVATE
+        )
+    }
+
+    val darkModeKey = context.getString(R.string.pref_settings_dark_mode)
+    val dynamicColorKey = context.getString(R.string.pref_settings_dynamic_color)
+
+    val (settings, setSettings) = remember {
+        androidx.compose.runtime.mutableStateOf(
+            ThemeSettings(
+                useDarkTheme = when (sharedPrefs.getInt(darkModeKey, 0)) {
+                    1 -> false
+                    2 -> true
+                    else -> (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                },
+                useDynamicColors = sharedPrefs.getBoolean(dynamicColorKey, true)
+            )
+        )
+    }
+
+    androidx.compose.runtime.DisposableEffect(sharedPrefs) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+            if (key == darkModeKey || key == dynamicColorKey) {
+                setSettings(
+                    ThemeSettings(
+                        useDarkTheme = when (prefs.getInt(darkModeKey, 0)) {
+                            1 -> false
+                            2 -> true
+                            else -> (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                        },
+                        useDynamicColors = prefs.getBoolean(dynamicColorKey, true)
+                    )
+                )
+            }
+        }
+        sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+    
+    // Also need to handle System Theme changes if setting is "System"
+    // However, isSystemInDarkTheme() handles that automatically for the composable call site
+    // *if* we pass a value that reflects it.
+    // The issue is: if we calculate 'useDarkTheme' here based on system, does it update when system theme updates?
+    // 'context.resources.configuration' might not update in this scope automatically?
+    // Actually, `isSystemInDarkTheme()` is composable and updates on change.
+    
+    // Better approach: Return the RAW preference values and let the caller decide logic?
+    // OOOOR: Return the final boolean, but make sure we observe system changes if needed.
+    // simpler:
+    // Let's return a data class with the preferences, AND the resolved booleans.
+    
+    // Wait, the easiest way to be reactive to SYSTEM changes is to use `isSystemInDarkTheme()` usage inside this composable or passing it in.
+    val systemInDarkTheme = isSystemInDarkTheme()
+    
+    // Recalculate if system theme changes OR prefs change
+    val finalDarkMode = remember(settings, systemInDarkTheme) {
+        val prefMode = sharedPrefs.getInt(darkModeKey, 0)
+        when (prefMode) {
+             1 -> false
+             2 -> true
+             else -> systemInDarkTheme
+        }
+    }
+
+    return settings.copy(useDarkTheme = finalDarkMode)
+}
 
 private val LightThemeColorScheme = lightColorScheme(
 
@@ -75,10 +159,11 @@ private val DarkThemeColorScheme = darkColorScheme(
 @Composable
 fun NopeRemoteTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
+    useDynamicColors: Boolean = true,
     content: @Composable() () -> Unit,
 ) {
     val colorScheme = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        useDynamicColors && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (useDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }

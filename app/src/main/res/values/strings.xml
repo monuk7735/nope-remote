@@ -13,5 +13,7 @@
 <!--    Preferences-->
     <string name="shared_pref_app_settings">SHARED_PREF_APP_SETTINGS</string>
     <string name="pref_settings_vibration">APP_SETTINGS_VIBRATE_ON_TOUCH</string>
+    <string name="pref_settings_dark_mode">APP_SETTINGS_DARK_MODE</string>
+    <string name="pref_settings_dynamic_color">APP_SETTINGS_DYNAMIC_COLOR</string>
 
 </resources>

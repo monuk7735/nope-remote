@@ -18,12 +18,22 @@ class SettingsActivityViewModel(
     )
 
     var vibrateSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
+    var darkModeSettingsValue: MutableLiveData<Int> = MutableLiveData<Int>()
+    var dynamicColorSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
 
     init {
         vibrateSettingsValue.value = settingsPreferences.getBoolean(
                 application.getString(R.string.pref_settings_vibration),
                 true
             )
+        darkModeSettingsValue.value = settingsPreferences.getInt(
+            application.getString(R.string.pref_settings_dark_mode),
+            0 // Default to 0 (System)
+        )
+        dynamicColorSettingsValue.value = settingsPreferences.getBoolean(
+            application.getString(R.string.pref_settings_dynamic_color),
+            true
+        )
     }
 
     fun saveSettings(context: Context) {
@@ -32,8 +42,15 @@ class SettingsActivityViewModel(
                 context.getString(R.string.pref_settings_vibration),
                 vibrateSettingsValue.value?:true
             )
+            .putInt(
+                context.getString(R.string.pref_settings_dark_mode),
+                darkModeSettingsValue.value?:0
+            )
+            .putBoolean(
+                context.getString(R.string.pref_settings_dynamic_color),
+                dynamicColorSettingsValue.value?:true
+            )
             .apply()
-
     }
 
 }

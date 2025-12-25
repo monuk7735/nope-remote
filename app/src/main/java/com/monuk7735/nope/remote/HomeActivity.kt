@@ -69,7 +69,11 @@ class HomeActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this)[HomeActivityViewModel::class.java]
 
         setContent {
-            NopeRemoteTheme {
+            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            NopeRemoteTheme(
+                useDarkTheme = themeSettings.useDarkTheme,
+                useDynamicColors = themeSettings.useDynamicColors
+            ) {
                 Root()
             }
         }

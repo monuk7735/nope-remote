@@ -32,7 +32,11 @@ class AddRemoteActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this)[AddRemoteActivityViewModel::class.java]
 
         setContent {
-            NopeRemoteTheme {
+            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            NopeRemoteTheme(
+                useDarkTheme = themeSettings.useDarkTheme,
+                useDynamicColors = themeSettings.useDynamicColors
+            ) {
                 AddRemoteActivityRoot()
             }
         }

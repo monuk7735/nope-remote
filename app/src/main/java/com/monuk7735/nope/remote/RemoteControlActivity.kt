@@ -41,7 +41,11 @@ class RemoteControlActivity : ComponentActivity() {
 //        }
 
         setContent {
-            NopeRemoteTheme {
+            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            NopeRemoteTheme(
+                useDarkTheme = themeSettings.useDarkTheme,
+                useDynamicColors = themeSettings.useDynamicColors
+            ) {
                 Root()
             }
         }

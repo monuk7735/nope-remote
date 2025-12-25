@@ -52,7 +52,11 @@ class AddEditMacroActivity : ComponentActivity() {
         editingMacro = macroDataDBModel.id != 0
 
         setContent {
-            NopeRemoteTheme {
+            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            NopeRemoteTheme(
+                useDarkTheme = themeSettings.useDarkTheme,
+                useDynamicColors = themeSettings.useDynamicColors
+            ) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     AddEditMacroRoot(macroDataDBModel)
                 }
