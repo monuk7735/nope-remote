@@ -17,7 +17,6 @@ class IRPattern(val irPatternType: IRPatternType, val frequency: Int, val data: 
             intervals = data
             cycles = convertToCycles()
         }
-
     }
 
     private fun convertToCycles(): IntArray {

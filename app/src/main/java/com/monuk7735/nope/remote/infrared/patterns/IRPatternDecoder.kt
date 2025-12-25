@@ -6,8 +6,19 @@ class IRPatternDecoder(hexData: String) {
 
     init {
         val dec = mutableListOf<Int>()
-        hexData.chunked(4).forEach {
-            dec.add(it.toInt(16))
+        // Handle optional "0x" prefix and split by whitespace or fixed width if no spaces
+        val cleanHex = hexData.replace("0x", "")
+        
+        if (cleanHex.contains(" ")) {
+            cleanHex.split("\\s+".toRegex()).forEach {
+                if (it.isNotEmpty()) {
+                    dec.add(it.toInt(16))
+                }
+            }
+        } else {
+            cleanHex.chunked(4).forEach {
+                dec.add(it.toInt(16))
+            }
         }
         dec.removeAt(0)
         var frequency = dec.removeAt(0)

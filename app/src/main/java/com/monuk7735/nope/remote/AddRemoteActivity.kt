@@ -58,7 +58,8 @@ class AddRemoteActivity : ComponentActivity() {
                     onOneClicked = { type ->
                         viewModel.getBrands(type)
                         navController.navigate(AddRemoteNavigation.ListBrands.route)
-                    }
+                    },
+                    onSearch = { viewModel.filterTypes(it) }
                 )
             }
             composable(
@@ -69,7 +70,8 @@ class AddRemoteActivity : ComponentActivity() {
                     onOneClicked = { type, brand ->
                         viewModel.getCodes(type, brand)
                         navController.navigate(AddRemoteNavigation.ListCodes.route)
-                    }
+                    },
+                    onSearch = { viewModel.filterBrands(it) }
                 )
             }
             composable(

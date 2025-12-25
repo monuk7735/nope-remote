@@ -1,23 +1,14 @@
 package com.monuk7735.nope.remote.api
 
-import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
-import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
-import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.Path
+import retrofit2.http.Url
 
 interface Database {
-    @GET("devices/types/")
-    suspend fun getTypes(): Response<List<DeviceTypesRetrofitModel>>
+    @GET("index")
+    suspend fun getIndex(): Response<ResponseBody>
 
-    @GET("devices/types/{type}/brands/")
-    suspend fun getBrands(@Path("type") type: String): Response<List<DeviceBrandsRetrofitModel>>
-
-    @GET("devices/types/{type}/brands/{brand}/codes/")
-    suspend fun getCodes(
-        @Path("type") type: String,
-        @Path("brand") brand: String,
-    ) : Response<List<DeviceCodesRetrofitModel>>
-
+    @GET
+    suspend fun getCsv(@Url url: String): Response<ResponseBody>
 }

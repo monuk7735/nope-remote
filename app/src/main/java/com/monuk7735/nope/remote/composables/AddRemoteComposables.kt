@@ -44,12 +44,16 @@ import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
 import java.util.Date
+import androidx.compose.material3.TextField
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.OutlinedTextField
 
 @ExperimentalMaterial3Api
 @Composable
 fun ListTypes(
     allTypes: List<DeviceTypesRetrofitModel>?,
     onOneClicked: (type: String) -> Unit,
+    onSearch: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -58,13 +62,18 @@ fun ListTypes(
             )
         },
         content = { paddingValues ->
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(5.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                SearchBar(onSearch = onSearch)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(5.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                 if (allTypes == null) {
                     item {
                         LinearProgressIndicator(
@@ -74,7 +83,10 @@ fun ListTypes(
                     return@LazyColumn
                 }
 
-                items(allTypes.sortedBy { it.type[0] }) {
+                items(
+                    items = allTypes.sortedBy { it.type[0] },
+                    key = { it.type }
+                ) {
                     DeviceTypeComposable(
                         name = it.type,
                         icon = it.getIcon(),
@@ -85,6 +97,7 @@ fun ListTypes(
                 }
             }
         }
+    }
     )
 }
 
@@ -94,6 +107,7 @@ fun ListTypes(
 fun ListBrands(
     allBrands: List<DeviceBrandsRetrofitModel>?,
     onOneClicked: (type: String, brand: String) -> Unit,
+    onSearch: (String) -> Unit
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -116,13 +130,19 @@ fun ListBrands(
             val groupedSortedList = allBrands
                 .sortedBy { it.brand }
                 .groupBy { it.brand[0] }
-            LazyColumn(
+            
+            Column(
                 modifier = Modifier
-                    .fillMaxHeight()
+                    .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(5.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                SearchBar(onSearch = onSearch, hint = "Search Brands...")
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(5.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
 
                 for (key in groupedSortedList.keys) {
                     stickyHeader {
@@ -136,7 +156,10 @@ fun ListBrands(
                             }
                         }
                     }
-                    items(groupedSortedList[key] ?: listOf()) { item ->
+                    items(
+                        items = groupedSortedList[key] ?: listOf(),
+                        key = { it.brand }
+                    ) { item ->
                         DeviceBrandComposable(
                             name = item.brand,
                             onClick = {
@@ -147,6 +170,7 @@ fun ListBrands(
                 }
             }
         }
+    }
     )
 }
 
@@ -324,4 +348,26 @@ fun DeviceBrandComposable(
             Text(text = name)
         }
     }
+}
+
+@Composable
+fun SearchBar(
+    modifier: Modifier = Modifier,
+    hint: String = "Search...",
+    onSearch: (String) -> Unit
+) {
+    var text by remember { mutableStateOf("") }
+    OutlinedTextField(
+        value = text,
+        onValueChange = {
+            text = it
+            onSearch(it)
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(10.dp),
+        placeholder = { Text(text = hint) },
+        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+        singleLine = true
+    )
 }
