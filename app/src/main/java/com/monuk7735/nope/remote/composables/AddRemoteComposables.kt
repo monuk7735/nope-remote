@@ -1,6 +1,6 @@
 package com.monuk7735.nope.remote.composables
 
-import android.util.Log
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -185,22 +185,29 @@ fun ListCodes(
         mutableStateOf(0)
     }
 
-    val rightEnabled = selected + 1 < allCodes?.size ?: 0
+    val rightEnabled = selected + 1 < (allCodes?.size ?: 0)
     val leftEnabled = selected > 0
 
     val allRemoteDataDBModel = mutableListOf<RemoteDataDBModel>()
 
     allCodes?.forEach {
-        Log.d("monumonu", "ListCodes: Converting ${it.brand}")
         val listOfRemoteButtons = mutableListOf<RemoteButtonDBModel>()
-        it.codes.forEach { button ->
-            if (button.key != "POWER TOGGLE")
+        
+        // Find Power button safely
+        val powerKey = it.codes.keys.find { key -> 
+            key.contains("Power", ignoreCase = true) 
+        } ?: it.codes.keys.firstOrNull() ?: "POWER TOGGLE"
+        
+        val powerCode = it.codes[powerKey] ?: ""
+
+        it.codes.forEach { (key, value) ->
+            if (key != powerKey)
                 listOfRemoteButtons.add(
                     RemoteButtonDBModel(
                         offsetX = 0f,
                         offsetY = 0f,
-                        name = button.key,
-                        irPattern = IRPatternDecoder(button.value).irPattern
+                        name = key,
+                        irPattern = IRPatternDecoder(value).irPattern
                     )
                 )
         }
@@ -212,15 +219,14 @@ fun ListCodes(
                 brand = it.brand,
                 added = Date(),
                 offScreenRemoteButtonDBS = listOfRemoteButtons,
-                onScreenRemoteButtonDBS = listOf(
+                onScreenRemoteButtonDBS = if(powerCode.isNotEmpty()) listOf(
                     RemoteButtonDBModel(
                         offsetX = 0f,
                         offsetY = 0f,
-                        name = "POWER TOGGLE",
-                        irPattern = IRPatternDecoder(it.codes["POWER TOGGLE"]!!).irPattern
+                        name = powerKey,
+                        irPattern = IRPatternDecoder(powerCode).irPattern
                     )
-
-                )
+                ) else emptyList()
             )
         )
     }
@@ -229,11 +235,11 @@ fun ListCodes(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AppBar(
-                title = if (allCodes == null) "Loading..." else "${allCodes[selected].type} - ${allCodes[selected].brand}"
+                title = if (allCodes.isNullOrEmpty()) "Loading..." else "${allCodes[selected].type} - ${allCodes[selected].brand}"
             )
         },
         content = { paddingValues ->
-            if (allCodes == null) {
+            if (allCodes.isNullOrEmpty()) {
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -246,14 +252,21 @@ fun ListCodes(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .onGloballyPositioned { coordinates ->
-                        layoutLimits = coordinates.boundsInWindow()
-                    }
+                    .padding(16.dp), // Add margin
+                    contentAlignment = Alignment.Center
             ) {
-                UniversalRemote(
-                    remoteDataDBModel = allRemoteDataDBModel[selected],
-                    layoutLimits = layoutLimits
-                )
+                 Card(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned { coordinates ->
+                            layoutLimits = coordinates.boundsInWindow()
+                        }
+                ) {
+                    UniversalRemote(
+                        remoteDataDBModel = allRemoteDataDBModel[selected],
+                        layoutLimits = layoutLimits
+                    )
+                }
             }
         },
         bottomBar = {
@@ -261,7 +274,6 @@ fun ListCodes(
                 Icon(
                     modifier = Modifier
                         .weight(1 / 3f)
-                        .fillMaxHeight()
                         .clickable(enabled = leftEnabled) { selected-- }
                         .padding(15.dp),
                     imageVector = Icons.Outlined.KeyboardArrowLeft,
@@ -270,9 +282,8 @@ fun ListCodes(
                 Column(
                     modifier = Modifier
                         .weight(1 / 3f)
-                        .fillMaxHeight()
                         .clickable {
-                            if (allCodes == null) {
+                            if (allCodes.isNullOrEmpty()) {
                                 return@clickable
                             }
                             onSave(allRemoteDataDBModel[selected])
@@ -286,12 +297,13 @@ fun ListCodes(
                         imageVector = Icons.Outlined.Done,
                         contentDescription = "Done"
                     )
-                    allCodes?.let { Text(text = "${selected + 1}/${it.size}") }
+                    if (!allCodes.isNullOrEmpty()) {
+                        Text(text = "${selected + 1}/${allCodes.size}")
+                    }
                 }
                 Icon(
                     modifier = Modifier
                         .weight(1 / 3f)
-                        .fillMaxHeight()
                         .clickable(enabled = rightEnabled) { selected++ }
                         .padding(15.dp),
                     imageVector = Icons.Outlined.KeyboardArrowRight,

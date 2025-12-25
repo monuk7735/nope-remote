@@ -1,61 +1,63 @@
 package com.monuk7735.nope.remote.infrared.patterns
 
-abstract class Protocol {
-    abstract fun generate(device: Int, subdevice: Int, function: Int): List<Int>
+import com.monuk7735.nope.remote.infrared.IrCommandBuilder
 
-    protected fun lsbToBits(value: Int, length: Int): List<Int> {
-        val bits = mutableListOf<Int>()
-        for (i in 0 until length) {
-            bits.add((value shr i) and 1)
-        }
-        return bits
-    }
+interface Protocol {
+    fun generate(device: Int, subdevice: Int, function: Int): List<Int>
 }
 
-open class BaseNEC(
-    private val leaderMark: Int,
-    private val leaderSpace: Int
-) : Protocol() {
+class NECStandard : Protocol {
+    companion object {
+        private const val FREQUENCY = 38028
+        private const val HDR_MARK = 9000
+        private const val HDR_SPACE = 4500
+        private const val BIT_MARK = 560
+        private const val ONE_SPACE = 1690
+        private const val ZERO_SPACE = 560
+        
+        // NEC is LSB first
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+    }
 
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
-        val bits = mutableListOf<Int>()
-
-        // Address
-        bits.addAll(lsbToBits(device, 8))
-
-        if (subdevice == -1) {
-            // Standard NEC (Address, ~Address)
-            bits.addAll(lsbToBits(device.inv() and 0xFF, 8))
-        } else {
-            // Extended NEC (Address, Subdevice)
-            bits.addAll(lsbToBits(subdevice, 8))
-        }
-
-        // Command
-        bits.addAll(lsbToBits(function, 8))
-        bits.addAll(lsbToBits(function.inv() and 0xFF, 8))
-
-        val timings = mutableListOf<Int>()
-        // Leader
-        timings.add(leaderMark)
-        timings.add(leaderSpace)
-
-        // Data
-        for (b in bits) {
-            if (b == 1) {
-                timings.add(560)
-                timings.add(1690)
-            } else {
-                timings.add(560)
-                timings.add(560)
-            }
-        }
-        // Stop
-        timings.add(560)
-        return timings
+        return IrCommandBuilder(FREQUENCY)
+            .pair(HDR_MARK, HDR_SPACE)
+            .sequenceLSB(SEQUENCE_DEF, 8, device)
+            .sequenceLSB(SEQUENCE_DEF, 8, device.inv()) // Address inverse
+            .sequenceLSB(SEQUENCE_DEF, 8, function)
+            .sequenceLSB(SEQUENCE_DEF, 8, function.inv()) // Command inverse
+            .mark(BIT_MARK) // Stop bit
+            .build()
     }
 }
 
-class NECStandard : BaseNEC(9000, 4500)
-class NECSamsung : BaseNEC(4500, 4500)
-class NEC48k : BaseNEC(9000, 4500)
+class NECSamsung : Protocol {
+    companion object {
+        private const val FREQUENCY = 38028
+        private const val HDR_MARK = 4500
+        private const val HDR_SPACE = 4500
+        private const val BIT_MARK = 560
+        private const val ONE_SPACE = 1690
+        private const val ZERO_SPACE = 560
+        
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+    }
+
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
+        return IrCommandBuilder(FREQUENCY)
+            .pair(HDR_MARK, HDR_SPACE)
+            .sequenceLSB(SEQUENCE_DEF, 8, device)
+            .sequenceLSB(SEQUENCE_DEF, 8, device) // Samsung repeats address or subdevice in specific way.
+            .sequenceLSB(SEQUENCE_DEF, 8, function)
+            .sequenceLSB(SEQUENCE_DEF, 8, function.inv())
+            .mark(BIT_MARK)
+            .build()
+    }
+}
+
+class NEC48k : Protocol {
+    // Just delegating for now
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
+        return NECStandard().generate(device, subdevice, function)
+    }
+}

@@ -1,22 +1,26 @@
 package com.monuk7735.nope.remote.infrared
 
 import com.monuk7735.nope.remote.infrared.patterns.*
-
 import kotlin.math.roundToInt
 
 object IrCsvParser {
     fun parseCsvAndGenerateHex(csvContent: String, functionQuery: String? = null): Map<String, String> {
         val lines = csvContent.lines()
-        if (lines.isEmpty()) return emptyMap()
+        if (lines.isEmpty()) {
+            return emptyMap()
+        }
 
         val header = lines[0].split(",").map { it.trim() }
+
         val funcIndex = header.indexOfFirst { it.equals("functionname", ignoreCase = true) || it.equals("function", ignoreCase = true) }
         val protocolIndex = header.indexOfFirst { it.equals("protocol", ignoreCase = true) }
         val deviceIndex = header.indexOfFirst { it.equals("device", ignoreCase = true) }
         val subdeviceIndex = header.indexOfFirst { it.equals("subdevice", ignoreCase = true) }
         val functionCodeIndex = header.indexOfLast { it.equals("function", ignoreCase = true) }
 
-        if (funcIndex == -1 || protocolIndex == -1 || deviceIndex == -1 || functionCodeIndex == -1) return emptyMap()
+        if (funcIndex == -1 || protocolIndex == -1 || deviceIndex == -1 || functionCodeIndex == -1) {
+            return emptyMap()
+        }
 
         val results = mutableMapOf<String, String>()
 
@@ -24,10 +28,15 @@ object IrCsvParser {
             val line = lines[i]
             if (line.isBlank()) continue
             val row = line.split(",").map { it.trim() }
-            if (row.size != header.size) continue
+
+            if (row.size != header.size) {
+                continue
+            }
 
             val funcName = row[funcIndex]
-            if (functionQuery != null && !funcName.equals(functionQuery, ignoreCase = true)) continue
+            if (functionQuery != null && !funcName.equals(functionQuery, ignoreCase = true)) {
+                continue
+            }
 
             val protocolName = row[protocolIndex]
             val device = row[deviceIndex].toIntOrNull() ?: 0
@@ -44,7 +53,7 @@ object IrCsvParser {
             if (generator != null) {
                 val timings = generator.generate(device, subdevice, function)
                 val frequency = if (protocolName.startsWith("48-NEC")) 48000 else 38000
-                
+
                 // Convert to Pronto Hex
                 val hex = encodeToProntoHex(frequency, timings)
                 results[funcName] = hex
@@ -56,14 +65,11 @@ object IrCsvParser {
     private fun encodeToProntoHex(frequency: Int, timings: List<Int>): String {
         val sb = StringBuilder()
         sb.append("0000 ") // Preamble
-        
+
         // Frequency code: 1000000 / (frequency * 0.241246)
         val freqCode = (1000000.0 / (frequency * 0.241246)).roundToInt()
         sb.append(String.format("%04X ", freqCode))
-        
-        sb.append("0000 ") // Seq 1 Length (Burst Pair Count)
-        // sb.append("0000 ") // Seq 2 Length (Repeat) handled locally
-        
+
         val period = 1000000.0 / frequency
         val burstPairs = mutableListOf<Pair<Int, Int>>()
         for (i in 0 until timings.size - 1 step 2) {
@@ -71,20 +77,20 @@ object IrCsvParser {
              val space = (timings[i+1] / period).roundToInt()
              burstPairs.add(Pair(mark, space))
         }
-        
+
         var pairsCount = burstPairs.size
         val lastIsMark = timings.size % 2 != 0
         if (lastIsMark) {
             pairsCount++
         }
-        
+
         sb.append(String.format("%04X ", pairsCount)) // Seq 1 Length
         sb.append("0000 ") // Seq 2 Length (Repeat)
-        
+
         for (pair in burstPairs) {
             sb.append(String.format("%04X %04X ", pair.first, pair.second))
         }
-        
+
         if (lastIsMark) {
              val mark = (timings.last() / period).roundToInt()
              val space = 0x06C3

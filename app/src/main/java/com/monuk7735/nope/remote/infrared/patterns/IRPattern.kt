@@ -22,10 +22,10 @@ class IRPattern(val irPatternType: IRPatternType, val frequency: Int, val data: 
     private fun convertToCycles(): IntArray {
         val cycles = IntArray(intervals.size)
 
-        val k = 1000000 / frequency
+        val k = 1000000.0 / frequency
 
         for (i in cycles.indices) {
-            cycles[i] = intervals[i] / k
+            cycles[i] = (intervals[i] / k).toInt()
         }
 
         return cycles
@@ -34,10 +34,10 @@ class IRPattern(val irPatternType: IRPatternType, val frequency: Int, val data: 
     private fun convertToIntervals(): IntArray {
         val intervals = IntArray(cycles.size)
 
-        val k = 1000000 / frequency
+        val k = 1000000.0 / frequency
 
         for (i in intervals.indices) {
-            intervals[i] = cycles[i] * k
+            intervals[i] = (cycles[i] * k).toInt()
         }
 
         return intervals

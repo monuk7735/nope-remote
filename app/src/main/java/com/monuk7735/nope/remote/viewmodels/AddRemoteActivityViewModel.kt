@@ -3,7 +3,7 @@ package com.monuk7735.nope.remote.viewmodels
 import android.app.Application
 import android.content.Context
 import android.hardware.ConsumerIrManager
-import android.util.Log
+
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
@@ -17,7 +17,9 @@ import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
 import com.monuk7735.nope.remote.repository.RemoteDataRepository
+import com.monuk7735.nope.remote.api.Constants
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 
 class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -26,11 +28,11 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
     )
 
     val types: MutableLiveData<List<DeviceTypesRetrofitModel>> =
-        MutableLiveData<List<DeviceTypesRetrofitModel>>()
-    val brands: MutableLiveData<List<DeviceBrandsRetrofitModel>> =
-        MutableLiveData<List<DeviceBrandsRetrofitModel>>()
-    val codes: MutableLiveData<List<DeviceCodesRetrofitModel>> =
-        MutableLiveData<List<DeviceCodesRetrofitModel>>()
+        MutableLiveData()
+    val brands: MutableLiveData<List<DeviceBrandsRetrofitModel>?> =
+        MutableLiveData()
+    val codes: MutableLiveData<List<DeviceCodesRetrofitModel>?> =
+        MutableLiveData()
 
 
     init {
@@ -56,7 +58,7 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
                     if (parts.size >= 3) {
                         val brand = parts[0]
                         val type = parts[1]
-                        val path = line // Store full path
+                        val path = Constants.BASE_URL + line.trim().replace(" ", "%20")
 
                         val typeMap = tempIndex.getOrPut(type) { mutableMapOf() }
                         val brandList = typeMap.getOrPut(brand) { mutableListOf() }
@@ -123,9 +125,10 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
                 val matchingFiles = deviceIndex?.get(type)?.get(brand) ?: emptyList()
                 
                 val resultList = mutableListOf<DeviceCodesRetrofitModel>()
-                
+
                 for (path in matchingFiles) {
                     try {
+
                         val response = RetrofitInstance.api.getCsv(path)
                         if (response.isSuccessful && response.body() != null) {
                             val csvContent = response.body()!!.string()
