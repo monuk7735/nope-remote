@@ -26,6 +26,9 @@ jobs:
           mkdir -p .local
           echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > .local/nope.key
 
+      - name: Setup SDK location
+        run: echo "sdk.dir=/home/monuk7735/Android/Sdk" > local.properties
+
       - name: Build Release APK
         run: ./gradlew assembleRelease
 
