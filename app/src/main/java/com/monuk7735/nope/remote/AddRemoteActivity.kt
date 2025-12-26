@@ -3,6 +3,7 @@ package com.monuk7735.nope.remote
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ class AddRemoteActivity : ComponentActivity() {
     private lateinit var viewModel: AddRemoteActivityViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         viewModel = ViewModelProvider(this)[AddRemoteActivityViewModel::class.java]
@@ -55,7 +57,19 @@ class AddRemoteActivity : ComponentActivity() {
             startDestination = AddRemoteNavigation.ListTypes.route
         ) {
             composable(
-                route = AddRemoteNavigation.ListTypes.route
+                route = AddRemoteNavigation.ListTypes.route,
+                enterTransition = {
+                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                },
+                exitTransition = {
+                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popEnterTransition = {
+                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                },
+                popExitTransition = {
+                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                }
             ) {
                 ListTypes(
                     allTypes = allTypes,
@@ -70,7 +84,19 @@ class AddRemoteActivity : ComponentActivity() {
                 )
             }
             composable(
-                route = AddRemoteNavigation.ListBrands.route
+                route = AddRemoteNavigation.ListBrands.route,
+                enterTransition = {
+                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                },
+                exitTransition = {
+                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popEnterTransition = {
+                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                },
+                popExitTransition = {
+                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                }
             ) {
                 ListBrands(
                     allBrands = allBrands,
@@ -85,7 +111,19 @@ class AddRemoteActivity : ComponentActivity() {
                 )
             }
             composable(
-                route = AddRemoteNavigation.ListCodes.route
+                route = AddRemoteNavigation.ListCodes.route,
+                enterTransition = {
+                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                },
+                exitTransition = {
+                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popEnterTransition = {
+                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                },
+                popExitTransition = {
+                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                }
             ) {
                 ListCodes(
                     allCodes = allCodes,

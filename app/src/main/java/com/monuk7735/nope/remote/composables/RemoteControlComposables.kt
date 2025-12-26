@@ -4,9 +4,10 @@ import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Done
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.automirrored.outlined.ArrowForwardIos
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -79,35 +80,27 @@ fun RemoteControlEditLayout(
     onSaveLayout: (remoteDataModel: RemoteDataDBModel) -> Unit,
     onBack: () -> Unit
 ) {
-
-    var localRemoteDataDBModel = remoteDataModel?.copy()
-
-    var layoutLimits by remember {
-        mutableStateOf(Rect(Offset.Zero, 0f))
-    }
+    var localRemoteDataDBModel by remember { mutableStateOf(remoteDataModel?.copy()) }
+    var layoutLimits by remember { mutableStateOf(Rect(Offset.Zero, 0f)) }
 
     Scaffold(
         topBar = {
             AppBar(
-                title = "Editing ${remoteDataModel?.name}",
+                title = "Edit Layout",
                 onBack = onBack,
                 actions = {
-                    ActionButton(
-                        name = "Save",
-                        icon = Icons.Outlined.Done,
-                        onClick = {
-                            val temp = localRemoteDataDBModel
-                            if (temp != null)
-                                onSaveLayout(temp)
-                        }
-                    )
+                    IconButton(onClick = {
+                        localRemoteDataDBModel?.let { onSaveLayout(it) }
+                    }) {
+                        Icon(Icons.Outlined.Save, contentDescription = "Save")
+                    }
                 }
             )
         },
-        content = {
+        content = { innerPadding ->
             Box(
                 modifier = Modifier
-                    .padding(it)
+                    .padding(innerPadding)
                     .fillMaxSize()
                     .onGloballyPositioned { coordinates ->
                         layoutLimits = coordinates.boundsInWindow()
@@ -134,128 +127,145 @@ fun RemoteControlSettings(
     onDelete: (remoteDataModel: RemoteDataDBModel) -> Unit,
     onBack: () -> Unit
 ) {
-    var remoteName by remember {
-        mutableStateOf(remoteDataModel?.name ?: "")
-    }
-    val errorToast = Toast.makeText(
-        LocalContext.current,
-        "Remote Name cannot be empty",
-        Toast.LENGTH_SHORT
-    )
+    var remoteName by remember { mutableStateOf(remoteDataModel?.name ?: "") }
+    var deleteDialogVisible by remember { mutableStateOf(false) }
+    
+    val context = LocalContext.current
+
     Scaffold(
         topBar = {
             AppBar(
-                title = "${remoteDataModel?.name} Settings",
+                title = "Settings",
                 onBack = onBack,
                 actions = {
-                    ActionButton(
-                        name = "",
-                        icon = Icons.Outlined.Done,
-                        onClick = {
-                            if (remoteDataModel == null)
-                                return@ActionButton
-                            if (remoteName.isEmpty()) {
-                                errorToast.show()
-                                return@ActionButton
-                            }
-                            onSave(
-                                remoteDataModel.copy(
-                                    name = remoteName
-                                )
-                            )
+                    IconButton(onClick = {
+                        if (remoteName.isBlank()) {
+                            Toast.makeText(context, "Name cannot be empty", Toast.LENGTH_SHORT).show()
+                        } else {
+                            remoteDataModel?.let { onSave(it.copy(name = remoteName)) }
                         }
-                    )
+                    }) {
+                        Icon(Icons.Outlined.Save, contentDescription = "Save")
+                    }
                 }
             )
-        },
-        content = { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                val modifier = Modifier
-                    .padding(10.dp)
-                    .fillMaxWidth()
-
-                var deleteDialogVisible by remember {
-                    mutableStateOf(false)
-                }
-
-                OutlinedTextField(
-                    modifier = modifier,
-                    value = remoteName,
-                    onValueChange = {
-                        remoteName = it
-                    },
-                    label = {
-                        Text(text = "Remote Name")
-                    }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                 )
-                Button(
-                    modifier = modifier,
-                    onClick = {
-                        onEditLayout()
-                    }
-                ) {
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        modifier = Modifier.padding(5.dp),
-                        text = "Edit Remote Layout"
+                        text = "Remote Details",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = remoteName,
+                        onValueChange = { remoteName = it },
+                        label = { Text("Remote Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
                     )
                 }
+            }
 
-                Button(
-                    modifier = modifier,
-                    onClick = {
-                        deleteDialogVisible = true;
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
+            Card(
+                onClick = onEditLayout,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        modifier = Modifier.padding(5.dp),
-                        text = "Delete Remote"
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Customize Layout",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Rearrange or hide buttons",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowForwardIos,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
 
-                if (deleteDialogVisible)
-                    Dialog(
-                        onDismissRequest = {
-                            deleteDialogVisible = false
-                        }
-                    ) {
-                        Card {
-                            Column(
-                                modifier = Modifier
-                                    .padding(20.dp)
-                                    .width(200.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "Are you sure?",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = MaterialTheme.typography.titleLarge.fontSize
-                                )
-                                Spacer(modifier = Modifier.height(20.dp))
-                                Button(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = {
-                                        if (remoteDataModel != null)
-                                            onDelete(remoteDataModel)
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.error
-                                    )
-                                ) {
-                                    Text(
-                                        text = "Yes",
-                                    )
-                                }
-                            }
-                        }
-                    }
+            Spacer(modifier = Modifier.weight(1f))
+
+            Button(
+                onClick = { deleteDialogVisible = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(Icons.Outlined.Delete, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Delete Remote", fontWeight = FontWeight.SemiBold)
             }
         }
-    )
+
+        if (deleteDialogVisible) {
+            AlertDialog(
+                onDismissRequest = { deleteDialogVisible = false },
+                title = { Text("Delete Remote?") },
+                text = { Text("This will permanently remove this remote from your list. This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            remoteDataModel?.let { onDelete(it) }
+                            deleteDialogVisible = false
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleteDialogVisible = false }) {
+                        Text("Cancel")
+                    }
+                },
+                shape = RoundedCornerShape(28.dp)
+            )
+        }
+    }
 }

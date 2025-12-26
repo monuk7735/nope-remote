@@ -22,8 +22,40 @@ data class RemoteButtonDBModel(
     val name: String,
     val irPattern: IRPattern,
 ) : Parcelable {
-    fun getIcon(): ImageVector {
+    fun getDigitValue(): Int? {
         val n = name.uppercase()
+        return when {
+            n == "0" || n.contains("DIGIT 0") || n.contains("NUMBER 0") || n.contains("KEY 0") || n.contains("KEY_0") -> 0
+            n == "1" || n.contains("DIGIT 1") || n.contains("NUMBER 1") || n.contains("KEY 1") || n.contains("KEY_1") -> 1
+            n == "2" || n.contains("DIGIT 2") || n.contains("NUMBER 2") || n.contains("KEY 2") || n.contains("KEY_2") -> 2
+            n == "3" || n.contains("DIGIT 3") || n.contains("NUMBER 3") || n.contains("KEY 3") || n.contains("KEY_3") -> 3
+            n == "4" || n.contains("DIGIT 4") || n.contains("NUMBER 4") || n.contains("KEY 4") || n.contains("KEY_4") -> 4
+            n == "5" || n.contains("DIGIT 5") || n.contains("NUMBER 5") || n.contains("KEY 5") || n.contains("KEY_5") -> 5
+            n == "6" || n.contains("DIGIT 6") || n.contains("NUMBER 6") || n.contains("KEY 6") || n.contains("KEY_6") -> 6
+            n == "7" || n.contains("DIGIT 7") || n.contains("NUMBER 7") || n.contains("KEY 7") || n.contains("KEY_7") -> 7
+            n == "8" || n.contains("DIGIT 8") || n.contains("NUMBER 8") || n.contains("KEY 8") || n.contains("KEY_8") -> 8
+            n == "9" || n.contains("DIGIT 9") || n.contains("NUMBER 9") || n.contains("KEY 9") || n.contains("KEY_9") -> 9
+            else -> null
+        }
+    }
+
+    fun getTextIcon(): String? {
+        val n = name.uppercase()
+        val digit = getDigitValue()
+        if (digit != null) {
+            return digit.toString()
+        }
+        if (n.startsWith("TEXT:")) {
+            return name.substringAfter("TEXT:")
+        }
+        return null
+    }
+
+    fun getIcon(): ImageVector? {
+        val n = name.uppercase()
+        if (getTextIcon() != null) {
+            return null // Fallback to text for digits and custom text
+        }
         return when {
             // Specific overrides for risky partial matches
             n.contains("SETUP") -> Icons.Outlined.Settings
@@ -80,20 +112,8 @@ data class RemoteButtonDBModel(
             n.contains("GREEN") -> Icons.Outlined.Circle
             n.contains("YELLOW") -> Icons.Outlined.Circle
             n.contains("BLUE") -> Icons.Outlined.Circle
-
-            // Digits
-            n == "1" || n.contains("DIGIT 1") || n.contains("NUMBER 1") || n.contains("KEY 1") -> Icons.Outlined.Filter1
-            n == "2" || n.contains("DIGIT 2") || n.contains("NUMBER 2") || n.contains("KEY 2") -> Icons.Outlined.Filter2
-            n == "3" || n.contains("DIGIT 3") || n.contains("NUMBER 3") || n.contains("KEY 3") -> Icons.Outlined.Filter3
-            n == "4" || n.contains("DIGIT 4") || n.contains("NUMBER 4") || n.contains("KEY 4") -> Icons.Outlined.Filter4
-            n == "5" || n.contains("DIGIT 5") || n.contains("NUMBER 5") || n.contains("KEY 5") -> Icons.Outlined.Filter5
-            n == "6" || n.contains("DIGIT 6") || n.contains("NUMBER 6") || n.contains("KEY 6") -> Icons.Outlined.Filter6
-            n == "7" || n.contains("DIGIT 7") || n.contains("NUMBER 7") || n.contains("KEY 7") -> Icons.Outlined.Filter7
-            n == "8" || n.contains("DIGIT 8") || n.contains("NUMBER 8") || n.contains("KEY 8") -> Icons.Outlined.Filter8
-            n == "9" || n.contains("DIGIT 9") || n.contains("NUMBER 9") || n.contains("KEY 9") -> Icons.Outlined.Filter9
-            n == "0" || n.contains("DIGIT 0") || n.contains("NUMBER 0") || n.contains("KEY 0") -> Digit_0
-
-            else -> Icons.Outlined.DeveloperBoard
+            
+            else -> null // No icon found
         }
     }
 

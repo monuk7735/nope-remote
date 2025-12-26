@@ -7,23 +7,27 @@
       android:scaleY="0.38937238"
       android:translateX="-34.38753"
       android:translateY="-39.06">
+    <!-- Outer circle (Outline only) -->
     <path
         android:pathData="M227,154L227,154A85,85 0,0 1,312 239L312,239A85,85 0,0 1,227 324L227,324A85,85 0,0 1,142 239L142,239A85,85 0,0 1,227 154z"
-        android:fillColor="#ECF0F1"/>
+        android:strokeWidth="16"
+        android:strokeColor="#000000"
+        android:fillColor="#00000000"/>
+    <!-- Diagonal line 1 -->
     <path
-        android:strokeWidth="1"
+        android:strokeWidth="12"
         android:pathData="M167.249,178.542L287.458,298.751"
-        android:fillColor="#00000000"
         android:strokeColor="#000000"/>
+    <!-- Diagonal line 2 -->
     <path
-        android:strokeWidth="1"
+        android:strokeWidth="12"
         android:pathData="M166.542,298.751L286.751,178.542"
-        android:fillColor="#00000000"
         android:strokeColor="#000000"/>
+    <!-- Inner circle (Filled) -->
     <path
-        android:strokeWidth="1"
+        android:strokeWidth="12"
         android:pathData="M192.5,239C192.5,219.946 207.946,204.5 227,204.5C246.054,204.5 261.5,219.946 261.5,239C261.5,258.054 246.054,273.5 227,273.5C207.946,273.5 192.5,258.054 192.5,239Z"
-        android:fillColor="#ECF0F1"
+        android:fillColor="#000000"
         android:strokeColor="#000000"/>
   </group>
 </vector>

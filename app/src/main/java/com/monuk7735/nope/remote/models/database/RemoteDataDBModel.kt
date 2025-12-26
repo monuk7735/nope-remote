@@ -64,45 +64,28 @@ data class RemoteDataDBModel(
     }
 
     fun getAllDigits(): List<RemoteButtonDBModel> {
-        val toRet = mutableListOf<RemoteButtonDBModel>()
-        val digitsNames = listOf(
-            "DIGIT 0",
-            "DIGIT 1",
-            "DIGIT 2",
-            "DIGIT 3",
-            "DIGIT 4",
-            "DIGIT 5",
-            "DIGIT 6",
-            "DIGIT 7",
-            "DIGIT 8",
-            "DIGIT 9",
-        )
-        digitsNames.forEach {
-            val temp = getByName(it) ?: return emptyList()
-            toRet.add(temp)
+        val digits = mutableMapOf<Int, RemoteButtonDBModel>()
+        
+        onScreenRemoteButtonDBS.forEach { button ->
+            button.getDigitValue()?.let { digits[it] = button }
         }
-        return toRet
+        
+        offScreenRemoteButtonDBS.forEach { button ->
+            button.getDigitValue()?.let { digits[it] = button }
+        }
+
+        if (digits.size < 10) return emptyList()
+
+        return (0..9).map { digits[it]!! }
     }
 
     fun getAllOffScreen(): List<RemoteButtonDBModel> {
         val toRet = mutableListOf<RemoteButtonDBModel>()
 
-        val digitsNames = listOf(
-            "DIGIT 0",
-            "DIGIT 1",
-            "DIGIT 2",
-            "DIGIT 3",
-            "DIGIT 4",
-            "DIGIT 5",
-            "DIGIT 6",
-            "DIGIT 7",
-            "DIGIT 8",
-            "DIGIT 9",
-        )
-
-        offScreenRemoteButtonDBS.forEach {
-//            if (!digitsNames.contains(it.name))
-            toRet.add(it)
+        offScreenRemoteButtonDBS.forEach { button ->
+            if (button.getDigitValue() == null) {
+                toRet.add(button)
+            }
         }
 
         return toRet

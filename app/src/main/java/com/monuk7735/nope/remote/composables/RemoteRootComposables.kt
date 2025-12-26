@@ -2,7 +2,9 @@ package com.monuk7735.nope.remote.composables
 
 import android.content.Context
 import android.hardware.ConsumerIrManager
+import android.os.Build
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
@@ -14,10 +16,12 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.ExperimentalMaterial3Api
 import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @Composable
@@ -45,6 +49,7 @@ fun EditableRemote(
         RemoteButtonSingleEditable(
             name = remoteButton.name,
             icon = remoteButton.getIcon(),
+            textIcon = remoteButton.getTextIcon(),
             offsetX = remoteButton.offsetX,
             offsetY = remoteButton.offsetY,
             onPosUpdate = { posX, posY ->
@@ -83,6 +88,7 @@ fun EditableRemote(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @ExperimentalFoundationApi
 @Composable
 fun UniversalRemote(
@@ -94,7 +100,13 @@ fun UniversalRemote(
     }
 
     val vibrator = LocalContext.current.run {
-        getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
     }
 
     Box(
@@ -104,6 +116,7 @@ fun UniversalRemote(
             RemoteButtonSingle(
                 name = it.name,
                 icon = it.getIcon(),
+                textIcon = it.getTextIcon(),
                 offsetX = it.offsetX,
                 offsetY = it.offsetY,
                 onClick = {

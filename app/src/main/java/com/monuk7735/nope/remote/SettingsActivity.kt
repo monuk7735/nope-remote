@@ -21,6 +21,15 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import com.monuk7735.nope.remote.composables.SwitchPreference
 import com.monuk7735.nope.remote.viewmodels.SettingsActivityViewModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material.icons.outlined.Brightness4
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.dp
 
 @ExperimentalMaterial3Api
 class SettingsActivity : ComponentActivity() {
@@ -30,12 +39,17 @@ class SettingsActivity : ComponentActivity() {
     val dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         viewModel = ViewModelProvider(this)[SettingsActivityViewModel::class.java]
 
         setContent {
-            NopeRemoteTheme {
+            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            NopeRemoteTheme(
+                useDarkTheme = themeSettings.useDarkTheme,
+                useDynamicColors = themeSettings.useDynamicColors
+            ) {
                 SettingsRoot()
             }
         }
@@ -62,64 +76,70 @@ class SettingsActivity : ComponentActivity() {
                         onBack = { finish() }
                     )
                 },
-                content = { padding ->
-                    androidx.compose.foundation.lazy.LazyColumn(
-                        modifier = Modifier
-                            .padding(padding)
-                            .fillMaxSize()
-                    ) {
-                        item {
-                            com.monuk7735.nope.remote.composables.SettingsGroup(title = "General") {
-                                SwitchPreference(
-                                    title = "Vibrate",
-                                    summary = "Vibrate on button press",
-                                    value = vibrate,
-                                    onValueChange = {
-                                        viewModel.vibrateSettingsValue.value = it
-                                        viewModel.saveSettings(applicationContext)
-                                    }
-                                )
-                            }
-                        }
-
-                        item {
-                            com.monuk7735.nope.remote.composables.SettingsGroup(title = "Appearance") {
-                                val darkModeOptions = listOf("System Default", "Light", "Dark")
-                                com.monuk7735.nope.remote.composables.SingleChoicePreference(
-                                    title = "Dark Mode",
-                                    summary = darkModeOptions.getOrElse(darkMode) { "System Default" },
-                                    options = darkModeOptions,
-                                    selectedOption = darkMode,
-                                    onOptionSelected = {
-                                        viewModel.darkModeSettingsValue.value = it
-                                        viewModel.saveSettings(applicationContext)
-                                    }
-                                )
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                                    SwitchPreference(
-                                        title = "Dynamic Color",
-                                        summary = "Use wallpaper colors",
-                                        value = dynamicColor,
-                                        onValueChange = {
-                                            viewModel.dynamicColorSettingsValue.value = it
-                                            viewModel.saveSettings(applicationContext)
-                                        }
-                                    )
+                modifier = Modifier.background(MaterialTheme.colorScheme.background)
+            ) { padding ->
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier
+                        .padding(padding)
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)
+                ) {
+                    item {
+                        com.monuk7735.nope.remote.composables.SettingsGroup(title = "General") {
+                            SwitchPreference(
+                                title = "Vibrate",
+                                summary = "Vibrate on button press",
+                                icon = Icons.Outlined.Vibration,
+                                value = vibrate,
+                                onValueChange = {
+                                    viewModel.vibrateSettingsValue.value = it
+                                    viewModel.saveSettings(applicationContext)
                                 }
-                            }
+                            )
                         }
+                    }
 
-                        item {
-                            com.monuk7735.nope.remote.composables.SettingsGroup(title = "About") {
-                                com.monuk7735.nope.remote.composables.InfoPreference(
-                                    title = "App Version",
-                                    value = BuildConfig.VERSION_NAME
+                    item {
+                        com.monuk7735.nope.remote.composables.SettingsGroup(title = "Appearance") {
+                            val darkModeOptions = listOf("System Default", "Light", "Dark")
+                            com.monuk7735.nope.remote.composables.SingleChoicePreference(
+                                title = "Dark Mode",
+                                summary = darkModeOptions.getOrElse(darkMode) { "System Default" },
+                                icon = Icons.Outlined.Brightness4,
+                                options = darkModeOptions,
+                                selectedOption = darkMode,
+                                onOptionSelected = {
+                                    viewModel.darkModeSettingsValue.value = it
+                                    viewModel.saveSettings(applicationContext)
+                                }
+                            )
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                                SwitchPreference(
+                                    title = "Dynamic Color",
+                                    summary = "Use wallpaper colors",
+                                    icon = Icons.Outlined.Palette,
+                                    value = dynamicColor,
+                                    onValueChange = {
+                                        viewModel.dynamicColorSettingsValue.value = it
+                                        viewModel.saveSettings(applicationContext)
+                                    }
                                 )
                             }
                         }
                     }
+
+                    item {
+                        com.monuk7735.nope.remote.composables.SettingsGroup(title = "About") {
+                            com.monuk7735.nope.remote.composables.InfoPreference(
+                                title = "App Version",
+                                value = BuildConfig.VERSION_NAME,
+                                icon = Icons.Outlined.Info
+                            )
+                        }
+                    }
                 }
-            )
+            }
         }
     }
 }
