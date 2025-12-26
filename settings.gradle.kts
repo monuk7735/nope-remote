@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "Nope Remote"
-include ':app'
-include ':infrared'
+include(":app")
+// include(":infrared") // Commenting out as the directory doesn't seem to exist

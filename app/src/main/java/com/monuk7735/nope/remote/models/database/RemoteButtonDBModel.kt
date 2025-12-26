@@ -12,6 +12,9 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Input
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.VolumeDown
+import androidx.compose.material.icons.automirrored.outlined.VolumeOff
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -81,9 +84,9 @@ data class RemoteButtonDBModel(
             n.contains("POWER") || n.contains("PWR") -> Icons.Outlined.PowerSettingsNew
 
             // Volume
-            n.contains("MUTE") -> Icons.Outlined.VolumeOff
-            (n.contains("VOL") && (n.contains("+") || n.contains("UP") || n.contains("INC"))) -> Icons.Outlined.VolumeUp
-            (n.contains("VOL") && (n.contains("-") || n.contains("DOWN") || n.contains("DN") || n.contains("DEC"))) -> Icons.Outlined.VolumeDown
+            n.contains("MUTE") -> Icons.AutoMirrored.Outlined.VolumeOff
+            (n.contains("VOL") && (n.contains("+") || n.contains("UP") || n.contains("INC"))) -> Icons.AutoMirrored.Outlined.VolumeUp
+            (n.contains("VOL") && (n.contains("-") || n.contains("DOWN") || n.contains("DN") || n.contains("DEC"))) -> Icons.AutoMirrored.Outlined.VolumeDown
 
             // Channel / Page
             (n.contains("CH") || n.contains("CHAN") || n.contains("PROG") || n.contains("PAGE")) && (n.contains("+") || n.contains("UP") || n.contains("INC") || n.contains("NEXT")) -> Icons.Outlined.ArrowCircleUp
