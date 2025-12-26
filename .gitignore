@@ -1,3 +1,6 @@
+# Local Files
+*.local
+
 # Gradle files
 .gradle/
 build/
