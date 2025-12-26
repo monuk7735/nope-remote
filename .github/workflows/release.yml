@@ -1,0 +1,55 @@
+name: Build and Release Signed APK
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: self-hosted
+    env:
+      BUILD_TOOLS_DIR: "/home/monuk7735/Android/Sdk/build-tools/35.0.0"
+      KEYSTORE_FILE: ".local/nope.key"
+      KEY_ALIAS: "${{ secrets.RELEASE_KEY_ALIAS }}"
+      STORE_PASS: "${{ secrets.RELEASE_STORE_PASSWORD }}"
+      KEY_PASS: "${{ secrets.RELEASE_KEY_PASSWORD }}"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make Scripts Executable
+        run: chmod +x gradlew
+
+      - name: Decode Keystore
+        run: |
+          mkdir -p .local
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > .local/nope.key
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Zipalign APK
+        run: ${BUILD_TOOLS_DIR}/zipalign -f 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/NopeRemote-${{ github.event.release.tag_name }}-aligned.apk
+
+      - name: Sign APK with apksigner
+        run: |
+          java --enable-native-access=ALL-UNNAMED -jar "${BUILD_TOOLS_DIR}/lib/apksigner.jar" sign --ks "${KEYSTORE_FILE}" \
+            --ks-key-alias "${KEY_ALIAS}" \
+            --ks-pass "pass:${STORE_PASS}" \
+            --key-pass "pass:${KEY_PASS}" \
+            --out app/build/outputs/apk/release/NopeRemote-${{ github.event.release.tag_name }}.apk \
+            app/build/outputs/apk/release/NopeRemote-${{ github.event.release.tag_name }}-aligned.apk
+
+      - name: Verify signature
+        run: |
+          VERIFY_OUT=$(java --enable-native-access=ALL-UNNAMED -jar "${BUILD_TOOLS_DIR}/lib/apksigner.jar" verify --print-certs app/build/outputs/apk/release/NopeRemote-${{ github.event.release.tag_name }}.apk 2>&1)
+          echo "$VERIFY_OUT" | grep -i "Signer" || echo "Signature verification failed!"
+          echo "$VERIFY_OUT" | grep -i "DN:" || true
+
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: app/build/outputs/apk/release/NopeRemote-${{ github.event.release.tag_name }}.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
