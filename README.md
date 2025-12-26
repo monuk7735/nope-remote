@@ -1,16 +1,16 @@
 # Nope-Remote 📱
 
-Nope-Remote is an open-source Android application that turns your smartphone into a powerful, universal IR remote control. Built with modern Android technologies, it offers a sleek Material You interface and advanced features like Custom Flows to automate your home entertainment system.
+Nope-Remote is an open-source Android application that turns your smartphone into a powerful, universal IR remote control. Built with modern Android technologies, it offers a sleek Material You interface and advanced features like Custom Macros to automate your home entertainment system.
 
 <img src="https://via.placeholder.com/800x400.png?text=Nope-Remote+Banner" alt="Nope-Remote Banner" width="100%">
 
 ## ✨ Features
 
 -   **Universal Compatibility**: Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
--   **Custom Flows (Macros)**: Create "Flows" to chain multiple commands together. Turn on your TV, Set-Top Box, and Soundbar with a single tap!
+-   **Custom Macros**: Create "Macros" to chain multiple commands together. Turn on your TV, Set-Top Box, and Soundbar with a single tap!
 -   **Material You Design**: A beautiful, modern UI that adapts to your wallpaper's colors (on supported devices).
 -   **Dark/Light Mode**: Fully supports system-wide dark and light themes.
--   **Database Support**: Stores your remotes and flows locally using Room Database.
+-   **Database Support**: Stores your remotes and macros locally using Room Database.
 -   **Haptic Feedback**: Get tactile confirmation for every button press.
 
 ## 🛠️ Tech Stack
@@ -53,17 +53,20 @@ Nope-Remote is an open-source Android application that turns your smartphone int
 3.  Test the buttons to find the working configuration.
 4.  Save the remote.
 
-### Creating a Flow (Macro)
-1.  Go to the **Flows** tab.
-2.  Tap **"Create New Flow"**.
+### Creating a Macro
+1.  Go to the **Macros** tab.
+2.  Tap **"Create New Macro"**.
 3.  Add steps by selecting buttons from your saved remotes.
 4.  Add delays if necessary between commands.
-5.  Save and execute the flow with one tap.
+5.  Save and execute the macro with one tap.
 
 ## 🤝 Contributing
-
+ 
 Contributions are welcome! Please feel free to invoke `Issue` or `Pull Request`.
+
+## 🎗️ Credits & Acknowledgments
+-   **irdb**: Contains/accesses codes from https://github.com/probonopd/irdb
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [GPLv3 License](LICENSE).

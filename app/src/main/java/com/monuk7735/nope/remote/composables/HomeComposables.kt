@@ -249,9 +249,9 @@ fun MacroSequenceCard(
 
 //@Preview(showBackground = true)
 //@Composable
-//fun FlowPreview() {
+//fun MacroPreview() {
 //    Column(modifier = Modifier.fillMaxWidth(1f)) {
-//        FlowParent(
+//        MacroParent(
 //            modifier = Modifier,
 //            name = "Xiaomi TV",
 //            onClick = {

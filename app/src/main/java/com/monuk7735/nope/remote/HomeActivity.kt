@@ -166,7 +166,7 @@ class HomeActivity : ComponentActivity() {
                         },
                         icon = {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_ir_flow),
+                                painter = painterResource(id = R.drawable.ic_macro),
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp)
                             )
