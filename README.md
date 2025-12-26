@@ -65,7 +65,7 @@ Nope-Remote is an open-source Android application that turns your smartphone int
 Contributions are welcome! Please feel free to invoke `Issue` or `Pull Request`.
 
 ## 🎗️ Credits & Acknowledgments
--   **irdb**: Contains/accesses codes from https://github.com/probonopd/irdb
+- Contains/accesses irdb by Simon Peter and contributors, used under permission. For licensing details and for information on how to contribute to the database, see  https://github.com/probonopd/irdb
 
 ## 📄 License
 
