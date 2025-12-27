@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.monuk7735.nope.remote"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.monuk7735.nope.remote"
@@ -58,7 +58,7 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
 
     // UI - Compose
-    implementation(platform("androidx.compose:compose-bom:2024.05.00"))
+    implementation(platform("androidx.compose:compose-bom:2025.12.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
