@@ -1,0 +1,6 @@
+What's New in v1.1:
+
+- Improved application stability and performance.
+- Updated internal libraries to latest versions.
+- Enhanced security configurations.
+- Minor UI polish and bug fixes.
