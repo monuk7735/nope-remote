@@ -9,19 +9,18 @@ import android.os.VibratorManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,7 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -42,14 +40,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.monuk7735.nope.remote.composables.ActionButton
 import com.monuk7735.nope.remote.composables.AppBar
 import com.monuk7735.nope.remote.composables.EmptyState
 import com.monuk7735.nope.remote.composables.MacroSequenceCard
 import com.monuk7735.nope.remote.composables.RemoteTile
+import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.viewmodels.HomeActivityViewModel
 import kotlinx.coroutines.Dispatchers
@@ -71,11 +69,9 @@ class HomeActivity : ComponentActivity() {
         setContent {
             val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
             NopeRemoteTheme(
-                useDarkTheme = themeSettings.useDarkTheme,
-                useDynamicColors = themeSettings.useDynamicColors
-            ) {
-                Root()
-            }
+                    useDarkTheme = themeSettings.useDarkTheme,
+                    useDynamicColors = themeSettings.useDynamicColors
+            ) { Root() }
         }
     }
 
@@ -83,7 +79,7 @@ class HomeActivity : ComponentActivity() {
     fun Root() {
         val pagerState = rememberPagerState(pageCount = { 2 })
         val coroutineScope = rememberCoroutineScope()
-        
+
         val remotesGridState = rememberLazyGridState()
         val macrosListState = rememberLazyListState()
 
@@ -96,140 +92,164 @@ class HomeActivity : ComponentActivity() {
                 }
             }
         }
-        
+
         val context = LocalContext.current
         val allRemotes by viewModel.allRemotesInfo.observeAsState(emptyList())
         val allMacros by viewModel.allMacros.observeAsState(emptyList())
 
+        var selectedRemoteForDeletion by remember { mutableStateOf<RemoteDataDBModel?>(null) }
+
         Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = {
-                AppBar(
-                    title = stringResource(id = R.string.app_name)
-                ) {
-                    Surface(
-                        onClick = {
-                            startActivity(Intent(context, SettingsActivity::class.java))
-                        },
-                        shape = CircleShape,
-                        color = Color.Transparent
-                    ) {
-                        Box(modifier = Modifier.padding(8.dp)) {
-                            Icon(
-                                imageVector = Icons.Outlined.Settings,
-                                contentDescription = "Settings",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            },
-            bottomBar = {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier.height(84.dp)
-                ) {
-                    NavigationBarItem(
-                        selected = pagerState.currentPage == 0,
-                        onClick = {
-                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
-                        },
-                        label = { 
-                            Text(
-                                "Remotes",
-                                fontWeight = if (pagerState.currentPage == 0) FontWeight.Bold else FontWeight.Normal
-                            ) 
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_ir_remote),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                        )
-                    )
-                    NavigationBarItem(
-                        selected = pagerState.currentPage == 1,
-                        onClick = {
-                            coroutineScope.launch { pagerState.animateScrollToPage(1) }
-                        },
-                        label = { 
-                            Text(
-                                "Macros",
-                                fontWeight = if (pagerState.currentPage == 1) FontWeight.Bold else FontWeight.Normal
-                            ) 
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_macro),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                        )
-                    )
-                }
-            },
-            floatingActionButton = {
-                val fabColor = MaterialTheme.colorScheme.primary
-                
-                Surface(
-                    onClick = {
-                        val intent = if (pagerState.currentPage == 0) {
-                            Intent(context, AddRemoteActivity::class.java)
-                        } else {
-                            Intent(context, AddEditMacroActivity::class.java)
-                        }
-                        startActivity(intent)
-                    },
-                    shape = RoundedCornerShape(24.dp),
-                    color = fabColor,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    tonalElevation = 6.dp,
-                    shadowElevation = 8.dp,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = if (isFabExpanded) 24.dp else 16.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = isFabExpanded,
-                            enter = androidx.compose.animation.expandHorizontally() + androidx.compose.animation.fadeIn(),
-                            exit = androidx.compose.animation.shrinkHorizontally() + androidx.compose.animation.fadeOut()
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    AppBar(title = stringResource(id = R.string.app_name)) {
+                        Surface(
+                                onClick = {
+                                    startActivity(Intent(context, SettingsActivity::class.java))
+                                },
+                                shape = CircleShape,
+                                color = Color.Transparent
                         ) {
-                            Row {
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = if (pagerState.currentPage == 0) "Add Remote" else "Add Macro",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1
+                            Box(modifier = Modifier.padding(8.dp)) {
+                                Icon(
+                                        imageVector = Icons.Outlined.Settings,
+                                        contentDescription = "Settings",
+                                        tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
                     }
+                },
+                bottomBar = {
+                    NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 0.dp,
+                            modifier = Modifier.height(84.dp)
+                    ) {
+                        NavigationBarItem(
+                                selected = pagerState.currentPage == 0,
+                                onClick = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                                },
+                                label = {
+                                    Text(
+                                            "Remotes",
+                                            fontWeight =
+                                                    if (pagerState.currentPage == 0) FontWeight.Bold
+                                                    else FontWeight.Normal
+                                    )
+                                },
+                                icon = {
+                                    Icon(
+                                            painter = painterResource(id = R.drawable.ic_ir_remote),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                colors =
+                                        NavigationBarItemDefaults.colors(
+                                                selectedIconColor =
+                                                        MaterialTheme.colorScheme.primary,
+                                                indicatorColor =
+                                                        MaterialTheme.colorScheme.primaryContainer
+                                                                .copy(alpha = 0.5f)
+                                        )
+                        )
+                        NavigationBarItem(
+                                selected = pagerState.currentPage == 1,
+                                onClick = {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                                },
+                                label = {
+                                    Text(
+                                            "Macros",
+                                            fontWeight =
+                                                    if (pagerState.currentPage == 1) FontWeight.Bold
+                                                    else FontWeight.Normal
+                                    )
+                                },
+                                icon = {
+                                    Icon(
+                                            painter = painterResource(id = R.drawable.ic_macro),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                colors =
+                                        NavigationBarItemDefaults.colors(
+                                                selectedIconColor =
+                                                        MaterialTheme.colorScheme.primary,
+                                                indicatorColor =
+                                                        MaterialTheme.colorScheme.primaryContainer
+                                                                .copy(alpha = 0.5f)
+                                        )
+                        )
+                    }
+                },
+                floatingActionButton = {
+                    val fabColor = MaterialTheme.colorScheme.primary
+
+                    Surface(
+                            onClick = {
+                                val intent =
+                                        if (pagerState.currentPage == 0) {
+                                            Intent(context, AddRemoteActivity::class.java)
+                                        } else {
+                                            Intent(context, AddEditMacroActivity::class.java)
+                                        }
+                                startActivity(intent)
+                            },
+                            shape = RoundedCornerShape(24.dp),
+                            color = fabColor,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            tonalElevation = 6.dp,
+                            shadowElevation = 8.dp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Row(
+                                modifier =
+                                        Modifier.padding(
+                                                horizontal = if (isFabExpanded) 24.dp else 16.dp,
+                                                vertical = 16.dp
+                                        ),
+                                verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                    imageVector = Icons.Outlined.Add,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp)
+                            )
+
+                            androidx.compose.animation.AnimatedVisibility(
+                                    visible = isFabExpanded,
+                                    enter =
+                                            androidx.compose.animation.expandHorizontally() +
+                                                    androidx.compose.animation.fadeIn(),
+                                    exit =
+                                            androidx.compose.animation.shrinkHorizontally() +
+                                                    androidx.compose.animation.fadeOut()
+                            ) {
+                                Row {
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                            text =
+                                                    if (pagerState.currentPage == 0) "Add Remote"
+                                                    else "Add Macro",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
-            }
         ) { innerPadding ->
             val vibrator = remember {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                    val vibratorManager =
+                            context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as
+                                    VibratorManager
                     vibratorManager.defaultVibrator
                 } else {
                     @Suppress("DEPRECATION")
@@ -238,41 +258,52 @@ class HomeActivity : ComponentActivity() {
             }
 
             HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
+                    state = pagerState,
+                    modifier = Modifier.padding(innerPadding).fillMaxSize()
             ) { pageIndex ->
                 when (pageIndex) {
                     0 -> {
                         if (allRemotes.isEmpty()) {
                             EmptyState(
-                                text = "No Remotes Yet",
-                                secondaryText = "Add a remote to start controlling your devices",
-                                icon = Icons.Outlined.SettingsInputAntenna
+                                    text = "No Remotes Yet",
+                                    secondaryText =
+                                            "Add a remote to start controlling your devices",
+                                    icon = Icons.Outlined.SettingsInputAntenna
                             )
                         } else {
                             LazyVerticalGrid(
-                                state = remotesGridState,
-                                columns = GridCells.Adaptive(160.dp),
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    state = remotesGridState,
+                                    columns = GridCells.Adaptive(160.dp),
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 items(allRemotes.size) { i ->
                                     RemoteTile(
-                                        name = allRemotes[i].name,
-                                        deviceType = "${allRemotes[i].brand} ${allRemotes[i].type}",
-                                        icon = allRemotes[i].getIcon(),
-                                        onClick = {
-                                            startActivity(
-                                                Intent(context, RemoteControlActivity::class.java).apply {
-                                                    putExtra("remote", allRemotes[i])
-                                                }
-                                            )
-                                        },
-                                        modifier = Modifier.height(140.dp)
+                                            name = allRemotes[i].name,
+                                            deviceType =
+                                                    "${allRemotes[i].brand} ${allRemotes[i].type}",
+                                            icon = allRemotes[i].getIcon(),
+                                            onClick = {
+                                                startActivity(
+                                                        Intent(
+                                                                        context,
+                                                                        RemoteControlActivity::class
+                                                                                .java
+                                                                )
+                                                                .apply {
+                                                                    putExtra(
+                                                                            "remote",
+                                                                            allRemotes[i]
+                                                                    )
+                                                                }
+                                                )
+                                            },
+                                            onLongClick = {
+                                                selectedRemoteForDeletion = allRemotes[i]
+                                            },
+                                            modifier = Modifier.height(140.dp)
                                     )
                                 }
                             }
@@ -281,36 +312,97 @@ class HomeActivity : ComponentActivity() {
                     1 -> {
                         if (allMacros.isEmpty()) {
                             EmptyState(
-                                text = "No Macros Yet",
-                                secondaryText = "Create sequences of commands for one-tap control",
-                                icon = Icons.Outlined.AutoFixHigh
+                                    text = "No Macros Yet",
+                                    secondaryText =
+                                            "Create sequences of commands for one-tap control",
+                                    icon = Icons.Outlined.AutoFixHigh
                             )
                         } else {
                             LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                state = macrosListState,
-                                contentPadding = PaddingValues(top = 16.dp, bottom = 88.dp)
+                                    modifier = Modifier.fillMaxSize(),
+                                    state = macrosListState,
+                                    contentPadding = PaddingValues(top = 16.dp, bottom = 88.dp)
                             ) {
                                 items(allMacros.size) { i ->
                                     MacroSequenceCard(
-                                        name = allMacros[i].name,
-                                        stepCount = allMacros[i].macroUnits.size,
-                                        onExecute = {
-                                            lifecycleScope.launch(Dispatchers.Main) {
-                                                allMacros[i].execute(viewModel.irController, vibrator)
-                                            }
-                                        },
-                                        onEdit = {
-                                            startActivity(
-                                                Intent(context, AddEditMacroActivity::class.java).apply {
-                                                    putExtra("macro_data", allMacros[i])
+                                            name = allMacros[i].name,
+                                            stepCount = allMacros[i].macroUnits.size,
+                                            onExecute = {
+                                                lifecycleScope.launch(Dispatchers.Main) {
+                                                    allMacros[i].execute(
+                                                            viewModel.irController,
+                                                            vibrator
+                                                    )
                                                 }
-                                            )
-                                        }
+                                            },
+                                            onEdit = {
+                                                startActivity(
+                                                        Intent(
+                                                                        context,
+                                                                        AddEditMacroActivity::class
+                                                                                .java
+                                                                )
+                                                                .apply {
+                                                                    putExtra(
+                                                                            "macro_data",
+                                                                            allMacros[i]
+                                                                    )
+                                                                }
+                                                )
+                                            }
                                     )
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            if (selectedRemoteForDeletion != null) {
+                ModalBottomSheet(
+                        onDismissRequest = { selectedRemoteForDeletion = null },
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        sheetState = rememberModalBottomSheetState()
+                ) {
+                    Column(
+                            modifier =
+                                    Modifier.fillMaxWidth().padding(24.dp).padding(bottom = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                                text = "Delete Remote?",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                                text =
+                                        "Are you sure you want to delete \"${selectedRemoteForDeletion?.name}\"? This action cannot be undone.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                                onClick = {
+                                    selectedRemoteForDeletion?.let { remote ->
+                                        viewModel.deleteRemote(remote)
+                                    }
+                                    selectedRemoteForDeletion = null
+                                },
+                                colors =
+                                        ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.error,
+                                                contentColor = MaterialTheme.colorScheme.onError
+                                        ),
+                                modifier = Modifier.fillMaxWidth()
+                        ) { Text("Delete") }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                                onClick = { selectedRemoteForDeletion = null },
+                                modifier = Modifier.fillMaxWidth()
+                        ) { Text("Cancel") }
                     }
                 }
             }

@@ -1,8 +1,9 @@
 package com.monuk7735.nope.remote.composables
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,133 +24,134 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun EmptyState(
-    modifier: Modifier = Modifier,
-    text: String,
-    secondaryText: String? = null,
-    icon: ImageVector
+        modifier: Modifier = Modifier,
+        text: String,
+        secondaryText: String? = null,
+        icon: ImageVector
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            modifier = modifier.fillMaxSize().padding(32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Surface(
-            modifier = Modifier.size(160.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                modifier = Modifier.size(160.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 // Outer glow
                 Surface(
-                    modifier = Modifier.size(100.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                        modifier = Modifier.size(100.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
                 ) {}
-                
+
                 Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(72.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(72.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
                 )
             }
         }
         Spacer(modifier = Modifier.height(32.dp))
         Text(
-            text = text,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
+                text = text,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
         )
         if (secondaryText != null) {
             Text(
-                text = secondaryText,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .padding(top = 12.dp)
-                    .widthIn(max = 280.dp),
-                lineHeight = 22.sp
+                    text = secondaryText,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 12.dp).widthIn(max = 280.dp),
+                    lineHeight = 22.sp
             )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RemoteTile(
-    modifier: Modifier = Modifier,
-    name: String,
-    deviceType: String? = null,
-    icon: ImageVector,
-    onClick: () -> Unit,
+        modifier: Modifier = Modifier,
+        name: String,
+        deviceType: String? = null,
+        icon: ImageVector,
+        onClick: () -> Unit,
+        onLongClick: (() -> Unit)? = null,
 ) {
     Card(
-        modifier = modifier
-            .clip(RoundedCornerShape(32.dp))
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            modifier =
+                    modifier.clip(RoundedCornerShape(32.dp))
+                            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Subtle background accent
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(80.dp)
-                    .background(
-                        androidx.compose.ui.graphics.Brush.radialGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                                Color.Transparent
-                            )
-                        )
-                    )
+                    modifier =
+                            Modifier.align(Alignment.TopEnd)
+                                    .size(80.dp)
+                                    .background(
+                                            androidx.compose.ui.graphics.Brush.radialGradient(
+                                                    colors =
+                                                            listOf(
+                                                                    MaterialTheme.colorScheme
+                                                                            .primary.copy(
+                                                                            alpha = 0.05f
+                                                                    ),
+                                                                    Color.Transparent
+                                                            )
+                                            )
+                                    )
             )
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier.fillMaxSize().padding(20.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Surface(
-                    modifier = Modifier.size(56.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                        modifier = Modifier.size(56.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                imageVector = icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
 
                 Column {
                     Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                            text = name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                     )
                     if (deviceType != null) {
                         Text(
-                            text = deviceType.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 1.sp,
-                            maxLines = 1
+                                text = deviceType.uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 1.sp,
+                                maxLines = 1
                         )
                     }
                 }
@@ -160,86 +162,82 @@ fun RemoteTile(
 
 @Composable
 fun MacroSequenceCard(
-    modifier: Modifier = Modifier,
-    name: String,
-    stepCount: Int,
-    onExecute: () -> Unit,
-    onEdit: () -> Unit,
+        modifier: Modifier = Modifier,
+        name: String,
+        stepCount: Int,
+        onExecute: () -> Unit,
+        onEdit: () -> Unit,
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(28.dp))
-            .clickable { onExecute() },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            modifier =
+                    modifier.fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .clickable { onExecute() },
+            colors =
+                    CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-            modifier = Modifier
-                .padding(20.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
+                modifier = Modifier.padding(20.dp).fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
+                horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                 Surface(
-                    modifier = Modifier.size(48.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                        modifier = Modifier.size(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Outlined.AutoFixHigh,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                imageVector = Icons.Outlined.AutoFixHigh,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                            text = name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Outlined.Layers,
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                                imageVector = Icons.Outlined.Layers,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "$stepCount Commands",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
+                                text = "$stepCount Commands",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
                         )
                     }
                 }
             }
-            
+
             Surface(
-                modifier = Modifier.size(40.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                onClick = onEdit
+                    modifier = Modifier.size(40.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    onClick = onEdit
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Edit $name",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "Edit $name",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -247,9 +245,9 @@ fun MacroSequenceCard(
     }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun MacroPreview() {
+// @Preview(showBackground = true)
+// @Composable
+// fun MacroPreview() {
 //    Column(modifier = Modifier.fillMaxWidth(1f)) {
 //        MacroParent(
 //            modifier = Modifier,
@@ -259,12 +257,12 @@ fun MacroSequenceCard(
 //            }
 //        )
 //    }
-//}
+// }
 
 //
-//@Preview(showBackground = true)
-//@Composable
-//fun Preview() {
+// @Preview(showBackground = true)
+// @Composable
+// fun Preview() {
 //    Column(modifier = Modifier.fillMaxWidth(1f)) {
 //        RemoteParent(
 //            modifier = Modifier,
@@ -275,4 +273,4 @@ fun MacroSequenceCard(
 //            }
 //        )
 //    }
-//}
+// }
