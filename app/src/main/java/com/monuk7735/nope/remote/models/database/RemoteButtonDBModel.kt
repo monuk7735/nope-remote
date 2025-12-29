@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 @Parcelize
 data class RemoteButtonDBModel(
+    val id: String = java.util.UUID.randomUUID().toString(),
     var offsetX: Float,
     var offsetY: Float,
     val name: String,

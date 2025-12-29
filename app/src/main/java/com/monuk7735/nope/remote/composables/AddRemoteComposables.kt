@@ -185,7 +185,7 @@ fun ListCodes(
     var selected by remember { mutableStateOf(0) }
 
     val hasCodes = !allCodes.isNullOrEmpty()
-    val rightEnabled = hasCodes && (selected + 1 < allCodes!!.size)
+    val rightEnabled = hasCodes && (selected + 1 < allCodes.size)
     val leftEnabled = hasCodes && (selected > 0)
 
     val allRemoteDataDBModels = remember(allCodes) {
@@ -196,7 +196,7 @@ fun ListCodes(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AppBar(
-                title = if (!hasCodes) "Loading..." else "${allCodes!![selected].brand}",
+                title = if (!hasCodes) "Loading..." else allCodes[selected].brand,
                 onBack = onBack
             )
         },
@@ -221,7 +221,7 @@ fun ListCodes(
                                 Icon(Icons.AutoMirrored.Outlined.ArrowBackIos, contentDescription = "Previous")
                             }
                             Text(
-                                text = "${selected + 1} / ${allCodes!!.size}",
+                                text = "${selected + 1} / ${allCodes.size}",
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(horizontal = 8.dp)
                             )
