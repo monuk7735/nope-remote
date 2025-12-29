@@ -13,7 +13,10 @@
   [![Issues](https://img.shields.io/github/issues/monuk7735/nope-remote.svg)](https://github.com/monuk7735/nope-remote/issues)
   [![Pull Requests](https://img.shields.io/github/issues-pr/monuk7735/nope-remote.svg)](https://github.com/monuk7735/nope-remote/pulls)
   [![Android Version](https://img.shields.io/badge/Android-6.0%2B-green.svg)](https://www.android.com)
-
+  
+  <a href="https://f-droid.org/packages/com.monuk7735.nope.remote/">
+    <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" width="200">
+  </a>
 </div>
 
 ## Features
