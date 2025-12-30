@@ -36,11 +36,9 @@ class AddRemoteActivity : ComponentActivity() {
         setContent {
             val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
             NopeRemoteTheme(
-                useDarkTheme = themeSettings.useDarkTheme,
-                useDynamicColors = themeSettings.useDynamicColors
-            ) {
-                AddRemoteActivityRoot()
-            }
+                    useDarkTheme = themeSettings.useDarkTheme,
+                    useDynamicColors = themeSettings.useDynamicColors
+            ) { AddRemoteActivityRoot() }
         }
     }
 
@@ -49,91 +47,87 @@ class AddRemoteActivity : ComponentActivity() {
         val allTypes = viewModel.types.observeAsState().value
         val allBrands = viewModel.brands.observeAsState().value
         val allCodes = viewModel.codes.observeAsState().value
+        val loadingProgress = viewModel.loadingProgress.observeAsState().value
 
         val navController = rememberNavController()
 
         NavHost(
-            navController = navController,
-            startDestination = AddRemoteNavigation.ListTypes.route
+                navController = navController,
+                startDestination = AddRemoteNavigation.ListTypes.route
         ) {
             composable(
-                route = AddRemoteNavigation.ListTypes.route,
-                enterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
-                },
-                exitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
-                },
-                popEnterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
-                },
-                popExitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
-                }
+                    route = AddRemoteNavigation.ListTypes.route,
+                    enterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                    },
+                    exitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                    },
+                    popEnterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                    },
+                    popExitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                    }
             ) {
                 ListTypes(
-                    allTypes = allTypes,
-                    onOneClicked = { type ->
-                        viewModel.getBrands(type)
-                        navController.navigate(AddRemoteNavigation.ListBrands.route)
-                    },
-                    onSearch = { viewModel.filterTypes(it) },
-                    onBack = {
-                        finish()
-                    }
+                        allTypes = allTypes,
+                        onOneClicked = { type ->
+                            viewModel.getBrands(type)
+                            navController.navigate(AddRemoteNavigation.ListBrands.route)
+                        },
+                        onSearch = { viewModel.filterTypes(it) },
+                        onBack = { finish() }
                 )
             }
             composable(
-                route = AddRemoteNavigation.ListBrands.route,
-                enterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
-                },
-                exitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
-                },
-                popEnterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
-                },
-                popExitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
-                }
+                    route = AddRemoteNavigation.ListBrands.route,
+                    enterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                    },
+                    exitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                    },
+                    popEnterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                    },
+                    popExitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                    }
             ) {
                 ListBrands(
-                    allBrands = allBrands,
-                    onOneClicked = { type, brand ->
-                        viewModel.getCodes(type, brand)
-                        navController.navigate(AddRemoteNavigation.ListCodes.route)
-                    },
-                    onSearch = { viewModel.filterBrands(it) },
-                    onBack = {
-                        navController.popBackStack()
-                    }
+                        allBrands = allBrands,
+                        onOneClicked = { type, brand ->
+                            viewModel.getCodes(type, brand)
+                            navController.navigate(AddRemoteNavigation.ListCodes.route)
+                        },
+                        onSearch = { viewModel.filterBrands(it) },
+                        onBack = { navController.popBackStack() }
                 )
             }
             composable(
-                route = AddRemoteNavigation.ListCodes.route,
-                enterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
-                },
-                exitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
-                },
-                popEnterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
-                },
-                popExitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
-                }
+                    route = AddRemoteNavigation.ListCodes.route,
+                    enterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                    },
+                    exitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                    },
+                    popEnterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                    },
+                    popExitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                    }
             ) {
                 ListCodes(
-                    allCodes = allCodes,
-                    onSave = {
-                        viewModel.saveRemote(it)
-                        finish()
-                    },
-                    onBack = {
-                        navController.popBackStack()
-                    }
+                        allCodes = allCodes,
+                        loadingProgress = loadingProgress,
+                        onSave = {
+                            viewModel.saveRemote(it)
+                            finish()
+                        },
+                        onBack = { navController.popBackStack() }
                 )
             }
         }

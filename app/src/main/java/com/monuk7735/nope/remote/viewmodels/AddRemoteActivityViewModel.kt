@@ -1,39 +1,29 @@
 package com.monuk7735.nope.remote.viewmodels
 
 import android.app.Application
-import android.content.Context
-import android.hardware.ConsumerIrManager
-
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
+import com.monuk7735.nope.remote.api.Constants
 import com.monuk7735.nope.remote.api.RetrofitInstance
 import com.monuk7735.nope.remote.database.RemoteDatabase
-import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.infrared.IrCsvParser
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
 import com.monuk7735.nope.remote.repository.RemoteDataRepository
-import com.monuk7735.nope.remote.api.Constants
 import kotlinx.coroutines.launch
-import java.net.URLEncoder
 
 class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val remoteDataRepository: RemoteDataRepository = RemoteDataRepository(
-        remoteDao = RemoteDatabase.getDatabase(application).remoteDao()
-    )
+    private val remoteDataRepository: RemoteDataRepository =
+            RemoteDataRepository(remoteDao = RemoteDatabase.getDatabase(application).remoteDao())
 
-    val types: MutableLiveData<List<DeviceTypesRetrofitModel>> =
-        MutableLiveData()
-    val brands: MutableLiveData<List<DeviceBrandsRetrofitModel>?> =
-        MutableLiveData()
-    val codes: MutableLiveData<List<DeviceCodesRetrofitModel>?> =
-        MutableLiveData()
-
+    val types: MutableLiveData<List<DeviceTypesRetrofitModel>> = MutableLiveData()
+    val brands: MutableLiveData<List<DeviceBrandsRetrofitModel>?> = MutableLiveData()
+    val codes: MutableLiveData<List<DeviceCodesRetrofitModel>?> = MutableLiveData()
+    val loadingProgress: MutableLiveData<Pair<Int, Int>?> = MutableLiveData()
 
     init {
         getTypes()
@@ -79,7 +69,9 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
     private fun getTypes() {
         viewModelScope.launch {
             if (ensureIndex()) {
-                val typeList = deviceIndex?.keys?.sorted()?.map { DeviceTypesRetrofitModel(it) } ?: emptyList()
+                val typeList =
+                        deviceIndex?.keys?.sorted()?.map { DeviceTypesRetrofitModel(it) }
+                                ?: emptyList()
                 types.value = typeList
             }
         }
@@ -90,7 +82,10 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
         if (query.isBlank()) {
             types.value = allTypes.map { DeviceTypesRetrofitModel(it) }
         } else {
-            types.value = allTypes.filter { it.contains(query, ignoreCase = true) }.map { DeviceTypesRetrofitModel(it) }
+            types.value =
+                    allTypes.filter { it.contains(query, ignoreCase = true) }.map {
+                        DeviceTypesRetrofitModel(it)
+                    }
         }
     }
 
@@ -98,9 +93,11 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
         brands.value = null
         viewModelScope.launch {
             if (ensureIndex()) {
-                val brandList = deviceIndex?.get(type)?.keys?.sorted()?.map { brand ->
-                     DeviceBrandsRetrofitModel(type = type, brand = brand)
-                } ?: emptyList()
+                val brandList =
+                        deviceIndex?.get(type)?.keys?.sorted()?.map { brand ->
+                            DeviceBrandsRetrofitModel(type = type, brand = brand)
+                        }
+                                ?: emptyList()
                 currentViewBrands = brandList
                 brands.value = brandList
             }
@@ -110,12 +107,12 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
     private var currentViewBrands: List<DeviceBrandsRetrofitModel>? = null
 
     fun filterBrands(query: String) {
-         val list = currentViewBrands ?: return
-         if (query.isBlank()) {
-             brands.value = list
-         } else {
-             brands.value = list.filter { it.brand.contains(query, ignoreCase = true) }
-         }
+        val list = currentViewBrands ?: return
+        if (query.isBlank()) {
+            brands.value = list
+        } else {
+            brands.value = list.filter { it.brand.contains(query, ignoreCase = true) }
+        }
     }
 
     fun getCodes(type: String, brand: String) {
@@ -123,24 +120,30 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch {
             if (ensureIndex()) {
                 val matchingFiles = deviceIndex?.get(type)?.get(brand) ?: emptyList()
-                
+
+                val totalRemoteFiles = matchingFiles.size
+                loadingProgress.postValue(Pair(0, totalRemoteFiles))
+
+                var currentCount = 0
                 val resultList = mutableListOf<DeviceCodesRetrofitModel>()
 
                 for (path in matchingFiles) {
+                    currentCount++
+                    loadingProgress.postValue(Pair(currentCount, totalRemoteFiles))
                     try {
 
                         val response = RetrofitInstance.api.getCsv(path)
                         if (response.isSuccessful && response.body() != null) {
                             val csvContent = response.body()!!.string()
                             val codeMap = IrCsvParser.parseCsvAndGenerateHex(csvContent)
-                            
+
                             if (codeMap.isNotEmpty()) {
                                 resultList.add(
-                                    DeviceCodesRetrofitModel(
-                                        type = type,
-                                        brand = brand, 
-                                        codes = codeMap
-                                    )
+                                        DeviceCodesRetrofitModel(
+                                                type = type,
+                                                brand = brand,
+                                                codes = codeMap
+                                        )
                                 )
                             }
                         }
@@ -148,15 +151,13 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
                         e.printStackTrace()
                     }
                 }
-                codes.value = resultList
+                loadingProgress.postValue(null)
+                codes.postValue(resultList)
             }
         }
     }
 
-    fun saveRemote(remoteDataDBModel: RemoteDataDBModel){
-        viewModelScope.launch {
-            remoteDataRepository.addRemote(remoteDataDBModel)
-        }
+    fun saveRemote(remoteDataDBModel: RemoteDataDBModel) {
+        viewModelScope.launch { remoteDataRepository.addRemote(remoteDataDBModel) }
     }
-
 }

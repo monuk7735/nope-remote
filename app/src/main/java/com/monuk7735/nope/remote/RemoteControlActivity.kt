@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -35,141 +36,125 @@ class RemoteControlActivity : ComponentActivity() {
 
         viewModel = ViewModelProvider(this).get(RemoteControlViewModel::class.java)
 
-//        val remote = intent.getParcelableExtra<RemoteDataDBModel>("remote")
-//
-//        if (remote == null) {
-//            finish()
-//            return
-//        }
+        //        val remote = intent.getParcelableExtra<RemoteDataDBModel>("remote")
+        //
+        //        if (remote == null) {
+        //            finish()
+        //            return
+        //        }
 
         setContent {
             val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
             NopeRemoteTheme(
-                useDarkTheme = themeSettings.useDarkTheme,
-                useDynamicColors = themeSettings.useDynamicColors
-            ) {
-                Root()
-            }
+                    useDarkTheme = themeSettings.useDarkTheme,
+                    useDynamicColors = themeSettings.useDynamicColors
+            ) { Root() }
         }
     }
 
     @Composable
     fun Root() {
 
-        val (remoteData, setRemoteData) = remember {
-            mutableStateOf(
-                intent.getParcelableExtra<RemoteDataDBModel>("remote")
-            )
-        }
+        val (remoteData, setRemoteData) =
+                remember { mutableStateOf(intent.getParcelableExtra<RemoteDataDBModel>("remote")) }
 
         if (remoteData == null) {
             finish()
             return
         }
 
-        var liveRemote: RemoteDataDBModel? = remember {
-            remoteData
-        }
-
+        val liveRemote = viewModel.getLiveRemote(remoteData.id).observeAsState(initial = remoteData)
         val navController = rememberNavController()
 
-        viewModel.getLiveRemote(remoteData.id).observe(this) {
-            liveRemote = it
-        }
-
         NavHost(
-            navController = navController,
-            startDestination = RemoteControlNavigation.RemoteControlMain.route
+                navController = navController,
+                startDestination = RemoteControlNavigation.RemoteControlMain.route
         ) {
-
             composable(
-                route = RemoteControlNavigation.RemoteControlMain.route,
-                enterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
-                },
-                exitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
-                },
-                popEnterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
-                },
-                popExitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
-                }
+                    route = RemoteControlNavigation.RemoteControlMain.route,
+                    enterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                    },
+                    exitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                    },
+                    popEnterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                    },
+                    popExitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                    }
             ) {
                 RemoteControl(
-                    remoteDataModel = liveRemote,
-                    onEditRemoteSettings = {
-                        navController.navigate(RemoteControlNavigation.RemoteControlSettings.route)
-                    },
-                    onBack = {
-                        finish()
-                    }
+                        remoteDataModel = liveRemote.value,
+                        onEditRemoteSettings = {
+                            navController.navigate(
+                                    RemoteControlNavigation.RemoteControlSettings.route
+                            )
+                        },
+                        onBack = { finish() }
                 )
             }
 
             composable(
-                route = RemoteControlNavigation.RemoteControlSettings.route,
-                enterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
-                },
-                exitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
-                },
-                popEnterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
-                },
-                popExitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
-                }
+                    route = RemoteControlNavigation.RemoteControlSettings.route,
+                    enterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                    },
+                    exitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                    },
+                    popEnterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                    },
+                    popExitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                    }
             ) {
                 RemoteControlSettings(
-                    remoteDataModel = liveRemote,
-                    onSave = {
-                        viewModel.updateRemote(it)
-                        navController.popBackStack()
-                    },
-                    onEditLayout = {
-                        setRemoteData(intent.getParcelableExtra("remote"))
-                        navController.navigate(RemoteControlNavigation.RemoteControlEditLayout.route)
-                    },
-                    onDelete = {
-                        viewModel.deleteRemote(it)
-                        finish()
-                    },
-                    onBack = {
-                        navController.popBackStack()
-                    }
+                        remoteDataModel = liveRemote.value,
+                        onSave = {
+                            viewModel.updateRemote(it)
+                            navController.popBackStack()
+                        },
+                        onEditLayout = {
+                            setRemoteData(intent.getParcelableExtra("remote"))
+                            navController.navigate(
+                                    RemoteControlNavigation.RemoteControlEditLayout.route
+                            )
+                        },
+                        onDelete = {
+                            viewModel.deleteRemote(it)
+                            finish()
+                        },
+                        onBack = { navController.popBackStack() }
                 )
             }
 
             composable(
-                route = RemoteControlNavigation.RemoteControlEditLayout.route,
-                enterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
-                },
-                exitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
-                },
-                popEnterTransition = {
-                    androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
-                },
-                popExitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
-                }
+                    route = RemoteControlNavigation.RemoteControlEditLayout.route,
+                    enterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                    },
+                    exitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                    },
+                    popEnterTransition = {
+                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                    },
+                    popExitTransition = {
+                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                    }
             ) {
                 RemoteControlEditLayout(
-                    remoteDataModel = remoteData,
-                    onSaveLayout = {
-                        viewModel.updateRemote(it)
-                        navController.popBackStack()
-                    },
-                    onBack = {
-                        navController.popBackStack()
-                    }
+                        remoteDataModel = remoteData,
+                        onSaveLayout = {
+                            viewModel.updateRemote(it)
+                            navController.popBackStack()
+                        },
+                        onBack = { navController.popBackStack() }
                 )
             }
-
         }
     }
 }
