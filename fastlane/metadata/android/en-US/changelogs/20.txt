@@ -1,0 +1,5 @@
+- Removed dependency on jsdeliver.net for enhanced privacy and reliability.
+- Added support for multiple repositories.
+- Improved the setup process for easier onboarding.
+- Added support to download the DBs directly.
+- Improved code structure and performance.

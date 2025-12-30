@@ -6,6 +6,9 @@ Key Features:
 
 - Universal Compatibility: Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
 - Custom Macros: Create "Macros" to chain multiple commands together (e.g., Turn on TV, STB, and Soundbar with one tap).
+- Offline Database: Direct database downloads for seamless offline access without reliance on third-party CDNs.
+- Enhanced Repository Support: Expanded support for multiple repositories and improved setup process.
+- Performance: optimized internal architecture for smoother operation and better maintainability.
 - Material You Design: Beautiful, modern UI that adapts to your wallpaper's colors.
 - Dark/Light Mode: Fully supports system-wide themes.
 - Haptic Feedback: Tactile confirmation for every button press.

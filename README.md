@@ -17,12 +17,18 @@
   <a href="https://f-droid.org/packages/com.monuk7735.nope.remote/">
     <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" width="200">
   </a>
+  <a href="https://apt.izzysoft.de/fdroid/index/apk/com.monuk7735.nope.remote">
+    <img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" width="200">
+  </a>
 </div>
 
 ## Features
 
 - **Universal Compatibility** - Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
 - **Custom Macros** - Create "Macros" to chain multiple commands together. Turn on your TV, Set-Top Box, and Soundbar with a single tap!
+- **Offline Database** - Direct database downloads for seamless offline access without reliance on third-party CDNs.
+- **Enhanced Repository Support** - Expanded support for multiple repositories and improved setup process.
+- **Performance** - Optimized internal architecture for smoother operation and better maintainability.
 - **Material You Design** - A beautiful, modern UI that adapts to your wallpaper's colors (on supported devices).
 - **Dark/Light Mode** - Fully supports system-wide dark and light themes.
 - **Database Support** - Stores your remotes and macros locally using Room Database.
