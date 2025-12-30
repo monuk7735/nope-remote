@@ -58,13 +58,11 @@ data class RemoteButtonDBModel(
     fun getIcon(): ImageVector? {
         val n = name.uppercase()
         if (getTextIcon() != null) {
-            return null // Fallback to text for digits and custom text
+            return null
         }
         return when {
-            // Specific overrides for risky partial matches
             n.contains("SETUP") -> Icons.Outlined.Settings
 
-            // Navigation & UI
             (n.contains("BACK") && !n.contains("PLAYBACK")) || n.contains("RETURN") || n.contains("PREV") && !n.contains("SKIP") -> Icons.AutoMirrored.Outlined.ArrowBack
             n.contains("EXIT") || n.contains("CLOSE") || n.contains("CANCEL") -> Icons.Outlined.Close
             n.contains("MENU") -> Icons.Outlined.Menu
@@ -74,32 +72,25 @@ data class RemoteButtonDBModel(
             n.contains("SETTING") || n.contains("TOOL") || n.contains("OPTION") -> Icons.Outlined.Settings
             n.contains("SEARCH") && !n.contains("RESEARCH") -> Icons.Outlined.Search
 
-            // Directions
-            n == "UP" || n.contains("CURSOR UP") || n.contains("DIRECTION UP") || n.contains("ARROW UP") -> Icons.Outlined.KeyboardArrowUp
             n == "DOWN" || n.contains("CURSOR DOWN") || n.contains("DIRECTION DOWN") || n.contains("ARROW DOWN") -> Icons.Outlined.KeyboardArrowDown
             n == "LEFT" || n.contains("CURSOR LEFT") || n.contains("DIRECTION LEFT") || n.contains("ARROW LEFT") -> Icons.AutoMirrored.Outlined.KeyboardArrowLeft
             n == "RIGHT" || n.contains("CURSOR RIGHT") || n.contains("DIRECTION RIGHT") || n.contains("ARROW RIGHT") -> Icons.AutoMirrored.Outlined.KeyboardArrowRight
             n.contains("OK") || n.contains("ENTER") || n.contains("SELECT") -> Icons.Outlined.CheckCircle
 
-            // Power
             n.contains("POWER") || n.contains("PWR") -> Icons.Outlined.PowerSettingsNew
 
-            // Volume
             n.contains("MUTE") -> Icons.AutoMirrored.Outlined.VolumeOff
             (n.contains("VOL") && (n.contains("+") || n.contains("UP") || n.contains("INC"))) -> Icons.AutoMirrored.Outlined.VolumeUp
             (n.contains("VOL") && (n.contains("-") || n.contains("DOWN") || n.contains("DN") || n.contains("DEC"))) -> Icons.AutoMirrored.Outlined.VolumeDown
 
-            // Channel / Page
             (n.contains("CH") || n.contains("CHAN") || n.contains("PROG") || n.contains("PAGE")) && (n.contains("+") || n.contains("UP") || n.contains("INC") || n.contains("NEXT")) -> Icons.Outlined.ArrowCircleUp
             (n.contains("CH") || n.contains("CHAN") || n.contains("PROG") || n.contains("PAGE")) && (n.contains("-") || n.contains("DOWN") || n.contains("DN") || n.contains("DEC") || n.contains("PREV")) -> Icons.Outlined.ArrowCircleDown
 
-            // Fallback Navigation
             n.contains("UP") && !n.contains("VOL") && !n.contains("CH") && !n.contains("PAGE") -> Icons.Outlined.KeyboardArrowUp
             (n.contains("DOWN") || n.contains("DN")) && !n.contains("VOL") && !n.contains("CH") && !n.contains("PAGE") -> Icons.Outlined.KeyboardArrowDown
             n.contains("LEFT") -> Icons.AutoMirrored.Outlined.KeyboardArrowLeft
             n.contains("RIGHT") && !n.contains("BRIGHT") && !n.contains("LIGHT") -> Icons.AutoMirrored.Outlined.KeyboardArrowRight
 
-            // Media
             n.contains("PLAY") && !n.contains("DISPLAY") -> Icons.Outlined.PlayArrow
             n.contains("PAUSE") -> Icons.Outlined.Pause
             n.contains("STOP") -> Icons.Outlined.Stop
@@ -108,16 +99,14 @@ data class RemoteButtonDBModel(
             n.contains("NEXT") || n.contains("SKIP") -> Icons.Outlined.SkipNext
             n.contains("REC") && !n.contains("RECENT") -> Icons.Outlined.FiberManualRecord
 
-            // Inputs
             n.contains("INPUT") || n.contains("SOURCE") || n.contains("HDMI") || n.contains("AV") || n.contains("AUX") -> Icons.AutoMirrored.Outlined.Input
 
-            // Colors
             n.contains("RED") && !n.contains("REDUCE") -> Icons.Outlined.Circle
             n.contains("GREEN") -> Icons.Outlined.Circle
             n.contains("YELLOW") -> Icons.Outlined.Circle
             n.contains("BLUE") -> Icons.Outlined.Circle
             
-            else -> null // No icon found
+            else -> null
         }
     }
 

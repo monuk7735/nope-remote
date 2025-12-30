@@ -42,14 +42,13 @@ class ReorderableState(
                 val itemEnd = item.offset + item.size
                 val currentOffset = (draggingItemIndex?.let { listState.layoutInfo.visibleItemsInfo.find { i -> i.index == it }?.offset } ?: 0) + dragOffset
                 
-                // Simple collision detection
                  currentOffset.toInt() in itemStart..itemEnd
             }?.index
 
         if (hoveredIndex != null && hoveredIndex != draggingItemIndex && draggingItemIndex != null) {
             onMove(draggingItemIndex!!, hoveredIndex)
             draggingItemIndex = hoveredIndex
-            dragOffset = 0f // Reset offset after swap implies new position
+            dragOffset = 0f
         }
     }
 

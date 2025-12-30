@@ -39,7 +39,7 @@ abstract class RemoteDatabase : RoomDatabase() {
                     RemoteDatabase::class.java,
                     "remotes"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(true)
                     .build()
 
                 INSTANCE = instance

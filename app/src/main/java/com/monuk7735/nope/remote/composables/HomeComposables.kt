@@ -40,7 +40,6 @@ fun EmptyState(
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                // Outer glow
                 Surface(
                         modifier = Modifier.size(100.dp),
                         shape = CircleShape,
@@ -97,7 +96,6 @@ fun RemoteTile(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Subtle background accent
             Box(
                     modifier =
                             Modifier.align(Alignment.TopEnd)
@@ -244,33 +242,3 @@ fun MacroSequenceCard(
         }
     }
 }
-
-// @Preview(showBackground = true)
-// @Composable
-// fun MacroPreview() {
-//    Column(modifier = Modifier.fillMaxWidth(1f)) {
-//        MacroParent(
-//            modifier = Modifier,
-//            name = "Xiaomi TV",
-//            onClick = {
-//
-//            }
-//        )
-//    }
-// }
-
-//
-// @Preview(showBackground = true)
-// @Composable
-// fun Preview() {
-//    Column(modifier = Modifier.fillMaxWidth(1f)) {
-//        RemoteParent(
-//            modifier = Modifier,
-//            name = "Xiaomi TV",
-//            icon = Icons.Filled.Send,
-//            onClick = {
-//
-//            }
-//        )
-//    }
-// }

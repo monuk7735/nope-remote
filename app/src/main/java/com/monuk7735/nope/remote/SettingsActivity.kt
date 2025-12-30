@@ -1,35 +1,54 @@
 package com.monuk7735.nope.remote
 
+
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Brightness4
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Vibration
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
+
 import com.monuk7735.nope.remote.composables.AppBar
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.getValue
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.monuk7735.nope.remote.composables.InfoPreference
+import com.monuk7735.nope.remote.composables.LogOutputView
+import com.monuk7735.nope.remote.composables.RepositoryPreference
+import com.monuk7735.nope.remote.composables.SettingsGroup
+import com.monuk7735.nope.remote.composables.SingleChoicePreference
 import com.monuk7735.nope.remote.composables.SwitchPreference
-import com.monuk7735.nope.remote.viewmodels.SettingsActivityViewModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Vibration
-import androidx.compose.material.icons.outlined.Brightness4
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.unit.dp
+import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
+import com.monuk7735.nope.remote.viewmodels.SettingsActivityViewModel
 
 @ExperimentalMaterial3Api
 class SettingsActivity : ComponentActivity() {
@@ -45,13 +64,11 @@ class SettingsActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this)[SettingsActivityViewModel::class.java]
 
         setContent {
-            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            val themeSettings = rememberThemeSettings()
             NopeRemoteTheme(
-                useDarkTheme = themeSettings.useDarkTheme,
-                useDynamicColors = themeSettings.useDynamicColors
-            ) {
-                SettingsRoot()
-            }
+                    useDarkTheme = themeSettings.useDarkTheme,
+                    useDynamicColors = themeSettings.useDynamicColors
+            ) { SettingsRoot() }
         }
     }
 
@@ -60,83 +77,132 @@ class SettingsActivity : ComponentActivity() {
         val vibrate by viewModel.vibrateSettingsValue.observeAsState(true)
         val darkMode by viewModel.darkModeSettingsValue.observeAsState(0)
         val dynamicColor by viewModel.dynamicColorSettingsValue.observeAsState(true)
+        val downloadStatus by viewModel.repoDownloadStatus.observeAsState("")
+        val downloadProgress by viewModel.repoDownloadProgress.observeAsState(0f)
+        val commandOutput by viewModel.repoCommandOutput.observeAsState("")
+
+        var showLogs by remember { mutableStateOf(false) }
+        val uriHandler = LocalUriHandler.current
 
         NopeRemoteTheme(
-            useDarkTheme = when (darkMode) {
-                1 -> false // Light
-                2 -> true // Dark
-                else -> isSystemInDarkTheme() // System
-            },
-            useDynamicColors = dynamicColor
+                useDarkTheme =
+                        when (darkMode) {
+                            1 -> false
+                            2 -> true
+                            else -> isSystemInDarkTheme()
+                        },
+                useDynamicColors = dynamicColor
         ) {
             Scaffold(
-                topBar = {
-                    AppBar(
-                        title = "Settings",
-                        onBack = { finish() }
-                    )
-                },
-                modifier = Modifier.background(MaterialTheme.colorScheme.background)
+                    topBar = { AppBar(title = "Settings", onBack = { finish() }) },
+                    modifier = Modifier.background(MaterialTheme.colorScheme.background)
             ) { padding ->
-                androidx.compose.foundation.lazy.LazyColumn(
-                    modifier = Modifier
-                        .padding(padding)
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)
+                LazyColumn(
+                        modifier =
+                                Modifier.padding(padding)
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.background),
+                        contentPadding =
+                                PaddingValues(bottom = 24.dp)
                 ) {
                     item {
-                        com.monuk7735.nope.remote.composables.SettingsGroup(title = "General") {
+                        SettingsGroup(title = "General") {
                             SwitchPreference(
-                                title = "Vibrate",
-                                summary = "Vibrate on button press",
-                                icon = Icons.Outlined.Vibration,
-                                value = vibrate,
-                                onValueChange = {
-                                    viewModel.vibrateSettingsValue.value = it
-                                    viewModel.saveSettings(applicationContext)
-                                }
+                                    title = "Vibrate",
+                                    summary = "Vibrate on button press",
+                                    icon = Icons.Outlined.Vibration,
+                                    value = vibrate,
+                                    onValueChange = {
+                                        viewModel.vibrateSettingsValue.value = it
+                                        viewModel.saveSettings(applicationContext)
+                                    }
                             )
                         }
                     }
 
                     item {
-                        com.monuk7735.nope.remote.composables.SettingsGroup(title = "Appearance") {
+                        SettingsGroup(title = "Appearance") {
                             val darkModeOptions = listOf("System Default", "Light", "Dark")
-                            com.monuk7735.nope.remote.composables.SingleChoicePreference(
-                                title = "Dark Mode",
-                                summary = darkModeOptions.getOrElse(darkMode) { "System Default" },
-                                icon = Icons.Outlined.Brightness4,
-                                options = darkModeOptions,
-                                selectedOption = darkMode,
-                                onOptionSelected = {
-                                    viewModel.darkModeSettingsValue.value = it
-                                    viewModel.saveSettings(applicationContext)
-                                }
-                            )
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                                SwitchPreference(
-                                    title = "Dynamic Color",
-                                    summary = "Use wallpaper colors",
-                                    icon = Icons.Outlined.Palette,
-                                    value = dynamicColor,
-                                    onValueChange = {
-                                        viewModel.dynamicColorSettingsValue.value = it
+                            SingleChoicePreference(
+                                    title = "Dark Mode",
+                                    summary =
+                                            darkModeOptions.getOrElse(darkMode) {
+                                                "System Default"
+                                            },
+                                    icon = Icons.Outlined.Brightness4,
+                                    options = darkModeOptions,
+                                    selectedOption = darkMode,
+                                    onOptionSelected = {
+                                        viewModel.darkModeSettingsValue.value = it
                                         viewModel.saveSettings(applicationContext)
                                     }
+                            )
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                            ) {
+                                SwitchPreference(
+                                        title = "Dynamic Color",
+                                        summary = "Use wallpaper colors",
+                                        icon = Icons.Outlined.Palette,
+                                        value = dynamicColor,
+                                        onValueChange = {
+                                            viewModel.dynamicColorSettingsValue.value = it
+                                            viewModel.saveSettings(applicationContext)
+                                        }
                                 )
                             }
                         }
                     }
 
                     item {
-                        com.monuk7735.nope.remote.composables.SettingsGroup(title = "About") {
-                            com.monuk7735.nope.remote.composables.InfoPreference(
-                                title = "App Version",
-                                value = BuildConfig.VERSION_NAME,
-                                icon = Icons.Outlined.Info
+                            SettingsGroup(
+                                    title = "Repositories"
+                            ) {
+                            val activeRepo by viewModel.activeRepoId.observeAsState("")
+                            
+                            viewModel.availableRepositories.forEach { repo ->
+                                val isActive = activeRepo == repo.directory
+                                val currentStatus = if (isActive || activeRepo.isEmpty()) downloadStatus else ""
+                                val currentProgress = if (isActive) downloadProgress else 0f
+                                
+                                val isInstalled = viewModel.isRepoInstalled(repo.directory)
+                                RepositoryPreference(
+                                        name = repo.name,
+                                        url = repo.url,
+                                        isInstalled = isInstalled,
+                                        downloadStatus = if (isActive) currentStatus else "",
+                                        downloadProgress = currentProgress,
+                                        onDownload = { viewModel.manageRepository(repo.url, repo.name, repo.directory) },
+                                        onDelete = { viewModel.deleteRepository(repo.directory) },
+                                        onUrlClick = { uriHandler.openUri(repo.url) }
+                                )
+                            }
+                            
+                            TextButton(
+                                onClick = { showLogs = !showLogs },
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                            ) {
+                                Text(if (showLogs) "Hide Logs" else "Show Logs")
+                            }
+                        }
+                    }
+
+                    item {
+                        SettingsGroup(title = "About") {
+                            InfoPreference(
+                                    title = "App Version",
+                                    value = BuildConfig.VERSION_NAME,
+                                    icon = Icons.Outlined.Info
                             )
                         }
+                    }
+                }
+                
+                if (showLogs) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        LogOutputView(output = commandOutput)
                     }
                 }
             }

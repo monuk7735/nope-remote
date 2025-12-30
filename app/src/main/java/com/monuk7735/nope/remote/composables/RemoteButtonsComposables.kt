@@ -52,7 +52,6 @@ fun RemoteButtonSingleEditable(
         var prevX by remember { mutableStateOf(0f) }
         var prevY by remember { mutableStateOf(0f) }
 
-        // Sync with parent state when it changes (e.g. initial load or external update)
         LaunchedEffect(offsetX, offsetY) {
                 localOffSetX = offsetX
                 localOffSetY = offsetY
@@ -291,7 +290,7 @@ fun RemoteButtonExtra(
                         Column(
                                 modifier =
                                         Modifier.fillMaxWidth()
-                                                .padding(bottom = 32.dp) // Space for navigation bar
+                                                .padding(bottom = 32.dp)
                         ) {
                                 Text(
                                         text = "Extra Buttons",
@@ -412,7 +411,6 @@ fun RemoteButtonDigits(
                                                         .padding(bottom = 16.dp)
                                 ) {
                                         digitButtons?.let { buttons ->
-                                                // 1-9
                                                 items(buttons.size - 1) { index ->
                                                         RemoteButtonSingle(
                                                                 name = buttons[index + 1].name,
@@ -427,8 +425,7 @@ fun RemoteButtonDigits(
                                                                 }
                                                         )
                                                 }
-                                                item { /* Empty for alignment */}
-                                                // 0
+                                                item { }
                                                 item {
                                                         RemoteButtonSingle(
                                                                 name = buttons[0].name,

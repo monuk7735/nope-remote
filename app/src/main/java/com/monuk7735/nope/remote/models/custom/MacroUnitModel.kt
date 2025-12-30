@@ -8,11 +8,9 @@ class MacroUnitModel(
 ) {
 
     fun execute(){
-//        sourceRemoteButton.transmit()
     }
 
     fun getName(): String {
-//        return "${sourceRemoteInfo.name}-${sourceRemoteButton.name}"
         return  ""
     }
 

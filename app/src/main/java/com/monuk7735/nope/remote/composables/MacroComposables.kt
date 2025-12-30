@@ -46,7 +46,6 @@ fun MacroStepItem(
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.Top
     ) {
-        // Timeline Column
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.width(32.dp)
@@ -85,7 +84,6 @@ fun MacroStepItem(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Content Card
         Card(
             modifier = Modifier
                 .weight(1f)
@@ -164,8 +162,6 @@ fun MacroStepItem(
     }
 }
 
-// Keeping old one for compatibility or simplified views if needed, 
-// but will primarily use MacroStepItem in the rewrite.
 @Composable
 fun MacroUnitComposable(
     macroTransmit: MacroTransmit,
@@ -287,7 +283,6 @@ fun AddMacroUnitDialog(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // Remote Selection
                 Column {
                     Text(
                         text = "Remote",
@@ -336,7 +331,6 @@ fun AddMacroUnitDialog(
                     }
                 }
 
-                // Button Selection
                 Column {
                     Text(
                         text = "Button",
@@ -393,7 +387,6 @@ fun AddMacroUnitDialog(
                     }
                 }
 
-                // Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,

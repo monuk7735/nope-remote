@@ -6,7 +6,6 @@ class IRPatternDecoder(hexData: String) {
 
     init {
         val dec = mutableListOf<Int>()
-        // Handle optional "0x" prefix and split by whitespace or fixed width if no spaces
         var cleanHex = hexData.replace("0x", "").replace("\\s+".toRegex(), "")
 
         cleanHex.chunked(4).forEach {

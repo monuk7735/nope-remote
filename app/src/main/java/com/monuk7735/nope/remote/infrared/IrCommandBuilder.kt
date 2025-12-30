@@ -37,7 +37,6 @@ class IrCommandBuilder(val frequency: Int) {
         return this
     }
 
-    // Sequence support
     interface SequenceDefinition {
         fun one(builder: IrCommandBuilder, index: Int)
         fun zero(builder: IrCommandBuilder, index: Int)
@@ -48,17 +47,12 @@ class IrCommandBuilder(val frequency: Int) {
     }
 
     fun sequence(definition: SequenceDefinition, length: Int, data: Long): IrCommandBuilder {
-        // Defaulting to MSB first behavior if not specified, matching original Java logic intent
-        // But referencing the LSB/MSB helpers below is safer.
         return sequenceMSB(definition, length, data)
     }
 
     private fun sequenceMSB(definition: SequenceDefinition, length: Int, data: Long): IrCommandBuilder {
         var d = data
         val topBit = 1L shl 63
-        
-        // This logic mimics checking MSB but for arbitrary length it's tricky without shifting input.
-        // Assuming strict usage of helpers below.
         return this 
     }
     
@@ -75,7 +69,6 @@ class IrCommandBuilder(val frequency: Int) {
         return this
     }
 
-    // Convenience for standard LSB processing (commonly used in IR like NEC)
     fun sequenceLSB(definition: SequenceDefinition, length: Int, data: Int): IrCommandBuilder {
         var d = data
         for (i in 0 until length) {
@@ -89,7 +82,6 @@ class IrCommandBuilder(val frequency: Int) {
         return this
     }
     
-    // Helper to create simple sequence definition
     companion object {
         fun simpleSequence(oneMark: Int, oneSpace: Int, zeroMark: Int, zeroSpace: Int): SequenceDefinition {
             return object : SequenceDefinition {

@@ -28,7 +28,7 @@ data class DeviceTypesRetrofitModel(
             t.contains("CAM") || t.contains("DSLR") -> Icons.Outlined.CameraAlt
             t.contains("DVD") || t.contains("CD") || t.contains("BLU") || t.contains("DISC") -> Icons.Outlined.Videocam
 
-            else -> Icons.Outlined.DeveloperBoard // CPU equivalent
+            else -> Icons.Outlined.DeveloperBoard
         }
     }
 }

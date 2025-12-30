@@ -50,6 +50,12 @@ import com.monuk7735.nope.remote.composables.RemoteTile
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.viewmodels.HomeActivityViewModel
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.fadeOut
+import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -67,7 +73,7 @@ class HomeActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this)[HomeActivityViewModel::class.java]
 
         setContent {
-            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            val themeSettings = rememberThemeSettings()
             NopeRemoteTheme(
                     useDarkTheme = themeSettings.useDarkTheme,
                     useDynamicColors = themeSettings.useDynamicColors
@@ -220,14 +226,14 @@ class HomeActivity : ComponentActivity() {
                                     modifier = Modifier.size(24.dp)
                             )
 
-                            androidx.compose.animation.AnimatedVisibility(
+                            AnimatedVisibility(
                                     visible = isFabExpanded,
                                     enter =
-                                            androidx.compose.animation.expandHorizontally() +
-                                                    androidx.compose.animation.fadeIn(),
+                                            expandHorizontally() +
+                                                    fadeIn(),
                                     exit =
-                                            androidx.compose.animation.shrinkHorizontally() +
-                                                    androidx.compose.animation.fadeOut()
+                                            shrinkHorizontally() +
+                                                    fadeOut()
                             ) {
                                 Row {
                                     Spacer(modifier = Modifier.width(12.dp))
@@ -252,8 +258,7 @@ class HomeActivity : ComponentActivity() {
                                     VibratorManager
                     vibratorManager.defaultVibrator
                 } else {
-                    @Suppress("DEPRECATION")
-                    context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                    context.getSystemService(Vibrator::class.java)!!
                 }
             }
 

@@ -1,23 +1,30 @@
 package com.monuk7735.nope.remote
 
+
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+
 import com.monuk7735.nope.remote.composables.ListBrands
 import com.monuk7735.nope.remote.composables.ListCodes
 import com.monuk7735.nope.remote.composables.ListTypes
 import com.monuk7735.nope.remote.navigation.AddRemoteNavigation
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
+import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.viewmodels.AddRemoteActivityViewModel
 
 @ExperimentalFoundationApi
@@ -34,7 +41,7 @@ class AddRemoteActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this)[AddRemoteActivityViewModel::class.java]
 
         setContent {
-            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            val themeSettings = rememberThemeSettings()
             NopeRemoteTheme(
                     useDarkTheme = themeSettings.useDarkTheme,
                     useDynamicColors = themeSettings.useDynamicColors
@@ -58,41 +65,62 @@ class AddRemoteActivity : ComponentActivity() {
             composable(
                     route = AddRemoteNavigation.ListTypes.route,
                     enterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                        slideInHorizontally(initialOffsetX = { it })
                     },
                     exitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                        slideOutHorizontally(targetOffsetX = { -it })
                     },
                     popEnterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                        slideInHorizontally(initialOffsetX = { -it })
                     },
                     popExitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                        slideOutHorizontally(targetOffsetX = { it })
                     }
             ) {
+                val isRepoInstalled =
+                        produceState(initialValue = true) {
+                                    value = viewModel.isRepoInstalled()
+                                }
+                                .value
+
+                val selectedRepoIndex = viewModel.selectedRepoIndex.observeAsState(0).value
+
                 ListTypes(
                         allTypes = allTypes,
+                        isRepoInstalled = isRepoInstalled,
+                        availableRepos = viewModel.availableRepos,
+                        selectedRepoIndex = selectedRepoIndex,
+                        onRepoSelected = { viewModel.selectRepository(it) },
                         onOneClicked = { type ->
                             viewModel.getBrands(type)
                             navController.navigate(AddRemoteNavigation.ListBrands.route)
                         },
                         onSearch = { viewModel.filterTypes(it) },
-                        onBack = { finish() }
+                        onBack = { finish() },
+                        onGoToSettings = {
+                            startActivity(
+                                    Intent(
+                                            this@AddRemoteActivity,
+                                            SettingsActivity::class.java
+                                    )
+                            )
+                            finish()
+                        }
                 )
             }
             composable(
                     route = AddRemoteNavigation.ListBrands.route,
                     enterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                        slideInHorizontally(initialOffsetX = { it })
                     },
                     exitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                        slideOutHorizontally(targetOffsetX = { -it })
                     },
                     popEnterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                        slideInHorizontally(initialOffsetX = { -it })
                     },
                     popExitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                        slideOutHorizontally(targetOffsetX = { it })
                     }
             ) {
                 ListBrands(
@@ -108,13 +136,13 @@ class AddRemoteActivity : ComponentActivity() {
             composable(
                     route = AddRemoteNavigation.ListCodes.route,
                     enterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                        slideInHorizontally(initialOffsetX = { it })
                     },
                     exitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                        slideOutHorizontally(targetOffsetX = { -it })
                     },
                     popEnterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                        slideInHorizontally(initialOffsetX = { -it })
                     },
                     popExitTransition = {
                         androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })

@@ -8,6 +8,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <uses-feature android:name="android.hardware.consumerir" />
 
     <application
@@ -17,6 +21,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.NopeRemote">
+        
+        <service 
+            android:name=".service.RepoDownloadService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings" />
@@ -33,13 +43,10 @@
             android:name=".HomeActivity"
             android:theme="@style/Theme.App.Starting"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
 
     </application>

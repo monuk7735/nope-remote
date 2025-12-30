@@ -1,9 +1,12 @@
 package com.monuk7735.nope.remote
 
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
@@ -11,16 +14,19 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+
 import com.monuk7735.nope.remote.composables.RemoteControl
 import com.monuk7735.nope.remote.composables.RemoteControlEditLayout
 import com.monuk7735.nope.remote.composables.RemoteControlSettings
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.navigation.RemoteControlNavigation
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
+import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.viewmodels.RemoteControlViewModel
 
 @ExperimentalFoundationApi
@@ -36,15 +42,8 @@ class RemoteControlActivity : ComponentActivity() {
 
         viewModel = ViewModelProvider(this).get(RemoteControlViewModel::class.java)
 
-        //        val remote = intent.getParcelableExtra<RemoteDataDBModel>("remote")
-        //
-        //        if (remote == null) {
-        //            finish()
-        //            return
-        //        }
-
         setContent {
-            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            val themeSettings = rememberThemeSettings()
             NopeRemoteTheme(
                     useDarkTheme = themeSettings.useDarkTheme,
                     useDynamicColors = themeSettings.useDynamicColors
@@ -56,7 +55,11 @@ class RemoteControlActivity : ComponentActivity() {
     fun Root() {
 
         val (remoteData, setRemoteData) =
-                remember { mutableStateOf(intent.getParcelableExtra<RemoteDataDBModel>("remote")) }
+                remember { 
+                    mutableStateOf(
+                        IntentCompat.getParcelableExtra(intent, "remote", RemoteDataDBModel::class.java)
+                    ) 
+                }
 
         if (remoteData == null) {
             finish()
@@ -73,16 +76,16 @@ class RemoteControlActivity : ComponentActivity() {
             composable(
                     route = RemoteControlNavigation.RemoteControlMain.route,
                     enterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                        slideInHorizontally(initialOffsetX = { it })
                     },
                     exitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                        slideOutHorizontally(targetOffsetX = { -it })
                     },
                     popEnterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                        slideInHorizontally(initialOffsetX = { -it })
                     },
                     popExitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                        slideOutHorizontally(targetOffsetX = { it })
                     }
             ) {
                 RemoteControl(
@@ -99,16 +102,16 @@ class RemoteControlActivity : ComponentActivity() {
             composable(
                     route = RemoteControlNavigation.RemoteControlSettings.route,
                     enterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                        slideInHorizontally(initialOffsetX = { it })
                     },
                     exitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                        slideOutHorizontally(targetOffsetX = { -it })
                     },
                     popEnterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                        slideInHorizontally(initialOffsetX = { -it })
                     },
                     popExitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                        slideOutHorizontally(targetOffsetX = { it })
                     }
             ) {
                 RemoteControlSettings(
@@ -118,7 +121,9 @@ class RemoteControlActivity : ComponentActivity() {
                             navController.popBackStack()
                         },
                         onEditLayout = {
-                            setRemoteData(intent.getParcelableExtra("remote"))
+                            setRemoteData(
+                                IntentCompat.getParcelableExtra(intent, "remote", RemoteDataDBModel::class.java)
+                            )
                             navController.navigate(
                                     RemoteControlNavigation.RemoteControlEditLayout.route
                             )
@@ -134,16 +139,16 @@ class RemoteControlActivity : ComponentActivity() {
             composable(
                     route = RemoteControlNavigation.RemoteControlEditLayout.route,
                     enterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { it })
+                        slideInHorizontally(initialOffsetX = { it })
                     },
                     exitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { -it })
+                        slideOutHorizontally(targetOffsetX = { -it })
                     },
                     popEnterTransition = {
-                        androidx.compose.animation.slideInHorizontally(initialOffsetX = { -it })
+                        slideInHorizontally(initialOffsetX = { -it })
                     },
                     popExitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                        slideOutHorizontally(targetOffsetX = { it })
                     }
             ) {
                 RemoteControlEditLayout(

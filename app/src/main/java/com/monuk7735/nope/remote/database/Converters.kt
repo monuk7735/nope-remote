@@ -41,14 +41,6 @@ class Converters {
         return gson.fromJson(data, object : TypeToken<Date>() {}.type)
     }
 
-//    @TypeConverter
-//    fun fromBitmap(data: Bitmap): String {
-//        return gson.toJson(data)
-//    }
-//
-//    @TypeConverter
-//    fun toBitmap(data: String): Bitmap {
-//        return gson.fromJson(data, object : TypeToken<Bitmap>() {}.type)
-//    }
+
 
 }

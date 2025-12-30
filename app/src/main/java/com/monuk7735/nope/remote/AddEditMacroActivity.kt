@@ -1,35 +1,41 @@
 package com.monuk7735.nope.remote
-import android.content.Context
 
+
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibratorManager
-
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.launch
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.ViewModelProvider
+
+import kotlinx.coroutines.launch
+
 import com.monuk7735.nope.remote.composables.ActionButton
 import com.monuk7735.nope.remote.composables.AddMacroUnitDialog
+import com.monuk7735.nope.remote.composables.AppBar
+import com.monuk7735.nope.remote.composables.MacroStepItem
 import com.monuk7735.nope.remote.composables.MacroUnitComposable
 import com.monuk7735.nope.remote.composables.utils.detectReorder
 import com.monuk7735.nope.remote.composables.utils.draggedItem
@@ -37,6 +43,7 @@ import com.monuk7735.nope.remote.composables.utils.rememberReorderableState
 import com.monuk7735.nope.remote.models.custom.macros.MacroTransmit
 import com.monuk7735.nope.remote.models.database.MacroDataDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
+import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.viewmodels.AddEditMacroViewModel
 
 @ExperimentalMaterial3Api
@@ -51,18 +58,14 @@ class AddEditMacroActivity : ComponentActivity() {
 
         viewModel = ViewModelProvider(this)[AddEditMacroViewModel::class.java]
 
-        @Suppress("DEPRECATION")
-        val initialMacro = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra("macro_data", MacroDataDBModel::class.java)
-        } else {
-            intent.getParcelableExtra("macro_data")
-        } ?: MacroDataDBModel(0, "", listOf())
+        val initialMacro = IntentCompat.getParcelableExtra(intent, "macro_data", MacroDataDBModel::class.java)
+            ?: MacroDataDBModel(0, "", listOf())
 
         isEditing = initialMacro.id != 0
         viewModel.initialize(initialMacro)
 
         setContent {
-            val themeSettings = com.monuk7735.nope.remote.ui.theme.rememberThemeSettings()
+            val themeSettings = rememberThemeSettings()
             NopeRemoteTheme(
                 useDarkTheme = themeSettings.useDarkTheme,
                 useDynamicColors = themeSettings.useDynamicColors
@@ -87,7 +90,7 @@ class AddEditMacroActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         
         val reorderableState = rememberReorderableState(
-            listState = androidx.compose.foundation.lazy.rememberLazyListState(),
+            listState = rememberLazyListState(),
             onMove = { from, to -> viewModel.reorderUnits(from, to) }
         )
 
@@ -97,7 +100,7 @@ class AddEditMacroActivity : ComponentActivity() {
 
         Scaffold(
             topBar = {
-                com.monuk7735.nope.remote.composables.AppBar(
+                AppBar(
                     title = if (isEditing) "Edit Macro" else "New Macro",
                     onBack = { finish() }
                 ) {
@@ -107,8 +110,7 @@ class AddEditMacroActivity : ComponentActivity() {
                                 val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
                                 vibratorManager.defaultVibrator
                             } else {
-                                @Suppress("DEPRECATION")
-                                context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                                context.getSystemService(Vibrator::class.java)!!
                             }
                             MacroDataDBModel(0, macroName, macroUnits.toList())
                                 .execute(viewModel.irController, vibrator)
@@ -187,7 +189,6 @@ class AddEditMacroActivity : ComponentActivity() {
                     .padding(innerPadding)
                     .fillMaxSize()
             ) {
-                // Name Input Section
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -252,7 +253,7 @@ class AddEditMacroActivity : ComponentActivity() {
                             val remote = allRemotes.find { it.id == unit.sourceRemoteId }
 
                             Box(modifier = Modifier.draggedItem(reorderableState, i)) {
-                                com.monuk7735.nope.remote.composables.MacroStepItem(
+                                MacroStepItem(
                                     stepNumber = i + 1,
                                     macroTransmit = unit,
                                     remoteData = remote,
@@ -272,7 +273,7 @@ class AddEditMacroActivity : ComponentActivity() {
         }
 
         if (showAddDialog) {
-            com.monuk7735.nope.remote.composables.AddMacroUnitDialog(
+            AddMacroUnitDialog(
                 viewModel = viewModel,
                 macroTransmit = if (editingIndex >= 0) macroUnits[editingIndex] else null,
                 index = editingIndex,

@@ -54,7 +54,6 @@ object IrCsvParser {
                 val timings = generator.generate(device, subdevice, function)
                 val frequency = if (protocolName.startsWith("48-NEC")) 48000 else 38000
 
-                // Convert to Pronto Hex
                 val hex = encodeToProntoHex(frequency, timings)
                 results[funcName] = hex
             }
@@ -62,11 +61,10 @@ object IrCsvParser {
         return results
     }
 
-    private fun encodeToProntoHex(frequency: Int, timings: List<Int>): String {
+    fun encodeToProntoHex(frequency: Int, timings: List<Int>): String {
         val sb = StringBuilder()
-        sb.append("0000 ") // Preamble
+        sb.append("0000 ")
 
-        // Frequency code: 1000000 / (frequency * 0.241246)
         val freqCode = (1000000.0 / (frequency * 0.241246)).roundToInt()
         sb.append(String.format("%04X ", freqCode))
 
@@ -84,8 +82,8 @@ object IrCsvParser {
             pairsCount++
         }
 
-        sb.append(String.format("%04X ", pairsCount)) // Seq 1 Length
-        sb.append("0000 ") // Seq 2 Length (Repeat)
+        sb.append(String.format("%04X ", pairsCount))
+        sb.append("0000 ")
 
         for (pair in burstPairs) {
             sb.append(String.format("%04X %04X ", pair.first, pair.second))

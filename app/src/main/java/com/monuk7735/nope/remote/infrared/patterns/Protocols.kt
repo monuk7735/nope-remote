@@ -15,7 +15,6 @@ class NECStandard : Protocol {
         private const val ONE_SPACE = 1690
         private const val ZERO_SPACE = 560
         
-        // NEC is LSB first
         private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
     }
 
@@ -23,10 +22,10 @@ class NECStandard : Protocol {
         return IrCommandBuilder(FREQUENCY)
             .pair(HDR_MARK, HDR_SPACE)
             .sequenceLSB(SEQUENCE_DEF, 8, device)
-            .sequenceLSB(SEQUENCE_DEF, 8, device.inv()) // Address inverse
+            .sequenceLSB(SEQUENCE_DEF, 8, device.inv())
             .sequenceLSB(SEQUENCE_DEF, 8, function)
-            .sequenceLSB(SEQUENCE_DEF, 8, function.inv()) // Command inverse
-            .mark(BIT_MARK) // Stop bit
+            .sequenceLSB(SEQUENCE_DEF, 8, function.inv())
+            .mark(BIT_MARK)
             .build()
     }
 }
@@ -47,7 +46,7 @@ class NECSamsung : Protocol {
         return IrCommandBuilder(FREQUENCY)
             .pair(HDR_MARK, HDR_SPACE)
             .sequenceLSB(SEQUENCE_DEF, 8, device)
-            .sequenceLSB(SEQUENCE_DEF, 8, device) // Samsung repeats address or subdevice in specific way.
+            .sequenceLSB(SEQUENCE_DEF, 8, device)
             .sequenceLSB(SEQUENCE_DEF, 8, function)
             .sequenceLSB(SEQUENCE_DEF, 8, function.inv())
             .mark(BIT_MARK)
@@ -56,7 +55,6 @@ class NECSamsung : Protocol {
 }
 
 class NEC48k : Protocol {
-    // Just delegating for now
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
         return NECStandard().generate(device, subdevice, function)
     }

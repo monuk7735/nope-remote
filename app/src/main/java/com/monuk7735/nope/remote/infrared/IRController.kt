@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import com.monuk7735.nope.remote.infrared.patterns.IRPattern
+import com.monuk7735.nope.remote.utils.VibrationHelper
 
 
 class IRController(private val consumerIrManager: ConsumerIrManager) {
@@ -12,11 +13,7 @@ class IRController(private val consumerIrManager: ConsumerIrManager) {
     fun transmit(irPattern: IRPattern, vibrator: Vibrator) {
         transmit(irPattern)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            vibrator.vibrate(100)
-        }
+        VibrationHelper.vibrate(vibrator, 100)
     }
 
     fun transmit(irPattern: IRPattern) {

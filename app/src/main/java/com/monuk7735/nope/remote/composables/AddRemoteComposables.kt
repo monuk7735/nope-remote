@@ -7,6 +7,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -42,22 +43,105 @@ import java.util.Date
 @Composable
 fun ListTypes(
         allTypes: List<DeviceTypesRetrofitModel>?,
+        isRepoInstalled: Boolean,
+        availableRepos: List<String>,
+        selectedRepoIndex: Int,
+        onRepoSelected: (Int) -> Unit,
         onOneClicked: (type: String) -> Unit,
         onSearch: (String) -> Unit,
-        onBack: () -> Unit
+        onBack: () -> Unit,
+        onGoToSettings: () -> Unit
 ) {
+        var showDialog by remember { mutableStateOf(false) }
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Select Repository") },
+                text = {
+                    Column {
+                        availableRepos.forEachIndexed { index, name ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onRepoSelected(index)
+                                        showDialog = false
+                                    }
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = (index == selectedRepoIndex),
+                                    onClick = null
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = name)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {}
+            )
+        }
+
         Scaffold(
                 topBar = {
                         AppBar(
-                                title = if (allTypes == null) "Loading..." else "Select Device",
-                                onBack = onBack
+                                title =
+                                        if (allTypes == null && isRepoInstalled) "Loading..."
+                                        else "Select Device",
+                                onBack = onBack,
+                                actions = {
+                                        if (availableRepos.size > 1) {
+                                                IconButton(onClick = { showDialog = true }) {
+                                                        Icon(
+                                                                imageVector = Icons.AutoMirrored.Outlined.List,
+                                                                contentDescription = "Select Repository"
+                                                        )
+                                                }
+                                        }
+                                }
                         )
                 },
                 content = { paddingValues ->
                         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                                 SearchBar(onSearch = onSearch, hint = "Search device types...")
 
-                                if (allTypes == null) {
+                                if (!isRepoInstalled) {
+                                        Column(
+                                                modifier = Modifier.fillMaxSize().padding(16.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                        ) {
+                                                Icon(
+                                                        imageVector = Icons.Outlined.CloudOff,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(64.dp),
+                                                        tint = MaterialTheme.colorScheme.error
+                                                )
+                                                Spacer(modifier = Modifier.height(16.dp))
+                                                Text(
+                                                        text = "No Repository Found",
+                                                        style = MaterialTheme.typography.titleLarge,
+                                                        fontWeight = FontWeight.Bold
+                                                )
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text(
+                                                        text =
+                                                                "You need to download an IR database to use this feature without internet.",
+                                                        textAlign = TextAlign.Center,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .onSurfaceVariant
+                                                )
+                                                Spacer(modifier = Modifier.height(24.dp))
+                                                Button(onClick = onGoToSettings) {
+                                                        Text("Go to Settings")
+                                                }
+                                        }
+                                } else if (allTypes == null) {
                                         Box(
                                                 modifier = Modifier.fillMaxSize(),
                                                 contentAlignment = Alignment.Center
@@ -130,19 +214,20 @@ fun ListBrands(
                                 } else {
                                         val groupedSortedList =
                                                 allBrands.sortedBy { it.brand }.groupBy {
-                                                        it.brand.first().uppercaseChar()
+                                                    val firstChar = it.brand.first().uppercaseChar()
+                                                    if (firstChar in 'A'..'Z') firstChar else '#'
                                                 }
 
                                         LazyColumn(
                                                 modifier = Modifier.fillMaxSize(),
-                                                contentPadding = PaddingValues(16.dp),
+                                                contentPadding = PaddingValues(vertical = 16.dp),
                                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                                 groupedSortedList.forEach { (initial, brands) ->
                                                         stickyHeader {
                                                                 Surface(
                                                                         modifier =
-                                                                                Modifier.fillMaxWidth(),
+                                                                            Modifier.fillMaxWidth(),
                                                                         color =
                                                                                 MaterialTheme
                                                                                         .colorScheme
@@ -157,7 +242,7 @@ fun ListBrands(
                                                                                                 vertical =
                                                                                                         8.dp,
                                                                                                 horizontal =
-                                                                                                        16.dp
+                                                                                                        24.dp
                                                                                         ),
                                                                                 style =
                                                                                         MaterialTheme
@@ -176,15 +261,17 @@ fun ListBrands(
 
                                                         items(items = brands, key = { it.brand }) {
                                                                 item ->
-                                                                DeviceBrandComposable(
-                                                                        name = item.brand,
-                                                                        onClick = {
-                                                                                onOneClicked(
-                                                                                        item.type,
-                                                                                        item.brand
-                                                                                )
-                                                                        }
-                                                                )
+                                                                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                                                                        DeviceBrandComposable(
+                                                                                name = item.brand,
+                                                                                onClick = {
+                                                                                        onOneClicked(
+                                                                                                item.type,
+                                                                                                item.brand
+                                                                                        )
+                                                                                }
+                                                                        )
+                                                                }
                                                         }
                                                 }
                                         }
@@ -366,8 +453,7 @@ fun TestRemoteGrid(remoteDataDBModel: RemoteDataDBModel) {
                                         VibratorManager
                         vibratorManager.defaultVibrator
                 } else {
-                        @Suppress("DEPRECATION")
-                        context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                        context.getSystemService(Vibrator::class.java)!!
                 }
         }
 
@@ -398,7 +484,6 @@ fun TestRemoteGrid(remoteDataDBModel: RemoteDataDBModel) {
         }
 }
 
-// Helper extension to convert retrofit model to DB model
 private fun DeviceCodesRetrofitModel.toDBModel(): RemoteDataDBModel {
         val listOfRemoteButtons = mutableListOf<RemoteButtonDBModel>()
         val powerKey =
@@ -457,7 +542,6 @@ fun DeviceTypeComposable(
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
                 Box(modifier = Modifier.fillMaxSize()) {
-                        // Subtle background accent
                         Box(
                                 modifier =
                                         Modifier.align(Alignment.TopEnd)
