@@ -33,15 +33,17 @@ data class ThemeSettings(
 @Composable
 fun rememberThemeSettings(): ThemeSettings {
     val context = LocalContext.current
+    val sharedPrefName = androidx.compose.ui.res.stringResource(R.string.shared_pref_app_settings)
     val sharedPrefs = remember {
         context.getSharedPreferences(
-            context.getString(R.string.shared_pref_app_settings),
+            sharedPrefName,
             Context.MODE_PRIVATE
         )
     }
 
-    val darkModeKey = context.getString(R.string.pref_settings_dark_mode)
-    val dynamicColorKey = context.getString(R.string.pref_settings_dynamic_color)
+    val darkModeKey = androidx.compose.ui.res.stringResource(R.string.pref_settings_dark_mode)
+    val dynamicColorKey = androidx.compose.ui.res.stringResource(R.string.pref_settings_dynamic_color)
+    val systemInDarkTheme = isSystemInDarkTheme()
 
     val (settings, setSettings) = remember {
         mutableStateOf(
@@ -49,7 +51,7 @@ fun rememberThemeSettings(): ThemeSettings {
                 useDarkTheme = when (sharedPrefs.getInt(darkModeKey, 0)) {
                     1 -> false
                     2 -> true
-                    else -> (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                    else -> systemInDarkTheme // Initial state using captured value
                 },
                 useDynamicColors = sharedPrefs.getBoolean(dynamicColorKey, true)
             )
@@ -64,7 +66,7 @@ fun rememberThemeSettings(): ThemeSettings {
                         useDarkTheme = when (prefs.getInt(darkModeKey, 0)) {
                             1 -> false
                             2 -> true
-                            else -> (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                            else -> false // Value ignored as it is overridden by finalDarkMode logic
                         },
                         useDynamicColors = prefs.getBoolean(dynamicColorKey, true)
                     )
@@ -76,8 +78,6 @@ fun rememberThemeSettings(): ThemeSettings {
             sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
         }
     }
-    
-    val systemInDarkTheme = isSystemInDarkTheme()
     
     val finalDarkMode = remember(settings, systemInDarkTheme) {
         val prefMode = sharedPrefs.getInt(darkModeKey, 0)

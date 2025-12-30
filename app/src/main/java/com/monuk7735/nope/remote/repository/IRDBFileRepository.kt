@@ -21,12 +21,12 @@ class IRDBFileRepository(private val application: Application) : IRSourceReposit
         var indexFile = File(repoDir, "codes/index")
         var baseUrl = "file://${repoDir.absolutePath}/codes/"
 
-            if (!indexFile.exists()) {
-             val masterDir = File(repoDir, "irdb-master")
-             if (masterDir.exists()) {
-                 indexFile = File(masterDir, "codes/index")
-                 baseUrl = "file://${masterDir.absolutePath}/codes/"
-             }
+        if (!indexFile.exists()) {
+            val masterDir = File(repoDir, "irdb-master")
+            if (masterDir.exists()) {
+                indexFile = File(masterDir, "codes/index")
+                baseUrl = "file://${masterDir.absolutePath}/codes/"
+            }
         }
 
         if (indexFile.exists()) {
