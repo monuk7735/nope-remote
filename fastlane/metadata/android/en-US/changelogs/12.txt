@@ -1,0 +1,4 @@
+What's New in v1.2:
+
+- **Remote Management**: Added the ability to long-press on a remote to delete it.
+- **Editing Improvements**: Enhanced the grid layout for editing remote buttons.
