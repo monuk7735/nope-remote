@@ -1,0 +1,3 @@
+- Improved Downloads: Robust single-threaded downloading with keep-alive support for large offline databases.
+- UX Enhancements: Cleaner settings, sticky headers for lists, and refined dark mode support.
+- Bug Fixes: Fixed remote list crash and addressed empty key issues.
