@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
@@ -79,9 +81,20 @@ class SettingsActivity : ComponentActivity() {
         val dynamicColor by viewModel.dynamicColorSettingsValue.observeAsState(true)
 
         val commandOutput by viewModel.repoCommandOutput.observeAsState("")
+        val isDevMode by viewModel.devModeSettingsValue.observeAsState(false)
 
         var showLogs by remember { mutableStateOf(false) }
         val uriHandler = LocalUriHandler.current
+
+        // Simple effect to show toast when dev mode becomes enabled
+        // In a real app we might use a dedicated event flow, but this works for simple state
+        var previousDevMode by remember { mutableStateOf(isDevMode) }
+        if (isDevMode && !previousDevMode) {
+             android.widget.Toast.makeText(LocalContext.current, "Developer Mode Enabled", android.widget.Toast.LENGTH_SHORT).show()
+             previousDevMode = true
+        } else if (!isDevMode) {
+            previousDevMode = false
+        }
 
         NopeRemoteTheme(
                 useDarkTheme =
@@ -173,22 +186,29 @@ class SettingsActivity : ComponentActivity() {
                                 )
                             }
                             
-                            TextButton(
-                                onClick = { showLogs = !showLogs },
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                            ) {
-                                Text(if (showLogs) "Hide Logs" else "Show Logs")
+                            
+                            if (isDevMode) {
+                                TextButton(
+                                    onClick = { showLogs = !showLogs },
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                ) {
+                                    Text(if (showLogs) "Hide Logs" else "Show Logs")
+                                }
                             }
                         }
                     }
 
                     item {
                         SettingsGroup(title = "About") {
-                            InfoPreference(
-                                    title = "App Version",
-                                    value = BuildConfig.VERSION_NAME,
-                                    icon = Icons.Outlined.Info
-                            )
+                             val context = LocalContext.current
+                             // We'll wrap the InfoPreference in a Box or Row to add the click listener for the whole item
+                             Box(modifier = Modifier.clickable { viewModel.onVersionClicked() }) {
+                                 InfoPreference(
+                                         title = "App Version",
+                                         value = BuildConfig.VERSION_NAME,
+                                         icon = Icons.Outlined.Info
+                                 )
+                             }
                         }
                     }
                 }

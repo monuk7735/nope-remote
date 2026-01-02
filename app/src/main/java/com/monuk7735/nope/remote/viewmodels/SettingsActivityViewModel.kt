@@ -26,6 +26,7 @@ class SettingsActivityViewModel(
     var vibrateSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var darkModeSettingsValue: MutableLiveData<Int> = MutableLiveData<Int>()
     var dynamicColorSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
+    var devModeSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
 
     init {
         vibrateSettingsValue.value =
@@ -43,6 +44,22 @@ class SettingsActivityViewModel(
                         application.getString(R.string.pref_settings_dynamic_color),
                         true
                 )
+        devModeSettingsValue.value = settingsPreferences.getBoolean("pref_dev_mode_enabled", false)
+    }
+
+    private var versionTapCount = 0
+
+    fun onVersionClicked() {
+        if (devModeSettingsValue.value == true) return
+
+        versionTapCount++
+        if (versionTapCount >= 7) {
+            devModeSettingsValue.value = true
+            settingsPreferences.edit().putBoolean("pref_dev_mode_enabled", true).apply()
+            versionTapCount = 0
+            // Ideally show a toast here, but ViewModel shouldn't show UI directly. 
+            // We'll rely on the UI reacting to the state change.
+        }
     }
 
 
