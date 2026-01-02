@@ -214,7 +214,7 @@ fun ListBrands(
                                 } else {
                                         val groupedSortedList =
                                                 allBrands.sortedBy { it.brand }.groupBy {
-                                                    val firstChar = it.brand.first().uppercaseChar()
+                                                    val firstChar = it.brand.firstOrNull()?.uppercaseChar() ?: '#'
                                                     if (firstChar in 'A'..'Z') firstChar else '#'
                                                 }
 

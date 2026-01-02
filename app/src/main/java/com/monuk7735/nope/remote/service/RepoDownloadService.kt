@@ -14,15 +14,12 @@ import androidx.core.app.NotificationCompat
 import com.monuk7735.nope.remote.R
 import com.monuk7735.nope.remote.SettingsActivity
 import com.monuk7735.nope.remote.utils.NotificationHelper
-import org.eclipse.jgit.api.Git
 import androidx.core.content.edit
 import androidx.core.app.ServiceCompat
-import java.net.HttpURLConnection
-import java.net.URL
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import java.io.File
-import org.eclipse.jgit.lib.ProgressMonitor
+import java.util.zip.ZipInputStream
 
 class RepoDownloadService : Service() {
 
@@ -34,7 +31,8 @@ class RepoDownloadService : Service() {
         const val EXTRA_DIRECTORY = "EXTRA_DIRECTORY"
     }
 
-    private var currentThread: Thread? = null
+
+    private val activeThreads = java.util.concurrent.ConcurrentHashMap<String, Thread>()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -50,189 +48,246 @@ class RepoDownloadService : Service() {
                     }
                 }
                 ACTION_STOP_DOWNLOAD -> {
-                    stopSelf()
+                    // Start shutdown if needed, though individual threads handle their own lifecycle
                 }
             }
         }
         return START_NOT_STICKY
     }
 
+    private val client by lazy {
+        okhttp3.OkHttpClient.Builder()
+            .protocols(java.util.Collections.singletonList(okhttp3.Protocol.HTTP_1_1))
+            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
+    
+    private val powerManager by lazy { getSystemService(Context.POWER_SERVICE) as android.os.PowerManager }
+    private val wifiManager by lazy { applicationContext.getSystemService(Context.WIFI_SERVICE) as android.net.wifi.WifiManager }
+
     private fun startDownload(url: String, name: String, directory: String) {
-        val notification = NotificationHelper.createDownloadNotification(this, "Preparing download...", 0, true)
+        if (activeThreads.containsKey(directory) && activeThreads[directory]?.isAlive == true) {
+            RepoDownloadManager.log("Download already in progress for $directory")
+            return
+        }
+
+        val notification = NotificationHelper.createDownloadNotification(this, "Starting $name...", 0, true)
         startForeground(NotificationHelper.NOTIFICATION_ID_DOWNLOAD, notification)
         
-        RepoDownloadManager.clear()
-        RepoDownloadManager.activeRepoId.postValue(directory)
-        RepoDownloadManager.downloadStatus.postValue("Starting service...")
+        // Initial state
+        RepoDownloadManager.updateState(directory, RepoState(DownloadState.DOWNLOADING, 0f, "Preparing...", true))
+        RepoDownloadManager.log("Starting download for $name ($directory)...")
 
-        currentThread = Thread {
+        val thread = Thread {
+            // Acquire locks
+            val wakeLock = powerManager.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "NopeRemote:DownloadWakeLock")
+            val wifiLock = wifiManager.createWifiLock(android.net.wifi.WifiManager.WIFI_MODE_FULL_HIGH_PERF, "NopeRemote:DownloadWifiLock")
+            
             try {
-                RepoDownloadManager.log("Initializing...")
-                val reposDir = File(filesDir, "repos")
-                if (!reposDir.exists()) reposDir.mkdirs()
-
-                val targetDir = File(reposDir, directory)
-                
-                NotificationHelper.updateDownloadNotification(this, "Downloading $name", 0, true)
-
-                if (name.contains("SQLite") || url.endsWith(".db")) {
-                     RepoDownloadManager.log("Detected SQLite repository request.")
-                     RepoDownloadManager.downloadStatus.postValue("Starting direct download...")
-
-                     val dbFileName = "irext_db_20251031_sqlite3.db"
-                     val dbUrl = "https://opensource.irext.net/irext/database/-/raw/master/db/irext_db_20251031_sqlite3.db"
-                     val dbFile = File(targetDir, dbFileName)
-                     
-                     if (!targetDir.exists()) targetDir.mkdirs()
-
-                     try {
-                         RepoDownloadManager.log("Downloading from $dbUrl")
-                         downloadFile(dbUrl, dbFile)
-                         RepoDownloadManager.log("Download complete: ${dbFile.length()} bytes")
-                         
-                         if (dbFile.length() < 1024 * 10) {
-                              throw Exception("Downloaded file is too small: ${dbFile.length()} bytes")
-                         }
-                         
-                     } catch (e: Exception) {
-                         RepoDownloadManager.log("Direct download failed: ${e.message}")
-                         throw e
-                     }
-
-                } else {
-                    if (targetDir.exists() && File(targetDir, ".git").exists()) {
-                        RepoDownloadManager.log("Repository exists. Updating...")
-                        RepoDownloadManager.downloadStatus.postValue("Updating...")
-    
-                        val git = Git.open(targetDir)
-                        git.pull().setProgressMonitor(createProgressMonitor()).call()
-                        git.close()
-    
-                        RepoDownloadManager.log("Update complete.")
-                        RepoDownloadManager.downloadStatus.postValue("Update Complete")
-                    } else {
-                        if (targetDir.exists()) {
-                            RepoDownloadManager.log("Target directory exists but invalid. Cleaning up...")
-                            targetDir.deleteRecursively()
-                        }
-    
-                        RepoDownloadManager.log("Cloning repository from $url...")
-                        RepoDownloadManager.downloadStatus.postValue("Cloning...")
-    
-                        val git = Git.cloneRepository()
-                            .setURI(url)
-                            .setDepth(1)
-                            .setDirectory(targetDir)
-                            .setProgressMonitor(createProgressMonitor())
-                            .call()
-                        
-                        git.close()
-    
-                        RepoDownloadManager.log("Clone complete.")
-                        RepoDownloadManager.downloadStatus.postValue("Clone Complete")
-                    }
-                }
-                
-                var success = true
-                val settingsPreferences = getSharedPreferences(getString(R.string.shared_pref_app_settings), Context.MODE_PRIVATE)
-                
-                if (success) {
-                    settingsPreferences.edit { putBoolean("repo_installed_$directory", true) }
-                    RepoDownloadManager.downloadProgress.postValue(1f)
-                    RepoDownloadManager.downloadStatus.postValue("Download Complete")
-                    RepoDownloadManager.log("Operation finished successfully.")
-                    NotificationHelper.updateDownloadNotification(this, "Download Complete", 100, false)
-                } else {
-                    settingsPreferences.edit { putBoolean("repo_installed_$directory", false) }
-                    RepoDownloadManager.log("Operation failed validation.")
-                }
-
+                wakeLock.acquire(10 * 60 * 1000L /*10 minutes*/)
+                wifiLock.acquire()
+                processDownload(url, name, directory)
             } catch (e: Exception) {
                 e.printStackTrace()
-                val errorMsg = "Error: ${e.message}"
-                RepoDownloadManager.log(errorMsg)
-                RepoDownloadManager.downloadStatus.postValue(errorMsg)
-                NotificationHelper.updateDownloadNotification(this, "Error: ${e.message}", 0, false)
+                RepoDownloadManager.log("Error during download ($directory): ${e.message}")
+                RepoDownloadManager.updateState(directory, RepoState(DownloadState.ERROR, 0f, "Error: ${e.message}"))
+                NotificationHelper.updateDownloadNotification(this, "Error in $name", 0, false)
             } finally {
-               try {
-                   Thread.sleep(2000)
-               } catch (e: InterruptedException) {
-                   e.printStackTrace()
-               }
-                ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-               stopSelf()
-               RepoDownloadManager.activeRepoId.postValue("")
-            }
-        }
-        currentThread?.start()
-    }
-
-
-    private fun createProgressMonitor(): ProgressMonitor {
-        return object : ProgressMonitor {
-            private var totalWork = 0
-            private var completed = 0
-
-            override fun start(totalTasks: Int) {
-                RepoDownloadManager.log("Starting Git operation...")
-            }
-
-            override fun beginTask(title: String, totalWork: Int) {
-                this.totalWork = totalWork
-                this.completed = 0
-                RepoDownloadManager.log("Task: $title")
-            }
-
-            override fun update(completed: Int) {
-                this.completed += completed
-                if (totalWork > 0) {
-                    val progress = this.completed.toFloat() / this.totalWork.toFloat()
-                    RepoDownloadManager.downloadProgress.postValue(progress)
-                    
-
+                if (wakeLock.isHeld) wakeLock.release()
+                if (wifiLock.isHeld) wifiLock.release()
+                
+                activeThreads.remove(directory)
+                // Stop service only if no active downloads remain
+                if (activeThreads.isEmpty()) {
+                    ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+                    stopSelf()
                 }
             }
+        }
+        activeThreads[directory] = thread
+        thread.start()
+    }
 
-            override fun showDuration(enabled: Boolean) {}
+    private fun processDownload(originalUrl: String, name: String, directory: String) {
+        val reposDir = File(filesDir, "repos")
+        if (!reposDir.exists()) reposDir.mkdirs()
+        val targetDir = File(reposDir, directory)
 
-            override fun endTask() {}
+        // Ensure clean state
+        if (targetDir.exists()) {
+             RepoDownloadManager.updateState(directory, RepoState(DownloadState.DOWNLOADING, 0f, "Cleaning up...", true))
+             setWritableRecursively(targetDir)
+             targetDir.deleteRecursively()
+        }
+        targetDir.mkdirs()
+        
+        // Logic to determine download mode using Enum lookup
+        val repoInfo = RepoDownloadManager.RepositoryInfo.fromDirectory(directory)
+        
+        if (repoInfo == null) {
+            // Fallback (should not happen if launched via UI) or explicit error?
+            RepoDownloadManager.log("[$name] Unknown repository directory: $directory")
+            RepoDownloadManager.updateState(directory, RepoState(DownloadState.ERROR, 0f, "Unknown Repository"))
+            return
+        }
 
-            override fun isCancelled(): Boolean = false
+        if (repoInfo.mode == RepoDownloadManager.DownloadMode.DIRECT_FILE) {
+             // SQLite Direct Download
+             RepoDownloadManager.log("[$name] Mode: Direct File Download")
+             RepoDownloadManager.updateState(directory, RepoState(DownloadState.DOWNLOADING, 0f, "Connecting...", true))
+
+             val fileName = originalUrl.substringAfterLast("/")
+             val downloadUrl = repoInfo.url // Use the trusted URL from Enum
+             val targetFile = File(targetDir, fileName)
+
+             downloadFile(downloadUrl, targetFile, name, directory)
+             targetFile.setReadOnly()
+             
+             val finalLength = targetFile.length()
+             
+             if (finalLength < 1024 * 10) {
+                   throw Exception("Downloaded file too small: $finalLength bytes")
+             }
+
+        } else {
+             // ZIP Archive Download
+             RepoDownloadManager.log("[$name] Mode: ZIP Download")
+             RepoDownloadManager.updateState(directory, RepoState(DownloadState.DOWNLOADING, 0f, "Connecting...", true))
+             
+             val downloadUrl = repoInfo.url // Use the trusted URL from Enum (already is ZIP url)
+             val zipFile = File(targetDir, "repo.zip")
+
+             downloadFile(downloadUrl, zipFile, name, directory)
+             
+             RepoDownloadManager.updateState(directory, RepoState(DownloadState.EXTRACTING, 0f, "Extracting...", true))
+             RepoDownloadManager.log("[$name] Extracting...")
+             unzip(zipFile, targetDir)
+             zipFile.delete()
+             
+             setReadOnlyRecursively(targetDir)
+        }
+
+        // Success
+        // settingsPreferences.edit { putBoolean("repo_installed_$directory", true) }
+        
+        RepoDownloadManager.updateState(directory, RepoState(DownloadState.INSTALLED, 1f, "Installed"))
+        RepoDownloadManager.log("[$name] Installation complete.")
+        NotificationHelper.updateDownloadNotification(this, "$name Complete", 100, false)
+    }
+
+    private fun downloadFile(urlStr: String, outputFile: File, name: String, directory: String) {
+        RepoDownloadManager.log("Starting download (stream) for $name")
+        val request = okhttp3.Request.Builder()
+            .url(urlStr)
+            .header("User-Agent", "Mozilla/5.0 (Android) NopeRemote/1.0")
+            .build()
+            
+        RepoDownloadManager.log("Executing request...")
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) throw Exception("HTTP ${response.code} ${response.message}")
+        
+        val body = response.body ?: throw Exception("Body null")
+        val length = body.contentLength()
+        RepoDownloadManager.log("Content-Length: $length, Content-Type: ${body.contentType()}")
+        val input = body.byteStream()
+        
+        // Ensure file exists/writable
+        if (outputFile.exists()) outputFile.delete()
+        outputFile.createNewFile()
+        
+        // Use BufferedOutputStream for better disk IO performance
+        val output = java.io.BufferedOutputStream(FileOutputStream(outputFile))
+        
+        val data = ByteArray(32 * 1024)
+        var total = 0L
+        var count: Int
+        var lastUpdate = 0L
+        
+        try {
+            RepoDownloadManager.log("Reading stream...")
+            while (input.read(data).also { count = it } != -1) {
+                total += count
+                output.write(data, 0, count)
+                
+                val now = System.currentTimeMillis()
+                if (now - lastUpdate > 500) {
+                    lastUpdate = now
+                    updateProgress(directory, name, total, length)
+                }
+            }
+            output.flush()
+            RepoDownloadManager.log("Download stream complete. Total: $total bytes")
+        } finally {
+            output.close()
+            input.close()
+            body.close()
         }
     }
 
-    private fun downloadFile(urlStr: String, outputFile: File) {
-        val url = URL(urlStr)
-        val connection = url.openConnection() as HttpURLConnection
-        connection.connect()
-
-        if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-             throw Exception("Server returned HTTP ${connection.responseCode} ${connection.responseMessage}")
+    private fun updateProgress(directory: String, name: String, current: Long, total: Long) {
+        if (total > 0) {
+             val progress = current.toFloat() / total.toFloat()
+             val percent = (progress * 100).toInt()
+             RepoDownloadManager.updateState(directory, RepoState(DownloadState.DOWNLOADING, progress, "Downloading $percent%", false))
+             NotificationHelper.updateDownloadNotification(this, "Downloading $name", percent, false)
+        } else {
+             RepoDownloadManager.updateState(directory, RepoState(DownloadState.DOWNLOADING, 0f, "Downloading...", true))
+             NotificationHelper.updateDownloadNotification(this, "Downloading $name", 0, true)
         }
+    }
+    
+    private fun unzip(zipFile: File, targetDir: File) {
+        ZipInputStream(BufferedInputStream(java.io.FileInputStream(zipFile))).use { zis ->
+            var zipEntry = zis.nextEntry
+            while (zipEntry != null) {
+                val fileName = zipEntry.name
+                val newFile = File(targetDir, fileName)
+                
+                // Basic security check to prevent Zip Slip
+                if (!newFile.canonicalPath.startsWith(targetDir.canonicalPath + File.separator)) {
+                    throw Exception("Zip entry is outside of the target dir: $fileName")
+                }
 
-        val fileLength = connection.contentLength
-        val input = BufferedInputStream(url.openStream(), 8192)
-        val output = FileOutputStream(outputFile)
+                if (zipEntry.isDirectory) {
+                    newFile.mkdirs()
+                } else {
+                    newFile.parentFile?.mkdirs()
+                    
+                    // Ensure we can overwrite if it exists
+                    if (newFile.exists()) {
+                        if (!newFile.canWrite()) {
+                            newFile.setWritable(true)
+                        }
+                        newFile.delete()
+                    }
 
-        val data = ByteArray(1024)
-        var total: Long = 0
-        var count: Int
-        
-        RepoDownloadManager.downloadStatus.postValue("Downloading Database...")
-
-        while (input.read(data).also { count = it } != -1) {
-            total += count.toLong()
-            if (fileLength > 0) {
-                 val progress = (total * 100 / fileLength).toInt()
-                 if (total % 4096 == 0L) {
-                    RepoDownloadManager.downloadProgress.postValue(total.toFloat() / fileLength.toFloat())
-                 }
+                    FileOutputStream(newFile).use { fos ->
+                        val buffer = ByteArray(1024)
+                        var len: Int
+                        while (zis.read(buffer).also { len = it } > 0) {
+                            fos.write(buffer, 0, len)
+                        }
+                    }
+                }
+                zipEntry = zis.nextEntry
             }
-            output.write(data, 0, count)
+            zis.closeEntry()
         }
+    }
 
-        output.flush()
-        output.close()
-        input.close()
+    private fun setReadOnlyRecursively(file: File) {
+        if (file.isDirectory) {
+             file.listFiles()?.forEach { setReadOnlyRecursively(it) }
+        }
+        file.setReadOnly()
+    }
+
+    private fun setWritableRecursively(file: File) {
+        if (file.isDirectory) {
+             file.listFiles()?.forEach { setWritableRecursively(it) }
+        }
+        file.setWritable(true)
     }
 }

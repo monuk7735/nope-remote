@@ -46,18 +46,10 @@ class SettingsActivityViewModel(
     }
 
 
-    val repoDownloadStatus = RepoDownloadManager.downloadStatus
-    val repoDownloadProgress = RepoDownloadManager.downloadProgress
-    val activeRepoId = RepoDownloadManager.activeRepoId
+    val repoStates = RepoDownloadManager.repoStates
     val repoCommandOutput = RepoDownloadManager.commandOutput
 
-    data class RepoDef(val name: String, val url: String, val directory: String)
-
-    val availableRepositories =
-            listOf(
-                RepoDef("CSV Repository", "https://github.com/probonopd/irdb.git", "irdb_official"),
-                RepoDef("SQLite Repository", "https://opensource.irext.net/irext/database.git", "irext_sqlite")
-            )
+    val availableRepositories = RepoDownloadManager.RepositoryInfo.values().toList()
 
         fun manageRepository(url: String, name: String, directory: String) {
         val intent = Intent(getApplication(), RepoDownloadService::class.java).apply {
@@ -77,19 +69,36 @@ class SettingsActivityViewModel(
         val reposDir = File(getApplication<Application>().filesDir, "repos")
         val targetDir = File(reposDir, directory)
         if (targetDir.exists()) {
+            targetDir.walkTopDown().forEach { it.setWritable(true) }
             targetDir.deleteRecursively()
         }
-        settingsPreferences.edit().putBoolean("repo_installed_$directory", false).apply()
+        // settingsPreferences.edit().putBoolean("repo_installed_$directory", false).apply()
         
 
-        RepoDownloadManager.downloadStatus.postValue("Deleted $directory")
+        RepoDownloadManager.updateState(directory, com.monuk7735.nope.remote.service.RepoState(com.monuk7735.nope.remote.service.DownloadState.IDLE))
         RepoDownloadManager.log("Deleted repository: $directory")
     }
 
 
 
     fun isRepoInstalled(directory: String): Boolean {
-        return settingsPreferences.getBoolean("repo_installed_$directory", false)
+        val context = getApplication<Application>()
+        val reposDir = File(context.filesDir, "repos")
+        val targetDir = File(reposDir, directory)
+        
+        if (!targetDir.exists()) return false
+
+        val repoInfo = RepoDownloadManager.RepositoryInfo.fromDirectory(directory) ?: return false
+
+        return if (repoInfo.mode == RepoDownloadManager.DownloadMode.DIRECT_FILE) {
+             // Check for DB file
+             targetDir.walk().any { it.extension == "db" || it.extension == "sqlite" }
+        } else {
+             // Check for index file (Probono)
+             val indexFile = File(targetDir, "codes/index")
+             val masterIndexFile = File(targetDir, "irdb-master/codes/index")
+             indexFile.exists() || masterIndexFile.exists()
+        }
     }
 
     fun saveSettings(context: Context) {

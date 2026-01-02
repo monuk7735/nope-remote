@@ -77,8 +77,7 @@ class SettingsActivity : ComponentActivity() {
         val vibrate by viewModel.vibrateSettingsValue.observeAsState(true)
         val darkMode by viewModel.darkModeSettingsValue.observeAsState(0)
         val dynamicColor by viewModel.dynamicColorSettingsValue.observeAsState(true)
-        val downloadStatus by viewModel.repoDownloadStatus.observeAsState("")
-        val downloadProgress by viewModel.repoDownloadProgress.observeAsState(0f)
+
         val commandOutput by viewModel.repoCommandOutput.observeAsState("")
 
         var showLogs by remember { mutableStateOf(false) }
@@ -157,23 +156,20 @@ class SettingsActivity : ComponentActivity() {
                             SettingsGroup(
                                     title = "Repositories"
                             ) {
-                            val activeRepo by viewModel.activeRepoId.observeAsState("")
+                            val repoStates by viewModel.repoStates.observeAsState(emptyMap())
                             
                             viewModel.availableRepositories.forEach { repo ->
-                                val isActive = activeRepo == repo.directory
-                                val currentStatus = if (isActive || activeRepo.isEmpty()) downloadStatus else ""
-                                val currentProgress = if (isActive) downloadProgress else 0f
+                                val repoState = repoStates[repo.directoryName] ?: com.monuk7735.nope.remote.service.RepoState()
+                                val isInstalled = viewModel.isRepoInstalled(repo.directoryName)
                                 
-                                val isInstalled = viewModel.isRepoInstalled(repo.directory)
                                 RepositoryPreference(
-                                        name = repo.name,
-                                        url = repo.url,
+                                        name = repo.title,
+                                        url = repo.displayUrl,
                                         isInstalled = isInstalled,
-                                        downloadStatus = if (isActive) currentStatus else "",
-                                        downloadProgress = currentProgress,
-                                        onDownload = { viewModel.manageRepository(repo.url, repo.name, repo.directory) },
-                                        onDelete = { viewModel.deleteRepository(repo.directory) },
-                                        onUrlClick = { uriHandler.openUri(repo.url) }
+                                        state = repoState,
+                                        onDownload = { viewModel.manageRepository(repo.url, repo.title, repo.directoryName) },
+                                        onDelete = { viewModel.deleteRepository(repo.directoryName) },
+                                        onUrlClick = { uriHandler.openUri(repo.displayUrl) }
                                 )
                             }
                             

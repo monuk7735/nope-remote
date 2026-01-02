@@ -7,18 +7,21 @@ import com.monuk7735.nope.remote.infrared.IrCsvParser
 import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
+import com.monuk7735.nope.remote.service.RepoDownloadManager
 import java.io.File
 
-class IRDBSqliteRepository(private val application: Application) : IRSourceRepository {
+class IrextRepository(private val application: Application) : IRSourceRepository {
 
     private var sqliteDb: SQLiteDatabase? = null
-    private val repoPath = "repos/irext_sqlite/irext_db_20251031_sqlite3.db"
+    // Dynamic path logic in ensureDb()
 
     private fun ensureDb(): Boolean {
         if (sqliteDb != null && sqliteDb?.isOpen == true) return true
 
         val context = application
-        val repoDir = File(context.filesDir, "repos/irext_sqlite")
+        // Use directory from Enum
+        val dirName = RepoDownloadManager.RepositoryInfo.IREXT.directoryName
+        val repoDir = File(context.filesDir, "repos/$dirName")
         
         val dbFile = File(repoDir, "irext_db_20251031_sqlite3.db")
         var genericDbFile = if (dbFile.exists()) dbFile else null
@@ -41,9 +44,7 @@ class IRDBSqliteRepository(private val application: Application) : IRSourceRepos
                 return true
             } catch (e: Exception) {
                 e.printStackTrace()
-                if (genericDbFile.exists()) {
-                    genericDbFile.delete()
-                }
+                // Do not delete file on open error. It might be locked or transient.
             }
         }
         return false
@@ -57,7 +58,7 @@ class IRDBSqliteRepository(private val application: Application) : IRSourceRepos
         if (ensureDb()) {
             val list = mutableListOf<DeviceTypesRetrofitModel>()
             try {
-                val cursor = sqliteDb?.rawQuery("SELECT DISTINCT name_en FROM category ORDER BY name_en", null)
+                val cursor = sqliteDb?.rawQuery("SELECT DISTINCT name_en FROM category WHERE name_en != 'AC' ORDER BY name_en", null)
                 cursor?.use {
                     if (it.moveToFirst()) {
                         do {
@@ -78,7 +79,7 @@ class IRDBSqliteRepository(private val application: Application) : IRSourceRepos
         if (ensureDb()) {
             val list = mutableListOf<DeviceBrandsRetrofitModel>()
             try {
-                val query = "SELECT DISTINCT b.name_en FROM brand b JOIN category c ON b.category_id = c.id WHERE c.name_en = ? ORDER BY b.name_en"
+                val query = "SELECT DISTINCT b.name_en FROM brand b JOIN category c ON b.category_id = c.id WHERE c.name_en = ? AND b.name_en IS NOT NULL AND length(b.name_en) > 0 ORDER BY b.name_en"
                 val cursor = sqliteDb?.rawQuery(query, arrayOf(type))
                 cursor?.use {
                     if (it.moveToFirst()) {
@@ -105,12 +106,12 @@ class IRDBSqliteRepository(private val application: Application) : IRSourceRepos
             val resultList = mutableListOf<DeviceCodesRetrofitModel>()
 
             val query = """
-                   SELECT ri.remote, ri.protocol, dr.key_name, dr.key_value 
+                   SELECT ri.remote, ri.protocol, dr.key_name, dr.key_value, c.name_en, b.name_en 
                    FROM decode_remote dr 
                    JOIN remote_index ri ON dr.remote_index_id = ri.id
                    JOIN brand b ON ri.brand_id = b.id
                    JOIN category c ON ri.category_id = c.id
-                   WHERE c.name_en = ? AND b.name_en = ?
+                   WHERE c.name_en = ? AND b.name_en = ? AND dr.key_name IS NOT NULL AND length(dr.key_name) > 0
                    ORDER BY ri.remote
                """.trimIndent()
 
@@ -186,10 +187,11 @@ class IRDBSqliteRepository(private val application: Application) : IRSourceRepos
         sqliteDb = null
         
         val context = application
-        val repoDir = File(context.filesDir, "repos/irext_sqlite")
+        val dirName = RepoDownloadManager.RepositoryInfo.IREXT.directoryName
+        val repoDir = File(context.filesDir, "repos/$dirName")
         val dbFile = File(repoDir, "irext_db_20251031_sqlite3.db")
-        if (dbFile.exists()) {
-             dbFile.delete()
-        }
+//        if (dbFile.exists()) {
+//             dbFile.delete()
+//        }
     }
 }

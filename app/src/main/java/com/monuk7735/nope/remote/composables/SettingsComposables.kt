@@ -246,14 +246,14 @@ fun RepositoryPreference(
         name: String,
         url: String,
         isInstalled: Boolean,
-        downloadStatus: String,
-        downloadProgress: Float,
+        state: com.monuk7735.nope.remote.service.RepoState,
         onDownload: () -> Unit,
         onDelete: () -> Unit,
         onUrlClick: () -> Unit
 ) {
-        val isRunning = downloadStatus == "Cloning..." || downloadStatus == "Updating..."
-        val isError = downloadStatus.startsWith("Error") || downloadStatus.startsWith("LFS Error")
+        val isRunning = state.state == com.monuk7735.nope.remote.service.DownloadState.DOWNLOADING || 
+                        state.state == com.monuk7735.nope.remote.service.DownloadState.EXTRACTING
+        val isError = state.state == com.monuk7735.nope.remote.service.DownloadState.ERROR
 
         Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -301,20 +301,26 @@ fun RepositoryPreference(
                             modifier = Modifier.clickable { onUrlClick() }
                         )
                         
-                        if (isError) {
+                        if (isError || isRunning) {
                                 Text(
-                                        text = downloadStatus,
+                                        text = state.message,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.error
+                                        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
                                 )
                         }
 
                         if (isRunning) {
                                 Spacer(modifier = Modifier.height(8.dp))
-                                LinearProgressIndicator(
-                                        progress = { downloadProgress },
+                                if (state.isIndeterminate) {
+                                    LinearProgressIndicator(
                                         modifier = Modifier.fillMaxWidth()
-                                )
+                                    )
+                                } else {
+                                    LinearProgressIndicator(
+                                        progress = { state.progress },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
                         }
                 }
 
@@ -326,10 +332,6 @@ fun RepositoryPreference(
                                                 contentDescription = "Delete",
                                                 tint = MaterialTheme.colorScheme.error
                                         )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Button(onClick = onDownload) {
-                                    Text("Update")
                                 }
                         } else {
                                 Button(onClick = onDownload) {

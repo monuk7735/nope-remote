@@ -6,9 +6,10 @@ import com.monuk7735.nope.remote.infrared.IrCsvParser
 import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
+import com.monuk7735.nope.remote.service.RepoDownloadManager
 import java.io.File
 
-class IRDBFileRepository(private val application: Application) : IRSourceRepository {
+class ProbonopdRepository(private val application: Application) : IRSourceRepository {
 
     private var deviceIndex: Map<String, Map<String, List<String>>>? = null
 
@@ -16,7 +17,9 @@ class IRDBFileRepository(private val application: Application) : IRSourceReposit
         if (deviceIndex != null) return true
 
         val context = application
-        val repoDir = File(context.filesDir, "repos/irdb_official")
+        // Use directory from Enum
+        val dirName = RepoDownloadManager.RepositoryInfo.PROBONOPD.directoryName
+        val repoDir = File(context.filesDir, "repos/$dirName")
         
         var indexFile = File(repoDir, "codes/index")
         var baseUrl = "file://${repoDir.absolutePath}/codes/"
@@ -49,6 +52,7 @@ class IRDBFileRepository(private val application: Application) : IRSourceReposit
             val parts = line.split("/")
             if (parts.size >= 3) {
                 val brand = parts[0]
+                if (brand.isBlank()) return@forEach
                 val type = parts[1]
                 val path = baseUrl + line.trim().replace(" ", "%20")
 
@@ -108,7 +112,7 @@ class IRDBFileRepository(private val application: Application) : IRSourceReposit
                     }
 
                     if (csvContent != null) {
-                        val codeMap = IrCsvParser.parseCsvAndGenerateHex(csvContent)
+                        val codeMap = IrCsvParser.parseCsvAndGenerateHex(csvContent).filterKeys { it.isNotBlank() }
                         if (codeMap.isNotEmpty()) {
                             resultList.add(
                                     DeviceCodesRetrofitModel(

@@ -16,8 +16,8 @@ android {
         applicationId = "com.monuk7735.nope.remote"
         minSdk = 23
         targetSdk = 34
-        versionCode = 20
-        versionName = "2.0"
+        versionCode = 21
+        versionName = "2.1-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -95,9 +95,6 @@ dependencies {
     // Storage & Preferences
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.datastore:datastore-preferences:1.2.0")
-
-    // JGit
-    implementation("org.eclipse.jgit:org.eclipse.jgit:6.10.0.202406032230-r")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
