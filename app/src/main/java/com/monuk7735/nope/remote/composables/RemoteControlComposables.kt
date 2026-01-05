@@ -23,6 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 
+
+enum class CustomRemoteLayout {
+    NONE,
+    CAMERA
+}
+
 @ExperimentalFoundationApi
 @ExperimentalMaterial3Api
 @Composable
@@ -33,12 +39,34 @@ fun RemoteControl(
 ) {
     var layoutLimits by remember { mutableStateOf(Rect(Offset.Zero, 0f)) }
 
+    val shutterButton = remember(remoteDataModel) { remoteDataModel?.getByName("SHUTTER") }
+    
+    val layoutType = remember(remoteDataModel) {
+        val isCamera = remoteDataModel?.type?.contains("Camera", ignoreCase = true) == true
+        
+        if (isCamera && shutterButton != null) {
+            CustomRemoteLayout.CAMERA
+        } else {
+            CustomRemoteLayout.NONE
+        }
+    }
+
+    val isCustomUiAvailable = layoutType != CustomRemoteLayout.NONE
+    var showCustomUi by remember(isCustomUiAvailable) { mutableStateOf(isCustomUiAvailable) }
+
     Scaffold(
             topBar = {
                 AppBar(
                         title = "${remoteDataModel?.name}",
                         onBack = onBack,
                         actions = {
+                            if (isCustomUiAvailable) {
+                                ActionButton(
+                                        name = "Switch Layout",
+                                        icon = if (showCustomUi) Icons.Outlined.GridOn else Icons.Outlined.CameraAlt,
+                                        onClick = { showCustomUi = !showCustomUi }
+                                )
+                            }
                             ActionButton(
                                     name = "Settings",
                                     icon = Icons.Outlined.Settings,
@@ -57,10 +85,17 @@ fun RemoteControl(
                                         }
                                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    UniversalRemote(
+                    if (showCustomUi && layoutType == CustomRemoteLayout.CAMERA && shutterButton != null) {
+                        CameraRemote(
+                            remoteDataDBModel = remoteDataModel,
+                            shutterButton = shutterButton
+                        )
+                    } else {
+                        UniversalRemote(
                             remoteDataDBModel = remoteDataModel,
                             layoutLimits = layoutLimits
-                    )
+                        )
+                    }
                 }
             }
     )
