@@ -43,9 +43,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.lifecycleScope
 import com.monuk7735.nope.remote.composables.AppBar
 import com.monuk7735.nope.remote.composables.EmptyState
 import com.monuk7735.nope.remote.composables.MacroSequenceCard
+import com.monuk7735.nope.remote.composables.NoIrBlasterScreen
 import com.monuk7735.nope.remote.composables.RemoteTile
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
@@ -83,6 +85,12 @@ class HomeActivity : ComponentActivity() {
 
     @Composable
     fun Root() {
+        // If there is no IR blaster, we simply show the error screen and do nothing else.
+        if (!viewModel.hasIrBlaster) {
+             NoIrBlasterScreen()
+             return
+        }
+
         val pagerState = rememberPagerState(pageCount = { 2 })
         val coroutineScope = rememberCoroutineScope()
 

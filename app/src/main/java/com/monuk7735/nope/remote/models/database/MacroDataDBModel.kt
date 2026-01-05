@@ -18,11 +18,11 @@ data class MacroDataDBModel(
     val macroUnits: List<MacroTransmit>
 ) : Parcelable {
     suspend fun execute(
-        irController: IRController,
+        irController: IRController?,
         vibrator: Vibrator,
     ) {
         macroUnits.forEach {
-            irController.transmit(
+            irController?.transmit(
                 it.irPattern,
                 vibrator
             )

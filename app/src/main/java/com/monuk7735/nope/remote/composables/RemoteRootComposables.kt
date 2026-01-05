@@ -155,7 +155,8 @@ fun UniversalRemote(
 ) {
     val irController =
             LocalContext.current.run {
-                IRController(getSystemService(Context.CONSUMER_IR_SERVICE) as ConsumerIrManager)
+                val manager = getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
+                if (manager != null) IRController(manager) else null
             }
 
     val vibrator =

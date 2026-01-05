@@ -20,10 +20,19 @@ import kotlinx.coroutines.launch
 
 class HomeActivityViewModel(application: Application) : AndroidViewModel(application) {
 
-    val irController =
-            IRController(
-                    application.getSystemService(Context.CONSUMER_IR_SERVICE) as ConsumerIrManager
-            )
+    private val consumerIrManager = try {
+        application.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
+    } catch (e: Exception) {
+        null
+    }
+
+    val hasIrBlaster = consumerIrManager?.hasIrEmitter() == true
+
+    val irController = if (hasIrBlaster) {
+        IRController(consumerIrManager!!)
+    } else {
+        null
+    }
 
     private val remoteDataRepository: RemoteDataRepository =
             RemoteDataRepository(remoteDao = RemoteDatabase.getDatabase(application).remoteDao())
