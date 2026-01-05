@@ -20,6 +20,9 @@ import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import java.io.File
 import java.util.zip.ZipInputStream
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
+import java.io.FileInputStream
 
 class RepoDownloadService : Service() {
 
@@ -151,6 +154,28 @@ class RepoDownloadService : Service() {
                    throw Exception("Downloaded file too small: $finalLength bytes")
              }
 
+        } else if (repoInfo.mode == RepoDownloadManager.DownloadMode.TAR_XZ) {
+             // TAR.XZ Archive Download
+             RepoDownloadManager.log("[$name] Mode: TAR.XZ Download")
+             RepoDownloadManager.updateState(directory, RepoState(DownloadState.DOWNLOADING, 0f, "Connecting...", true))
+             
+             val downloadUrl = repoInfo.url
+             val archiveFile = File(targetDir, "repo.tar.xz")
+
+             downloadFile(downloadUrl, archiveFile, name, directory)
+             
+             RepoDownloadManager.updateState(directory, RepoState(DownloadState.EXTRACTING, 0f, "Extracting...", true))
+             RepoDownloadManager.log("[$name] Extracting...")
+             try {
+                 untarXz(archiveFile, targetDir)
+             } catch (e: Exception) {
+                 e.printStackTrace()
+                 throw Exception("Extraction failed: ${e.message}")
+             }
+             archiveFile.delete()
+             
+             setReadOnlyRecursively(targetDir)
+             
         } else {
              // ZIP Archive Download
              RepoDownloadManager.log("[$name] Mode: ZIP Download")
@@ -274,6 +299,45 @@ class RepoDownloadService : Service() {
                 zipEntry = zis.nextEntry
             }
             zis.closeEntry()
+        }
+    }
+    
+    private fun untarXz(inputFile: File, targetDir: File) {
+        val fis = FileInputStream(inputFile)
+        val bis = BufferedInputStream(fis)
+        val xzIn = XZCompressorInputStream(bis)
+        val tarIn = TarArchiveInputStream(xzIn)
+
+        tarIn.use { tar ->
+            var entry = tar.nextTarEntry
+            while (entry != null) {
+                val fileName = entry.name
+                val newFile = File(targetDir, fileName)
+
+                // Zip Slip protection
+                if (!newFile.canonicalPath.startsWith(targetDir.canonicalPath + File.separator)) {
+                    throw Exception("Tar entry is outside of the target dir: $fileName")
+                }
+
+                if (entry.isDirectory) {
+                    newFile.mkdirs()
+                } else {
+                    newFile.parentFile?.mkdirs()
+                    if (newFile.exists()) {
+                         if (!newFile.canWrite()) newFile.setWritable(true)
+                         newFile.delete()
+                    }
+                    
+                    FileOutputStream(newFile).use { fos ->
+                         val buffer = ByteArray(4096)
+                         var len: Int
+                         while (tar.read(buffer).also { len = it } != -1) {
+                             fos.write(buffer, 0, len)
+                         }
+                    }
+                }
+                entry = tar.nextTarEntry
+            }
         }
     }
 

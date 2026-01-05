@@ -110,6 +110,11 @@ class SettingsActivityViewModel(
         return if (repoInfo.mode == RepoDownloadManager.DownloadMode.DIRECT_FILE) {
              // Check for DB file
              targetDir.walk().any { it.extension == "db" || it.extension == "sqlite" }
+        } else if (repoInfo.mode == RepoDownloadManager.DownloadMode.TAR_XZ) {
+             // Check for Mi Remote dump structure
+             val dumpDir = File(targetDir, "database_dump")
+             val flatDump = File(targetDir, "1_TV") // In case it wasn't nested
+             dumpDir.exists() || flatDump.exists()
         } else {
              // Check for index file (Probono)
              val indexFile = File(targetDir, "codes/index")

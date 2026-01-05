@@ -14,6 +14,7 @@ import com.monuk7735.nope.remote.repository.IrextRepository
 import com.monuk7735.nope.remote.service.RepoDownloadManager
 import com.monuk7735.nope.remote.repository.IRSourceRepository
 import com.monuk7735.nope.remote.repository.RemoteDataRepository
+import com.monuk7735.nope.remote.repository.MiRemoteDumpRepository
 import kotlinx.coroutines.launch
 
 class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(application) {
@@ -23,7 +24,8 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
 
     private val allRepositories = listOf(
         Pair(RepoDownloadManager.RepositoryInfo.PROBONOPD.title, ProbonopdRepository(application)),
-        Pair(RepoDownloadManager.RepositoryInfo.IREXT.title, IrextRepository(application))
+        Pair(RepoDownloadManager.RepositoryInfo.IREXT.title, IrextRepository(application)),
+        Pair(RepoDownloadManager.RepositoryInfo.MI_REMOTE.title, MiRemoteDumpRepository(application))
     )
 
     private val installedRepoPairs = allRepositories.filter { it.second.isRepoInstalled() }.ifEmpty { listOf(allRepositories[0]) }

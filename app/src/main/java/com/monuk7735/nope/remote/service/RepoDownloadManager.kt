@@ -21,7 +21,8 @@ data class RepoState(
 object RepoDownloadManager {
     enum class DownloadMode {
         ZIP_ARCHIVE,
-        DIRECT_FILE
+        DIRECT_FILE,
+        TAR_XZ
     }
 
     enum class RepositoryInfo(
@@ -44,6 +45,13 @@ object RepoDownloadManager {
             "https://opensource.irext.net/irext/database/-/raw/master/db/irext_db_20251031_sqlite3.db",
             "https://opensource.irext.net/irext/database",
             DownloadMode.DIRECT_FILE
+        ),
+        MI_REMOTE(
+            "Mi Remote Database (Dump)",
+            "mi_remote_dump",
+            "https://github.com/ysard/mi_remote_database/releases/download/v2.1/database_dump.tar.xz",
+            "https://github.com/ysard/mi_remote_database",
+            DownloadMode.TAR_XZ
         );
 
         companion object {
