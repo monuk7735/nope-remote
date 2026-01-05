@@ -17,6 +17,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
 import java.util.*
+import com.monuk7735.nope.remote.models.CustomRemoteLayout
 
 @Parcelize
 @Entity(tableName = "remotes")
@@ -89,5 +90,30 @@ data class RemoteDataDBModel(
         }
 
         return toRet
+    }
+
+    fun getCustomLayoutType(): CustomRemoteLayout {
+        val isCamera = type.contains("Camera", ignoreCase = true) ||
+                type.contains("DSLR", ignoreCase = true)
+        val shutterButton = getByName("SHUTTER")
+
+        if (isCamera && shutterButton != null) {
+            return CustomRemoteLayout.CAMERA
+        }
+
+        val isLight = type.contains("Light", ignoreCase = true) ||
+                type.contains("Lamp", ignoreCase = true) ||
+                type.contains("LED", ignoreCase = true) ||
+                type.contains("Strip", ignoreCase = true)
+        
+        // Essential buttons for Light UI
+        val hasColor = getByName("COLOR0") != null
+        val hasBrightness = getByName("BRIGHTNESS+") != null
+
+        if (isLight && (hasColor || hasBrightness)) {
+            return CustomRemoteLayout.LIGHT
+        }
+
+        return CustomRemoteLayout.NONE
     }
 }

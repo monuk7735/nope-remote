@@ -21,13 +21,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.monuk7735.nope.remote.models.CustomRemoteLayout
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
-
-
-enum class CustomRemoteLayout {
-    NONE,
-    CAMERA
-}
 
 @ExperimentalFoundationApi
 @ExperimentalMaterial3Api
@@ -42,13 +37,7 @@ fun RemoteControl(
     val shutterButton = remember(remoteDataModel) { remoteDataModel?.getByName("SHUTTER") }
     
     val layoutType = remember(remoteDataModel) {
-        val isCamera = remoteDataModel?.type?.contains("Camera", ignoreCase = true) == true
-        
-        if (isCamera && shutterButton != null) {
-            CustomRemoteLayout.CAMERA
-        } else {
-            CustomRemoteLayout.NONE
-        }
+        remoteDataModel?.getCustomLayoutType() ?: CustomRemoteLayout.NONE
     }
 
     val isCustomUiAvailable = layoutType != CustomRemoteLayout.NONE
@@ -63,7 +52,8 @@ fun RemoteControl(
                             if (isCustomUiAvailable) {
                                 ActionButton(
                                         name = "Switch Layout",
-                                        icon = if (showCustomUi) Icons.Outlined.GridOn else Icons.Outlined.CameraAlt,
+                                        icon = if (showCustomUi) Icons.Outlined.GridOn else 
+                                            if (layoutType == CustomRemoteLayout.CAMERA) Icons.Outlined.CameraAlt else Icons.Outlined.Lightbulb,
                                         onClick = { showCustomUi = !showCustomUi }
                                 )
                             }
@@ -89,6 +79,10 @@ fun RemoteControl(
                         CameraRemote(
                             remoteDataDBModel = remoteDataModel,
                             shutterButton = shutterButton
+                        )
+                    } else if (showCustomUi && layoutType == CustomRemoteLayout.LIGHT) {
+                        LightRemote(
+                            remoteDataDBModel = remoteDataModel
                         )
                     } else {
                         UniversalRemote(
