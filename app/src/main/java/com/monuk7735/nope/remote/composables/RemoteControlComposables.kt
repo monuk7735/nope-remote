@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.monuk7735.nope.remote.R
 import com.monuk7735.nope.remote.models.CustomRemoteLayout
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 
@@ -41,7 +42,23 @@ fun RemoteControl(
     }
 
     val isCustomUiAvailable = layoutType != CustomRemoteLayout.NONE
-    var showCustomUi by remember(isCustomUiAvailable) { mutableStateOf(isCustomUiAvailable) }
+    val context = LocalContext.current
+    val sharedPrefs = remember(context) {
+        context.getSharedPreferences(context.getString(R.string.shared_pref_app_settings), android.content.Context.MODE_PRIVATE)
+    }
+    
+    val globalPreferCustomUi = remember(sharedPrefs) {
+        sharedPrefs.getBoolean("pref_prefer_custom_ui_global", true)
+    }
+
+    // Custom UI is shown if:
+    // 1. Available for this type
+    // 2. Global preference is ON (default true)
+    // 3. Remote specific preference is ON (default true)
+    // Note: We treat 'null' in DB as true (default)
+    var showCustomUi by remember(isCustomUiAvailable, remoteDataModel, globalPreferCustomUi) { 
+        mutableStateOf(isCustomUiAvailable && globalPreferCustomUi && (remoteDataModel?.preferCustomUi != false)) 
+    }
 
     Scaffold(
             topBar = {
@@ -275,20 +292,50 @@ fun RemoteControlSettings(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                            text = "Remote Details",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                        text = "Remote Details",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
-                            value = remoteName,
-                            onValueChange = { remoteName = it },
-                            label = { Text("Remote Name") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
+                        value = remoteName,
+                        onValueChange = { remoteName = it },
+                        label = { Text("Remote Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
                     )
+
+                    // Beta: Default UI Preference
+                    if (remoteDataModel?.getCustomLayoutType() != CustomRemoteLayout.NONE) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Use Custom UI by Default",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "Beta feature",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Switch(
+                                checked = remoteDataModel?.preferCustomUi != false,
+                                onCheckedChange = { checked ->
+                                    remoteDataModel?.let {
+                                        onSave(it.copy(preferCustomUi = checked))
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
             }
 

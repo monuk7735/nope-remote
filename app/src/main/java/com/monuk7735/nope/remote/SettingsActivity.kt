@@ -162,6 +162,16 @@ class SettingsActivity : ComponentActivity() {
                                         }
                                 )
                             }
+                            SwitchPreference(
+                                title = "Prefer Custom UI (Beta)",
+                                summary = "Use specialized layouts for Remotes if available",
+                                icon = Icons.Outlined.Palette,
+                                value = viewModel.preferCustomUiGlobal.observeAsState(true).value,
+                                onValueChange = {
+                                    viewModel.preferCustomUiGlobal.value = it
+                                    viewModel.saveSettings(applicationContext)
+                                }
+                            )
                         }
                     }
 

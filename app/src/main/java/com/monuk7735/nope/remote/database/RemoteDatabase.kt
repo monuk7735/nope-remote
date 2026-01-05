@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.monuk7735.nope.remote.models.database.MacroDataDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 
@@ -13,7 +15,7 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
         RemoteDataDBModel::class,
         MacroDataDBModel::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -28,6 +30,12 @@ abstract class RemoteDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: RemoteDatabase? = null
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE remotes ADD COLUMN preferCustomUi INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
         fun getDatabase(context: Context): RemoteDatabase {
             val tempInstance = INSTANCE
             if (tempInstance != null)
@@ -39,7 +47,8 @@ abstract class RemoteDatabase : RoomDatabase() {
                     RemoteDatabase::class.java,
                     "remotes"
                 )
-                    .fallbackToDestructiveMigration(true)
+                    .addMigrations(MIGRATION_2_3)
+                    .fallbackToDestructiveMigration(false)
                     .build()
 
                 INSTANCE = instance

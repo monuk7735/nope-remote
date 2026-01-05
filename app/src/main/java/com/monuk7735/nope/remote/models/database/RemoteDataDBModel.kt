@@ -30,6 +30,7 @@ data class RemoteDataDBModel(
     val added: Date,
     val onScreenRemoteButtonDBS: List<RemoteButtonDBModel>,
     val offScreenRemoteButtonDBS: List<RemoteButtonDBModel>,
+    val preferCustomUi: Boolean = true,
 ) : Parcelable {
     fun getIcon(): ImageVector {
         val t = type.uppercase()
