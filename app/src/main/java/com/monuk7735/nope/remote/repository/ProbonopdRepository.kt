@@ -112,7 +112,9 @@ class ProbonopdRepository(private val application: Application) : IRSourceReposi
                     }
 
                     if (csvContent != null) {
-                        val codeMap = IrCsvParser.parseCsvAndGenerateHex(csvContent).filterKeys { it.isNotBlank() }
+                        val codeMap = IrCsvParser.parseCsvAndGenerateHex(csvContent)
+                            .filterKeys { it.isNotBlank() }
+                            .mapKeys { it.key.uppercase() }
                         if (codeMap.isNotEmpty()) {
                             resultList.add(
                                     DeviceCodesRetrofitModel(

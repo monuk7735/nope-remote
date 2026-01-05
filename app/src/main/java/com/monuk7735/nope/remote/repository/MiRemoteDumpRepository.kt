@@ -131,8 +131,10 @@ class MiRemoteDumpRepository(private val context: Context) : IRSourceRepository 
                             val codeMap = mutableMapOf<String, String>()
                             val keysIterator = keysObj.keys()
                             while(keysIterator.hasNext()){
-                                val keyName = keysIterator.next()
-                                val value = keysObj.getString(keyName)
+                                val originalKeyName = keysIterator.next()
+                                val keyName = originalKeyName.uppercase()
+                                val value = keysObj.getString(originalKeyName) 
+
                                 try {
                                     val timings = decrypt(value)
                                     if (timings.isNotEmpty()) {

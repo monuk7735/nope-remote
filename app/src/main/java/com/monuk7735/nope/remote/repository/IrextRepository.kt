@@ -134,7 +134,7 @@ class IrextRepository(private val application: Application) : IRSourceRepository
 
                             val remoteName = it.getString(0)
                             val protocol = it.getString(1)
-                            val keyName = it.getString(2)
+                            val keyName = it.getString(2).uppercase()
                             val keyValue = it.getString(3)
                             try {
                                 if (!keyValue.isNullOrBlank()) {
