@@ -310,6 +310,14 @@ fun RemoteControlSettings(
                     // Beta: Default UI Preference
                     if (remoteDataModel?.getCustomLayoutType() != CustomRemoteLayout.NONE) {
                         Spacer(modifier = Modifier.height(24.dp))
+                        
+                        val sharedPrefs = remember(context) {
+                            context.getSharedPreferences(context.getString(R.string.shared_pref_app_settings), android.content.Context.MODE_PRIVATE)
+                        }
+                        val globalPreferCustomUi = remember(sharedPrefs) {
+                            sharedPrefs.getBoolean("pref_prefer_custom_ui_global", true)
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -318,16 +326,18 @@ fun RemoteControlSettings(
                                 Text(
                                     text = "Use Custom UI by Default",
                                     style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (globalPreferCustomUi) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                 )
                                 Text(
-                                    text = "Beta feature",
+                                    text = if (globalPreferCustomUi) "Beta feature" else "Disabled by global setting",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = if (globalPreferCustomUi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                                 )
                             }
                             Switch(
                                 checked = remoteDataModel?.preferCustomUi != false,
+                                enabled = globalPreferCustomUi,
                                 onCheckedChange = { checked ->
                                     remoteDataModel?.let {
                                         onSave(it.copy(preferCustomUi = checked))
