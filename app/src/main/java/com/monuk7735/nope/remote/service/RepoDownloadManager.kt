@@ -33,21 +33,21 @@ object RepoDownloadManager {
         val mode: DownloadMode
     ) {
         PROBONOPD(
-            "IRDB by Probonopd (CSV)",
+            "IRDB by Probonopd",
             "irdb_probonopd",
             "https://github.com/probonopd/irdb/archive/refs/heads/master.zip",
             "https://github.com/probonopd/irdb",
             DownloadMode.ZIP_ARCHIVE
         ),
         IREXT(
-            "IRDB by IREXT (SQLite)",
+            "IRDB by IREXT",
             "irdb_irext",
             "https://opensource.irext.net/irext/database/-/raw/master/db/irext_db_20251031_sqlite3.db",
             "https://opensource.irext.net/irext/database",
             DownloadMode.DIRECT_FILE
         ),
         MI_REMOTE(
-            "Mi Remote Database (Dump)",
+            "Mi Remote Database",
             "mi_remote_dump",
             "https://github.com/ysard/mi_remote_database/releases/download/v2.1/database_dump.tar.xz",
             "https://github.com/ysard/mi_remote_database",

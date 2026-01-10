@@ -1,0 +1,4 @@
+- Added "Text Only Buttons" option in Settings for users who prefer labels over icons.
+- Improved icon consistency across the app.
+- Updated application icon with polished padding.
+- General performance improvements and bug fixes.

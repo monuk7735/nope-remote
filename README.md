@@ -33,6 +33,16 @@
 - **Dark/Light Mode** - Fully supports system-wide dark and light themes.
 - **Database Support** - Stores your remotes and macros locally using Room Database.
 - **Haptic Feedback** - Get tactile confirmation for every button press.
+- **Text-Only Mode** - Option to display text labels instead of icons on remote buttons.
+
+
+## Supported IR Repositories
+
+Nope Remote supports downloading and importing codes from the following community databases:
+
+- **[IRDB by Probonopd](https://github.com/probonopd/irdb)** - Massive community-driven database.
+- **[IRDB by IREXT](https://opensource.irext.net/irext/database)** - Extensive commercial device database.
+- **[Mi Remote Database](https://github.com/ysard/mi_remote_database)** - Extracted database from Xiaomi's Mi Remote app.
 
 ## Tech Stack
 
@@ -53,6 +63,10 @@
 - Minimum Android version: 6.0 (API Level 23).
 
 ## Installation
+
+Download the latest APK from the [Releases](https://github.com/monuk7735/NopeRemote/releases) page.
+
+## Build from Source
 
 1. **Clone the repository:**
    ```bash
