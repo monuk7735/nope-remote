@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="lightPrimary">#fdfcff</color>
+    <color name="splash_background">@color/lightPrimary</color>
 
     <color name="darkPrimary">#1a1c1e</color>
 </resources>
