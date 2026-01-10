@@ -51,6 +51,10 @@ fun RemoteControl(
         sharedPrefs.getBoolean("pref_prefer_custom_ui_global", true)
     }
 
+    val textOnlyButtons = remember(sharedPrefs) {
+        sharedPrefs.getBoolean("pref_text_buttons_only", false)
+    }
+
     // Custom UI is shown if:
     // 1. Available for this type
     // 2. Global preference is ON (default true)
@@ -104,7 +108,8 @@ fun RemoteControl(
                     } else {
                         UniversalRemote(
                             remoteDataDBModel = remoteDataModel,
-                            layoutLimits = layoutLimits
+                            layoutLimits = layoutLimits,
+                            textOnlyMode = textOnlyButtons
                         )
                     }
                 }
@@ -127,6 +132,8 @@ fun RemoteControlEditLayout(
     var showGridSettings by remember { mutableStateOf(false) }
     var gridHCount by remember { mutableIntStateOf(5) }
     var gridVCount by remember { mutableIntStateOf(10) }
+
+    val context = LocalContext.current
 
     if (showGridSettings) {
         Dialog(onDismissRequest = { showGridSettings = false }) {
@@ -231,7 +238,11 @@ fun RemoteControlEditLayout(
                             layoutLimits = layoutLimits,
                             gridEnabled = gridEnabled,
                             hCount = gridHCount,
-                            vCount = gridVCount
+                            vCount = gridVCount,
+                            textOnlyMode = remember(context) { 
+                                context.getSharedPreferences(context.getString(R.string.shared_pref_app_settings), android.content.Context.MODE_PRIVATE)
+                                    .getBoolean("pref_text_buttons_only", false) 
+                            }
                     )
                 }
             }

@@ -28,6 +28,7 @@ class SettingsActivityViewModel(
     var dynamicColorSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var devModeSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var preferCustomUiGlobal: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
+    var textButtonsOnlySettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
 
     init {
         vibrateSettingsValue.value =
@@ -47,6 +48,7 @@ class SettingsActivityViewModel(
                 )
         devModeSettingsValue.value = settingsPreferences.getBoolean("pref_dev_mode_enabled", false)
         preferCustomUiGlobal.value = settingsPreferences.getBoolean("pref_prefer_custom_ui_global", true)
+        textButtonsOnlySettingsValue.value = settingsPreferences.getBoolean("pref_text_buttons_only", false)
     }
 
     private var versionTapCount = 0
@@ -143,6 +145,10 @@ class SettingsActivityViewModel(
                 .putBoolean(
                         "pref_prefer_custom_ui_global",
                         preferCustomUiGlobal.value ?: true
+                )
+                .putBoolean(
+                        "pref_text_buttons_only",
+                        textButtonsOnlySettingsValue.value ?: false
                 )
                 .apply()
     }

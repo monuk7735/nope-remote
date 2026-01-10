@@ -34,7 +34,8 @@ fun EditableRemote(
         layoutLimits: Rect,
         gridEnabled: Boolean = false,
         hCount: Int = 5,
-        vCount: Int = 10
+        vCount: Int = 10,
+        textOnlyMode: Boolean = false
 ) {
 
     val onScreenRemotes: MutableList<RemoteButtonDBModel> =
@@ -87,6 +88,7 @@ fun EditableRemote(
                     name = remoteButton.name,
                     icon = remoteButton.getIcon(),
                     textIcon = remoteButton.getTextIcon(),
+                    forceTextOnly = textOnlyMode,
                     offsetX = remoteButton.offsetX,
                     offsetY = remoteButton.offsetY,
                     layoutLimits = layoutLimits,
@@ -152,6 +154,7 @@ fun EditableRemote(
 fun UniversalRemote(
         remoteDataDBModel: RemoteDataDBModel?,
         layoutLimits: Rect,
+        textOnlyMode: Boolean = false
 ) {
     val irController =
             LocalContext.current.run {
@@ -176,6 +179,7 @@ fun UniversalRemote(
                     name = it.name,
                     icon = it.getIcon(),
                     textIcon = it.getTextIcon(),
+                    forceTextOnly = textOnlyMode,
                     offsetX = it.offsetX,
                     offsetY = it.offsetY,
                     onClick = { it.transmit(irController, vibrator) }

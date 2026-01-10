@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Brightness4
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material.icons.outlined.Abc
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -171,6 +172,17 @@ class SettingsActivity : ComponentActivity() {
                                     viewModel.preferCustomUiGlobal.value = it
                                     viewModel.saveSettings(applicationContext)
                                 }
+                            )
+
+                            SwitchPreference(
+                                    title = "Text Only Buttons",
+                                    summary = "Hide icons and show text labels on buttons",
+                                    icon = Icons.Outlined.Abc,
+                                    value = viewModel.textButtonsOnlySettingsValue.observeAsState(false).value,
+                                    onValueChange = {
+                                        viewModel.textButtonsOnlySettingsValue.value = it
+                                        viewModel.saveSettings(applicationContext)
+                                    }
                             )
                         }
                     }

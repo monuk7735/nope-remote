@@ -41,6 +41,7 @@ fun RemoteButtonSingleEditable(
         name: String,
         icon: ImageVector?,
         textIcon: String? = null,
+        forceTextOnly: Boolean = false,
         offsetX: Float,
         offsetY: Float,
         layoutLimits: Rect,
@@ -142,7 +143,7 @@ fun RemoteButtonSingleEditable(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                         ) {
-                                if (icon != null) {
+                                if (icon != null && !forceTextOnly) {
                                         Icon(
                                                 imageVector = icon,
                                                 contentDescription = name,
@@ -188,6 +189,7 @@ fun RemoteButtonSingle(
         name: String,
         icon: ImageVector?,
         textIcon: String? = null,
+        forceTextOnly: Boolean = false,
         offsetX: Float,
         offsetY: Float,
         onClick: () -> Unit,
@@ -226,7 +228,7 @@ fun RemoteButtonSingle(
                                         ),
                         contentAlignment = Alignment.Center
                 ) {
-                        if (icon != null) {
+                        if (icon != null && !forceTextOnly) {
                                 Icon(
                                         imageVector = icon,
                                         contentDescription = name,
