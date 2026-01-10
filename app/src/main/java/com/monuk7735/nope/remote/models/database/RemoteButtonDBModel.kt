@@ -8,13 +8,7 @@ import com.monuk7735.nope.remote.ui.theme.icons.*
 import kotlinx.parcelize.Parcelize
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.Input
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.VolumeDown
-import androidx.compose.material.icons.automirrored.outlined.VolumeOff
-import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -60,53 +54,71 @@ data class RemoteButtonDBModel(
         if (getTextIcon() != null) {
             return null
         }
-        return when {
-            n.contains("SETUP") -> Icons.Outlined.Settings
+        return getIconFromMap(n)
+    }
 
-            (n.contains("BACK") && !n.contains("PLAYBACK")) || n.contains("RETURN") || n.contains("PREV") && !n.contains("SKIP") -> Icons.AutoMirrored.Outlined.ArrowBack
-            n.contains("EXIT") || n.contains("CLOSE") || n.contains("CANCEL") -> Icons.Outlined.Close
-            n.contains("MENU") -> Icons.Outlined.Menu
-            n.contains("HOME") -> Icons.Outlined.Home
-            n.contains("INFO") || n.contains("DISPLAY") || n.contains("DISP") -> Icons.Outlined.Info
-            n.contains("GUIDE") || n.contains("EPG") -> Icons.Outlined.Map
-            n.contains("SETTING") || n.contains("TOOL") || n.contains("OPTION") -> Icons.Outlined.Settings
-            n.contains("SEARCH") && !n.contains("RESEARCH") -> Icons.Outlined.Search
+    companion object {
+        private fun getIconFromMap(name: String): ImageVector? {
+            return when (name) {
+                // Navigation
+                "UP", "CURSOR UP", "DIRECTION UP", "ARROW UP" -> Icons.Outlined.KeyboardArrowUp
+                "DOWN", "CURSOR DOWN", "DIRECTION DOWN", "ARROW DOWN" -> Icons.Outlined.KeyboardArrowDown
+                "LEFT", "CURSOR LEFT", "DIRECTION LEFT", "ARROW LEFT" -> Icons.AutoMirrored.Outlined.KeyboardArrowLeft
+                "RIGHT", "CURSOR RIGHT", "DIRECTION RIGHT", "ARROW RIGHT" -> Icons.AutoMirrored.Outlined.KeyboardArrowRight
+                "OK", "ENTER", "SELECT", "CENTER" -> Icons.Outlined.CheckCircle
+                "BACK", "RETURN", "PREV", "PREVIOUS" -> Icons.AutoMirrored.Outlined.ArrowBack
 
-            n == "DOWN" || n.contains("CURSOR DOWN") || n.contains("DIRECTION DOWN") || n.contains("ARROW DOWN") -> Icons.Outlined.KeyboardArrowDown
-            n == "LEFT" || n.contains("CURSOR LEFT") || n.contains("DIRECTION LEFT") || n.contains("ARROW LEFT") -> Icons.AutoMirrored.Outlined.KeyboardArrowLeft
-            n == "RIGHT" || n.contains("CURSOR RIGHT") || n.contains("DIRECTION RIGHT") || n.contains("ARROW RIGHT") -> Icons.AutoMirrored.Outlined.KeyboardArrowRight
-            n.contains("OK") || n.contains("ENTER") || n.contains("SELECT") -> Icons.Outlined.CheckCircle
+                // Menu / UI
+                "MENU" -> Icons.Outlined.Menu
+                "HOME", "HOMEPAGE" -> Icons.Outlined.Home
+                "EXIT", "CLOSE", "CANCEL" -> Icons.Outlined.Close
+                "INFO", "DISPLAY", "DISP", "OSD" -> Icons.Outlined.Info
+                "GUIDE", "EPG" -> Icons.Outlined.Map
+                "SETUP", "SETTINGS", "SETTING", "TOOL", "TOOLS", "OPT", "OPTION", "OPTIONS" -> Icons.Outlined.Settings
+                "SEARCH" -> Icons.Outlined.Search
 
-            n.contains("POWER") || n.contains("PWR") -> Icons.Outlined.PowerSettingsNew
+                // Power
+                "POWER", "PWR", "POWER ON", "POWER OFF" -> Icons.Outlined.PowerSettingsNew
 
-            n.contains("MUTE") -> Icons.AutoMirrored.Outlined.VolumeOff
-            (n.contains("VOL") && (n.contains("+") || n.contains("UP") || n.contains("INC"))) -> Icons.AutoMirrored.Outlined.VolumeUp
-            (n.contains("VOL") && (n.contains("-") || n.contains("DOWN") || n.contains("DN") || n.contains("DEC"))) -> Icons.AutoMirrored.Outlined.VolumeDown
+                // Volume
+                "VOL+", "VOL +", "VOL UP", "VOLUME UP", "VOLUME+" -> Icons.AutoMirrored.Outlined.VolumeUp
+                "VOL-", "VOL -", "VOL DOWN", "VOLUME DOWN", "VOLUME-" -> Icons.AutoMirrored.Outlined.VolumeDown
+                "MUTE" -> Icons.AutoMirrored.Outlined.VolumeOff
 
-            (n.contains("CH") || n.contains("CHAN") || n.contains("PROG") || n.contains("PAGE")) && (n.contains("+") || n.contains("UP") || n.contains("INC") || n.contains("NEXT")) -> Icons.Outlined.ArrowCircleUp
-            (n.contains("CH") || n.contains("CHAN") || n.contains("PROG") || n.contains("PAGE")) && (n.contains("-") || n.contains("DOWN") || n.contains("DN") || n.contains("DEC") || n.contains("PREV")) -> Icons.Outlined.ArrowCircleDown
+                // Channel
+                "CH+", "CH +", "CH UP", "CHANNEL UP", "CHANNEL+", "PROG+", "PROG UP", "PAGE+", "PAGE UP" -> Icons.Outlined.ArrowCircleUp
+                "CH-", "CH -", "CH DOWN", "CHANNEL DOWN", "CHANNEL-", "PROG-", "PROG DOWN", "PAGE-", "PAGE DOWN" -> Icons.Outlined.ArrowCircleDown
+                "PREV CH", "PREVIOUS CHANNEL", "LAST" -> Icons.AutoMirrored.Outlined.ArrowBack
 
-            n.contains("UP") && !n.contains("VOL") && !n.contains("CH") && !n.contains("PAGE") -> Icons.Outlined.KeyboardArrowUp
-            (n.contains("DOWN") || n.contains("DN")) && !n.contains("VOL") && !n.contains("CH") && !n.contains("PAGE") -> Icons.Outlined.KeyboardArrowDown
-            n.contains("LEFT") -> Icons.AutoMirrored.Outlined.KeyboardArrowLeft
-            n.contains("RIGHT") && !n.contains("BRIGHT") && !n.contains("LIGHT") -> Icons.AutoMirrored.Outlined.KeyboardArrowRight
+                // Media
+                "PLAY" -> Icons.Outlined.PlayArrow
+                "PAUSE" -> Icons.Outlined.Pause
+                "STOP" -> Icons.Outlined.Stop
+                "REW", "REV", "REWIND", "BACKWARD" -> Icons.Outlined.FastRewind
+                "FWD", "FORWARD", "FAST FORWARD" -> Icons.Outlined.FastForward
+                "NEXT", "SKIP NEXT", "SKIP+" -> Icons.Outlined.SkipNext
+                "PREV TRACK", "SKIP PREV", "SKIP-" -> Icons.Outlined.SkipPrevious
+                "REC", "RECORD" -> Icons.Outlined.FiberManualRecord
 
-            n.contains("PLAY") && !n.contains("DISPLAY") -> Icons.Outlined.PlayArrow
-            n.contains("PAUSE") -> Icons.Outlined.Pause
-            n.contains("STOP") -> Icons.Outlined.Stop
-            n.contains("REW") || n.contains("REV") -> Icons.Outlined.FastRewind
-            n.contains("FWD") || n.contains("FORWARD") -> Icons.Outlined.FastForward
-            n.contains("NEXT") || n.contains("SKIP") -> Icons.Outlined.SkipNext
-            n.contains("REC") && !n.contains("RECENT") -> Icons.Outlined.FiberManualRecord
+                // Input
+                "INPUT", "SOURCE", "HDMI", "AV", "AUX" -> Icons.AutoMirrored.Outlined.Input
 
-            n.contains("INPUT") || n.contains("SOURCE") || n.contains("HDMI") || n.contains("AV") || n.contains("AUX") -> Icons.AutoMirrored.Outlined.Input
+                // Color
+                "RED" -> Icons.Outlined.Circle
+                "GREEN" -> Icons.Outlined.Circle
+                "YELLOW" -> Icons.Outlined.Circle
+                "BLUE" -> Icons.Outlined.Circle
 
-            n.contains("RED") && !n.contains("REDUCE") -> Icons.Outlined.Circle
-            n.contains("GREEN") -> Icons.Outlined.Circle
-            n.contains("YELLOW") -> Icons.Outlined.Circle
-            n.contains("BLUE") -> Icons.Outlined.Circle
-            
-            else -> null
+                // New Standards
+                "SUBTITLE", "SUB", "CAPTION", "CC" -> Icons.Outlined.Subtitles
+                "AUDIO", "LANG", "LANGUAGE" -> Icons.Outlined.Audiotrack
+                "ASPECT", "RATIO", "ZOOM", "SIZE", "WIDE" -> Icons.Outlined.AspectRatio
+                "LIST", "CH LIST", "CHANNEL LIST" -> Icons.AutoMirrored.Outlined.List
+                "FAV", "FAVORITE", "FAVORITES" -> Icons.Outlined.Favorite
+                "SLEEP", "TIMER" -> Icons.Outlined.Bedtime
+
+                else -> null
+            }
         }
     }
 
