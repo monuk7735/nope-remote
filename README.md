@@ -41,7 +41,7 @@
 Nope Remote supports downloading and importing codes from the following community databases:
 
 - **[IRDB by Probonopd](https://github.com/probonopd/irdb)** - Massive community-driven database.
-- **[IRDB by IREXT](https://opensource.irext.net/irext/database)** - Extensive commercial device database.
+- **[IRDB by IREXT](https://github.com/irext/database)** - Extensive commercial device database.
 - **[Mi Remote Database](https://github.com/ysard/mi_remote_database)** - Extracted database from Xiaomi's Mi Remote app.
 
 ## Tech Stack
