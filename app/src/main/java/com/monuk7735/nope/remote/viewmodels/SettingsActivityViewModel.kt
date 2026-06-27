@@ -123,6 +123,10 @@ class SettingsActivityViewModel(
              val flipperMainDir = File(targetDir, "Flipper-IRDB-main")
              val convertedDir = File(flipperMainDir, "_Converted_/Pronto")
              return flipperMainDir.exists() && convertedDir.exists()
+        } else if (repoInfo == RepoDownloadManager.RepositoryInfo.FLIPPER_DEVICES_IRDB) {
+             val flipperDevicesMainDir = File(targetDir, "IRDB-dev")
+             val categoriesDir = File(flipperDevicesMainDir, "database/categories")
+             return flipperDevicesMainDir.exists() && categoriesDir.exists()
         } else {
              // Check for index file (Probono)
              val indexFile = File(targetDir, "codes/index")

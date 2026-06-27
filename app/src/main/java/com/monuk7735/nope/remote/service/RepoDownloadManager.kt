@@ -59,6 +59,13 @@ object RepoDownloadManager {
             "https://github.com/Lucaslhm/Flipper-IRDB/archive/refs/heads/main.zip",
             "https://github.com/Lucaslhm/Flipper-IRDB",
             DownloadMode.ZIP_ARCHIVE
+        ),
+        FLIPPER_DEVICES_IRDB(
+            "Flipper Devices IRDB",
+            "flipper_devices_irdb",
+            "https://github.com/flipperdevices/IRDB/archive/refs/heads/dev.zip",
+            "https://github.com/flipperdevices/IRDB",
+            DownloadMode.ZIP_ARCHIVE
         );
 
         companion object {

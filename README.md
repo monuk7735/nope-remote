@@ -44,6 +44,7 @@ Nope Remote supports downloading and importing codes from the following communit
 - **[IRDB by IREXT](https://github.com/irext/database)** - Extensive commercial device database.
 - **[Mi Remote Database](https://github.com/ysard/mi_remote_database)** - Extracted database from Xiaomi's Mi Remote app.
 - **[Flipper-IRDB](https://github.com/Lucaslhm/Flipper-IRDB)** - A comprehensive database of infrared remote codes for Flipper Zero, converted for use.
+- **[Flipper Devices IRDB](https://github.com/flipperdevices/IRDB)** - The official Flipper Devices repository of infrared remote codes.
 
 ## Tech Stack
 
