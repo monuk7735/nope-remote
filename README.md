@@ -61,7 +61,7 @@ Nope Remote supports downloading and importing codes from the following communit
 ### Prerequisites
 
 - Use an Android device with a built-in **IR Blaster**.
-- Android SDK 33 installed.
+- Android SDK 36 installed.
 - Minimum Android version: 6.0 (API Level 23).
 
 ## Installation
