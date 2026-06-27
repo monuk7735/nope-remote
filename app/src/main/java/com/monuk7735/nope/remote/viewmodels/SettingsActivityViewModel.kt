@@ -119,6 +119,10 @@ class SettingsActivityViewModel(
              val dumpDir = File(targetDir, "database_dump")
              val flatDump = File(targetDir, "1_TV") // In case it wasn't nested
              dumpDir.exists() || flatDump.exists()
+        } else if (repoInfo == RepoDownloadManager.RepositoryInfo.FLIPPER_IRDB) {
+             val flipperMainDir = File(targetDir, "Flipper-IRDB-main")
+             val convertedDir = File(flipperMainDir, "_Converted_/Pronto")
+             return flipperMainDir.exists() && convertedDir.exists()
         } else {
              // Check for index file (Probono)
              val indexFile = File(targetDir, "codes/index")

@@ -52,6 +52,13 @@ object RepoDownloadManager {
             "https://github.com/ysard/mi_remote_database/releases/download/v2.1/database_dump.tar.xz",
             "https://github.com/ysard/mi_remote_database",
             DownloadMode.TAR_XZ
+        ),
+        FLIPPER_IRDB(
+            "Flipper-IRDB",
+            "flipper_irdb",
+            "https://github.com/Lucaslhm/Flipper-IRDB/archive/refs/heads/main.zip",
+            "https://github.com/Lucaslhm/Flipper-IRDB",
+            DownloadMode.ZIP_ARCHIVE
         );
 
         companion object {
