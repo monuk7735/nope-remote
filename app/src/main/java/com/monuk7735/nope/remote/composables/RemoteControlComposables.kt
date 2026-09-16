@@ -1,6 +1,7 @@
 package com.monuk7735.nope.remote.composables
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -130,8 +131,15 @@ fun RemoteControlEditLayout(
     var layoutLimits by remember { mutableStateOf(Rect(Offset.Zero, 0f)) }
     var gridEnabled by remember { mutableStateOf(true) }
     var showGridSettings by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
     var gridHCount by remember { mutableIntStateOf(5) }
     var gridVCount by remember { mutableIntStateOf(10) }
+
+    val hasChanges = localRemoteDataDBModel != remoteDataModel
+
+    BackHandler(enabled = hasChanges) {
+        showDiscardDialog = true
+    }
 
     val context = LocalContext.current
 
@@ -203,11 +211,44 @@ fun RemoteControlEditLayout(
         }
     }
 
+    if (showDiscardDialog) {
+        AlertDialog(
+                onDismissRequest = { showDiscardDialog = false },
+                title = { Text("Discard Changes?") },
+                text = { Text("Are you sure? You'll lose all your unsaved layout changes.") },
+                confirmButton = {
+                    TextButton(
+                            onClick = {
+                                showDiscardDialog = false
+                                onBack()
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                            )
+                    ) {
+                        Text("Discard")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDiscardDialog = false }) {
+                        Text("Keep Editing")
+                    }
+                },
+                shape = RoundedCornerShape(28.dp)
+        )
+    }
+
     Scaffold(
             topBar = {
                 AppBar(
                         title = "Edit Layout",
-                        onBack = onBack,
+                        onBack = {
+                            if (hasChanges) {
+                                showDiscardDialog = true
+                            } else {
+                                onBack()
+                            }
+                        },
                         actions = {
                             IconButton(onClick = { showGridSettings = true }) {
                                 Icon(
