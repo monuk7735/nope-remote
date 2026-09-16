@@ -293,6 +293,7 @@ fun ListCodes(
         onBack: () -> Unit
 ) {
         var selected by remember { mutableStateOf(0) }
+        var showIcons by remember { mutableStateOf(true) }
 
         val hasCodes = !allCodes.isNullOrEmpty()
         val rightEnabled = hasCodes && (selected + 1 < allCodes.size)
@@ -313,7 +314,15 @@ fun ListCodes(
                         }
                         AppBar(
                                 title = titleText,
-                                onBack = onBack
+                                onBack = onBack,
+                                actions = {
+                                        IconButton(onClick = { showIcons = !showIcons }) {
+                                                Icon(
+                                                        imageVector = if (showIcons) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                                                        contentDescription = "Toggle Icons"
+                                                )
+                                        }
+                                }
                         )
                 },
                 bottomBar = {
@@ -448,14 +457,14 @@ fun ListCodes(
                                 modifier = Modifier.padding(bottom = 16.dp)
                         )
 
-                        TestRemoteGrid(remoteDataDBModel = allRemoteDataDBModels[selected])
+                        TestRemoteGrid(remoteDataDBModel = allRemoteDataDBModels[selected], showIcons = showIcons)
                 }
         }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TestRemoteGrid(remoteDataDBModel: RemoteDataDBModel) {
+fun TestRemoteGrid(remoteDataDBModel: RemoteDataDBModel, showIcons: Boolean = true) {
         val context = LocalContext.current
         val irController = remember {
                 IRController(
@@ -492,6 +501,7 @@ fun TestRemoteGrid(remoteDataDBModel: RemoteDataDBModel) {
                                 name = button.name,
                                 icon = button.getIcon(),
                                 textIcon = button.getTextIcon(),
+                                forceTextOnly = !showIcons,
                                 offsetX = 0f,
                                 offsetY = 0f,
                                 onClick = { button.transmit(irController, vibrator) }
