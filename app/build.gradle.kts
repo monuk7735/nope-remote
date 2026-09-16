@@ -15,7 +15,7 @@ android {
     defaultConfig {
         applicationId = "com.monuk7735.nope.remote"
         minSdk = 23
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 23
         versionName = "2.3"
 
