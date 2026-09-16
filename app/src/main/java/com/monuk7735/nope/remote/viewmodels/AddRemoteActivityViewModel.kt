@@ -50,6 +50,8 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
     private val _error = MutableLiveData<String?>()
     val error: MutableLiveData<String?> get() = _error
 
+    val selectedBrand = MutableLiveData<String>()
+
     val loadingProgress: MutableLiveData<Pair<Int, Int>?> = MutableLiveData()
 
     private var allCachedTypes: List<DeviceTypesRetrofitModel> = emptyList()
@@ -101,6 +103,7 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
     }
 
     fun getCodes(type: String, brand: String) {
+        selectedBrand.value = brand
         _codes.value = null
         _error.value = null
         viewModelScope.launch {

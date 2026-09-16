@@ -288,6 +288,7 @@ fun ListCodes(
         allCodes: List<DeviceCodesRetrofitModel>?,
         loadingProgress: Pair<Int, Int>?,
         error: String?,
+        brandName: String?,
         onSave: (remoteDataDBModel: RemoteDataDBModel) -> Unit,
         onBack: () -> Unit
 ) {
@@ -305,7 +306,7 @@ fun ListCodes(
                 topBar = {
                         val currentCode = if (hasCodes) allCodes[selected] else null
                         val titleText = when {
-                                !hasCodes -> "Loading..."
+                                !hasCodes -> brandName ?: "Loading..."
                                 currentCode != null && !currentCode.model.isNullOrBlank() && !currentCode.model.equals(currentCode.brand, ignoreCase = true) ->
                                         "${currentCode.brand} • ${currentCode.model}"
                                 else -> currentCode?.brand ?: ""

@@ -56,6 +56,7 @@ class AddRemoteActivity : ComponentActivity() {
         val allCodes = viewModel.codes.observeAsState().value
         val loadingProgress = viewModel.loadingProgress.observeAsState().value
         val error = viewModel.error.observeAsState().value
+        val selectedBrand = viewModel.selectedBrand.observeAsState().value
 
         val navController = rememberNavController()
 
@@ -153,6 +154,7 @@ class AddRemoteActivity : ComponentActivity() {
                         allCodes = allCodes,
                         loadingProgress = loadingProgress,
                         error = error,
+                        brandName = selectedBrand,
                         onSave = {
                             viewModel.saveRemote(it)
                             finish()
