@@ -51,6 +51,23 @@ class IrCsvParserTest {
     }
 
     @Test
+    fun testSamsung20AirConditionerParsing() {
+        val csv = """
+            functionname,protocol,device,subdevice,function
+            SLEEP,Samsung20,1,8,39
+            COOL,Samsung20,1,8,60
+            POWER,Samsung20,1,8,63
+        """.trimIndent()
+
+        val results = IrCsvParser.parseCsvAndGenerateHex(csv)
+        assertEquals(3, results.size)
+        assertTrue(results.containsKey("SLEEP"))
+        assertTrue(results.containsKey("COOL"))
+        assertTrue(results.containsKey("POWER"))
+        assertTrue(results["POWER"]!!.startsWith("0000 "))
+    }
+
+    @Test
     fun testZoomIcons() {
         val zoomInButton = RemoteButtonDBModel(
             offsetX = 0f,

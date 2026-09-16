@@ -60,6 +60,63 @@ class NEC48k : Protocol {
     }
 }
 
+class Samsung20 : Protocol {
+    companion object {
+        const val FREQUENCY = 38400
+        private const val HDR_MARK = 4512
+        private const val HDR_SPACE = 4512
+        private const val BIT_MARK = 564
+        private const val ONE_SPACE = 1692
+        private const val ZERO_SPACE = 564
+
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+    }
+
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
+        val dev = if (device >= 0) device else 0
+        val sub = if (subdevice >= 0) subdevice else 0
+        val func = if (function >= 0) function else 0
+
+        return IrCommandBuilder(FREQUENCY)
+            .pair(HDR_MARK, HDR_SPACE)
+            .sequenceLSB(SEQUENCE_DEF, 6, dev)
+            .sequenceLSB(SEQUENCE_DEF, 6, sub)
+            .sequenceLSB(SEQUENCE_DEF, 8, func)
+            .mark(BIT_MARK)
+            .build()
+    }
+}
+
+class Samsung36 : Protocol {
+    companion object {
+        const val FREQUENCY = 38000
+        private const val HDR_MARK = 4500
+        private const val HDR_SPACE = 4500
+        private const val BIT_MARK = 500
+        private const val ONE_SPACE = 1500
+        private const val ZERO_SPACE = 500
+
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+    }
+
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
+        val dev = if (device >= 0) device else 0
+        val sub = if (subdevice >= 0) subdevice else 0
+        val func = if (function >= 0) function else 0
+
+        return IrCommandBuilder(FREQUENCY)
+            .pair(HDR_MARK, HDR_SPACE)
+            .sequenceLSB(SEQUENCE_DEF, 8, dev)
+            .sequenceLSB(SEQUENCE_DEF, 8, sub)
+            .pair(BIT_MARK, 4500)
+            .sequenceLSB(SEQUENCE_DEF, 4, 0)
+            .sequenceLSB(SEQUENCE_DEF, 8, func)
+            .sequenceLSB(SEQUENCE_DEF, 8, func.inv())
+            .mark(BIT_MARK)
+            .build()
+    }
+}
+
 class SonySIRC(private val bits: Int = 12) : Protocol {
     companion object {
         const val FREQUENCY = 40000
