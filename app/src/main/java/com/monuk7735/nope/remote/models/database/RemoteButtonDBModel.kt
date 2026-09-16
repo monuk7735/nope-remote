@@ -113,8 +113,8 @@ data class RemoteButtonDBModel(
                 "SUBTITLE", "SUB", "CAPTION", "CC" -> Icons.Outlined.Subtitles
                 "AUDIO", "LANG", "LANGUAGE" -> Icons.Outlined.Audiotrack
                 "ASPECT", "RATIO", "ZOOM", "SIZE", "WIDE" -> Icons.Outlined.AspectRatio
-                "ZOOM+", "ZOOM +", "ZOOM IN", "ZOOMIN" -> Icons.Outlined.ZoomIn
-                "ZOOM-", "ZOOM -", "ZOOM OUT", "ZOOMOUT" -> Icons.Outlined.ZoomOut
+                "ZOOM+", "ZOOM +", "ZOOM IN", "ZOOMIN", "ZOOM UP" -> Icons.Outlined.ZoomIn
+                "ZOOM-", "ZOOM -", "ZOOM OUT", "ZOOMOUT", "ZOOM DOWN" -> Icons.Outlined.ZoomOut
                 "LIST", "CH LIST", "CHANNEL LIST" -> Icons.AutoMirrored.Outlined.List
                 "FAV", "FAVORITE", "FAVORITES" -> Icons.Outlined.Favorite
                 "SLEEP", "TIMER" -> Icons.Outlined.Bedtime

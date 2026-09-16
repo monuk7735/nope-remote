@@ -89,8 +89,30 @@ class IrCsvParserTest {
                 intArrayOf(100, 100)
             )
         )
+        val zoomUpButton = RemoteButtonDBModel(
+            offsetX = 0f,
+            offsetY = 0f,
+            name = "ZOOM UP",
+            irPattern = com.monuk7735.nope.remote.infrared.patterns.IRPattern(
+                com.monuk7735.nope.remote.infrared.patterns.IRPatternType.Intervals,
+                38000,
+                intArrayOf(100, 100)
+            )
+        )
+        val zoomDownButton = RemoteButtonDBModel(
+            offsetX = 0f,
+            offsetY = 0f,
+            name = "ZOOM DOWN",
+            irPattern = com.monuk7735.nope.remote.infrared.patterns.IRPattern(
+                com.monuk7735.nope.remote.infrared.patterns.IRPatternType.Intervals,
+                38000,
+                intArrayOf(100, 100)
+            )
+        )
 
         assertNotNull(zoomInButton.getIcon())
         assertNotNull(zoomOutButton.getIcon())
+        assertNotNull(zoomUpButton.getIcon())
+        assertNotNull(zoomDownButton.getIcon())
     }
 }
