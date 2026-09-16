@@ -114,5 +114,18 @@ class IrCsvParserTest {
         assertNotNull(zoomOutButton.getIcon())
         assertNotNull(zoomUpButton.getIcon())
         assertNotNull(zoomDownButton.getIcon())
+        
+        fun createBtn(name: String) = RemoteButtonDBModel(
+            offsetX = 0f, offsetY = 0f, name = name,
+            irPattern = com.monuk7735.nope.remote.infrared.patterns.IRPattern(
+                com.monuk7735.nope.remote.infrared.patterns.IRPatternType.Intervals,
+                38000, intArrayOf(100, 100)
+            )
+        )
+        
+        assertEquals(androidx.compose.material.icons.Icons.Outlined.NorthWest, createBtn("UP LEFT").getIcon())
+        assertEquals(androidx.compose.material.icons.Icons.Outlined.NorthEast, createBtn("UP RIGHT").getIcon())
+        assertEquals(androidx.compose.material.icons.Icons.Outlined.SouthWest, createBtn("DOWN LEFT").getIcon())
+        assertEquals(androidx.compose.material.icons.Icons.Outlined.SouthEast, createBtn("DOWN RIGHT").getIcon())
     }
 }

@@ -65,6 +65,10 @@ data class RemoteButtonDBModel(
                 "DOWN", "CURSOR DOWN", "DIRECTION DOWN", "ARROW DOWN" -> Icons.Outlined.KeyboardArrowDown
                 "LEFT", "CURSOR LEFT", "DIRECTION LEFT", "ARROW LEFT" -> Icons.AutoMirrored.Outlined.KeyboardArrowLeft
                 "RIGHT", "CURSOR RIGHT", "DIRECTION RIGHT", "ARROW RIGHT" -> Icons.AutoMirrored.Outlined.KeyboardArrowRight
+                "UP LEFT", "UP-LEFT", "TOP LEFT", "TOP-LEFT" -> Icons.Outlined.NorthWest
+                "UP RIGHT", "UP-RIGHT", "TOP RIGHT", "TOP-RIGHT" -> Icons.Outlined.NorthEast
+                "DOWN LEFT", "DOWN-LEFT", "BOTTOM LEFT", "BOTTOM-LEFT" -> Icons.Outlined.SouthWest
+                "DOWN RIGHT", "DOWN-RIGHT", "BOTTOM RIGHT", "BOTTOM-RIGHT" -> Icons.Outlined.SouthEast
                 "OK", "ENTER", "SELECT", "CENTER" -> Icons.Outlined.CheckCircle
                 "BACK", "RETURN", "PREV", "PREVIOUS" -> Icons.AutoMirrored.Outlined.ArrowBack
 
