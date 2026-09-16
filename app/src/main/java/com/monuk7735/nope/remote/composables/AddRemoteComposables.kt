@@ -287,6 +287,7 @@ fun ListBrands(
 fun ListCodes(
         allCodes: List<DeviceCodesRetrofitModel>?,
         loadingProgress: Pair<Int, Int>?,
+        error: String?,
         onSave: (remoteDataDBModel: RemoteDataDBModel) -> Unit,
         onBack: () -> Unit
 ) {
@@ -381,7 +382,14 @@ fun ListCodes(
                         }
                 }
         ) { paddingValues ->
-                if (allCodes == null) {
+                if (error != null) {
+                        EmptyState(
+                                text = "Protocol not supported yet",
+                                secondaryText = error + " - We are working on it!",
+                                icon = Icons.Outlined.ErrorOutline
+                        )
+                        return@Scaffold
+                } else if (allCodes == null) {
                         Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
