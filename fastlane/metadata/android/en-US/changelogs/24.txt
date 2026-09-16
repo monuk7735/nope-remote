@@ -1,0 +1,8 @@
+- Expanded IR protocol support: JVC, Denon, Mitsubishi, RC6, Nokia32, Samsung20/36, Pioneer, and Aiwa.
+- Fixed FlipperIRDB remotes (e.g. Air Purifiers) not loading from non-converted directories.
+- Fixed Foxtel (Nokia32/RCMM32) remotes not loading.
+- Unsupported protocol now shows a clear in-page error instead of an indefinite loader.
+- Title bar in remote preview now shows the selected brand name while loading.
+- Added "Show/Hide Icons" toggle in remote preview to switch between icon and text label views.
+- Added diagonal navigation icons (UP LEFT, UP RIGHT, DOWN LEFT, DOWN RIGHT).
+- Added Zoom icons (ZM+, ZM-) for Sony TV remotes.

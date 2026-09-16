@@ -28,12 +28,14 @@
 - **Custom Macros** - Create "Macros" to chain multiple commands together. Turn on your TV, Set-Top Box, and Soundbar with a single tap!
 - **Offline Database** - Direct database downloads for seamless offline access without reliance on third-party CDNs.
 - **Enhanced Repository Support** - Expanded support for multiple repositories and improved setup process.
+- **Expanded Protocol Support** - Added JVC, Denon, Mitsubishi, RC6, Nokia32, Samsung20/36, Pioneer, and Aiwa IR protocols for broader device compatibility.
+- **Unsupported Protocol Errors** - Clear, friendly in-page error shown when a device's protocol is not yet supported instead of silently failing.
 - **Performance** - Optimized internal architecture for smoother operation and better maintainability.
 - **Material You Design** - A beautiful, modern UI that adapts to your wallpaper's colors (on supported devices).
 - **Dark/Light Mode** - Fully supports system-wide dark and light themes.
 - **Database Support** - Stores your remotes and macros locally using Room Database.
 - **Haptic Feedback** - Get tactile confirmation for every button press.
-- **Text-Only Mode** - Option to display text labels instead of icons on remote buttons.
+- **Toggle Icons** - Tap "Show/Hide Icons" in the remote preview to switch between icon and text label views.
 
 
 ## Supported IR Repositories
