@@ -123,6 +123,9 @@ class IrCsvParserTest {
             )
         )
         
+        assertEquals(androidx.compose.material.icons.Icons.Outlined.ZoomIn, createBtn("ZM+").getIcon())
+        assertEquals(androidx.compose.material.icons.Icons.Outlined.ZoomOut, createBtn("ZM-").getIcon())
+        
         assertEquals(androidx.compose.material.icons.Icons.Outlined.NorthWest, createBtn("UP LEFT").getIcon())
         assertEquals(androidx.compose.material.icons.Icons.Outlined.NorthEast, createBtn("UP RIGHT").getIcon())
         assertEquals(androidx.compose.material.icons.Icons.Outlined.SouthWest, createBtn("DOWN LEFT").getIcon())
