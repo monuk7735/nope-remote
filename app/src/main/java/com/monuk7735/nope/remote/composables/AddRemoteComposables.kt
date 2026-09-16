@@ -316,11 +316,8 @@ fun ListCodes(
                                 title = titleText,
                                 onBack = onBack,
                                 actions = {
-                                        IconButton(onClick = { showIcons = !showIcons }) {
-                                                Icon(
-                                                        imageVector = if (showIcons) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                                                        contentDescription = "Toggle Icons"
-                                                )
+                                        TextButton(onClick = { showIcons = !showIcons }) {
+                                                Text(if (showIcons) "Hide Icons" else "Show Icons")
                                         }
                                 }
                         )
