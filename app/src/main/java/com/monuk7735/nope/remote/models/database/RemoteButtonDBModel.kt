@@ -21,24 +21,24 @@ data class RemoteButtonDBModel(
     val irPattern: IRPattern,
 ) : Parcelable {
     fun getDigitValue(): Int? {
-        val n = name.uppercase()
+        val n = name.uppercase().replace("_", " ").trim()
         return when {
-            n == "0" || n.contains("DIGIT 0") || n.contains("NUMBER 0") || n.contains("KEY 0") || n.contains("KEY_0") -> 0
-            n == "1" || n.contains("DIGIT 1") || n.contains("NUMBER 1") || n.contains("KEY 1") || n.contains("KEY_1") -> 1
-            n == "2" || n.contains("DIGIT 2") || n.contains("NUMBER 2") || n.contains("KEY 2") || n.contains("KEY_2") -> 2
-            n == "3" || n.contains("DIGIT 3") || n.contains("NUMBER 3") || n.contains("KEY 3") || n.contains("KEY_3") -> 3
-            n == "4" || n.contains("DIGIT 4") || n.contains("NUMBER 4") || n.contains("KEY 4") || n.contains("KEY_4") -> 4
-            n == "5" || n.contains("DIGIT 5") || n.contains("NUMBER 5") || n.contains("KEY 5") || n.contains("KEY_5") -> 5
-            n == "6" || n.contains("DIGIT 6") || n.contains("NUMBER 6") || n.contains("KEY 6") || n.contains("KEY_6") -> 6
-            n == "7" || n.contains("DIGIT 7") || n.contains("NUMBER 7") || n.contains("KEY 7") || n.contains("KEY_7") -> 7
-            n == "8" || n.contains("DIGIT 8") || n.contains("NUMBER 8") || n.contains("KEY 8") || n.contains("KEY_8") -> 8
-            n == "9" || n.contains("DIGIT 9") || n.contains("NUMBER 9") || n.contains("KEY 9") || n.contains("KEY_9") -> 9
+            n == "0" || n.contains("DIGIT 0") || n.contains("NUMBER 0") || n.contains("KEY 0") -> 0
+            n == "1" || n.contains("DIGIT 1") || n.contains("NUMBER 1") || n.contains("KEY 1") -> 1
+            n == "2" || n.contains("DIGIT 2") || n.contains("NUMBER 2") || n.contains("KEY 2") -> 2
+            n == "3" || n.contains("DIGIT 3") || n.contains("NUMBER 3") || n.contains("KEY 3") -> 3
+            n == "4" || n.contains("DIGIT 4") || n.contains("NUMBER 4") || n.contains("KEY 4") -> 4
+            n == "5" || n.contains("DIGIT 5") || n.contains("NUMBER 5") || n.contains("KEY 5") -> 5
+            n == "6" || n.contains("DIGIT 6") || n.contains("NUMBER 6") || n.contains("KEY 6") -> 6
+            n == "7" || n.contains("DIGIT 7") || n.contains("NUMBER 7") || n.contains("KEY 7") -> 7
+            n == "8" || n.contains("DIGIT 8") || n.contains("NUMBER 8") || n.contains("KEY 8") -> 8
+            n == "9" || n.contains("DIGIT 9") || n.contains("NUMBER 9") || n.contains("KEY 9") -> 9
             else -> null
         }
     }
 
     fun getTextIcon(): String? {
-        val n = name.uppercase()
+        val n = name.uppercase().replace("_", " ").trim()
         val digit = getDigitValue()
         if (digit != null) {
             return digit.toString()
@@ -50,7 +50,7 @@ data class RemoteButtonDBModel(
     }
 
     fun getIcon(): ImageVector? {
-        val n = name.uppercase()
+        val n = name.uppercase().replace("_", " ").trim()
         if (getTextIcon() != null) {
             return null
         }

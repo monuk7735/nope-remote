@@ -128,7 +128,7 @@ fun RemoteControlEditLayout(
 ) {
     var localRemoteDataDBModel by remember { mutableStateOf(remoteDataModel?.copy()) }
     var layoutLimits by remember { mutableStateOf(Rect(Offset.Zero, 0f)) }
-    var gridEnabled by remember { mutableStateOf(false) }
+    var gridEnabled by remember { mutableStateOf(true) }
     var showGridSettings by remember { mutableStateOf(false) }
     var gridHCount by remember { mutableIntStateOf(5) }
     var gridVCount by remember { mutableIntStateOf(10) }
@@ -308,6 +308,14 @@ fun RemoteControlSettings(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    if (!remoteDataModel?.model.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Model: ${remoteDataModel.model}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = remoteName,

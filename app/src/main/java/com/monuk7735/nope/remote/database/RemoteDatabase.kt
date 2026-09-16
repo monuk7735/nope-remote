@@ -15,7 +15,7 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
         RemoteDataDBModel::class,
         MacroDataDBModel::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -36,6 +36,12 @@ abstract class RemoteDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE remotes ADD COLUMN model TEXT DEFAULT NULL")
+            }
+        }
+
         fun getDatabase(context: Context): RemoteDatabase {
             val tempInstance = INSTANCE
             if (tempInstance != null)
@@ -47,7 +53,7 @@ abstract class RemoteDatabase : RoomDatabase() {
                     RemoteDatabase::class.java,
                     "remotes"
                 )
-                    .addMigrations(MIGRATION_2_3)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration(false)
                     .build()
 

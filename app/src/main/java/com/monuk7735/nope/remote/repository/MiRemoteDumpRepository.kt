@@ -147,10 +147,14 @@ class MiRemoteDumpRepository(private val context: Context) : IRSourceRepository 
                             }
                             
                             if (codeMap.isNotEmpty()) {
+                                val modelName = remoteObj.optString("name")
+                                    .ifBlank { remoteObj.optString("model") }
+                                    .ifBlank { file.nameWithoutExtension }
                                 list.add(DeviceCodesRetrofitModel(
                                     type = type,
                                     brand = brand, 
-                                    codes = codeMap
+                                    codes = codeMap,
+                                    model = modelName
                                 ))
                             }
                         }

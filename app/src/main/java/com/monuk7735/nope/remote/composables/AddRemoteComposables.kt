@@ -302,8 +302,15 @@ fun ListCodes(
         Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
+                        val currentCode = if (hasCodes) allCodes[selected] else null
+                        val titleText = when {
+                                !hasCodes -> "Loading..."
+                                currentCode != null && !currentCode.model.isNullOrBlank() && !currentCode.model.equals(currentCode.brand, ignoreCase = true) ->
+                                        "${currentCode.brand} • ${currentCode.model}"
+                                else -> currentCode?.brand ?: ""
+                        }
                         AppBar(
-                                title = if (!hasCodes) "Loading..." else allCodes[selected].brand,
+                                title = titleText,
                                 onBack = onBack
                         )
                 },
@@ -311,7 +318,7 @@ fun ListCodes(
                         if (hasCodes) {
                                 Surface(tonalElevation = 8.dp, shadowElevation = 8.dp) {
                                         Row(
-                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                                modifier = Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.navigationBars).padding(16.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                         ) {
@@ -503,9 +510,15 @@ private fun DeviceCodesRetrofitModel.toDBModel(): RemoteDataDBModel {
                         )
                 }
         }
+        val defaultName = if (!model.isNullOrBlank() && !model.equals(brand, ignoreCase = true)) {
+                "$brand $model"
+        } else {
+                brand
+        }
+
         return RemoteDataDBModel(
                 id = 0,
-                name = brand,
+                name = defaultName,
                 type = type,
                 brand = brand,
                 added = java.util.Date(),
@@ -520,7 +533,8 @@ private fun DeviceCodesRetrofitModel.toDBModel(): RemoteDataDBModel {
                                                 irPattern = IRPatternDecoder(powerCode).irPattern
                                         )
                                 )
-                        else emptyList()
+                        else emptyList(),
+                model = model
         )
 }
 

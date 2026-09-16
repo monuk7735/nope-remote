@@ -162,7 +162,8 @@ class IrextRepository(private val application: Application) : IRSourceRepository
                             DeviceCodesRetrofitModel(
                                 type = type,
                                 brand = brand,
-                                codes = codes
+                                codes = codes,
+                                model = remoteName
                             )
                         )
                     }

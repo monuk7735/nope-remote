@@ -116,11 +116,14 @@ class ProbonopdRepository(private val application: Application) : IRSourceReposi
                             .filterKeys { it.isNotBlank() }
                             .mapKeys { it.key.uppercase() }
                         if (codeMap.isNotEmpty()) {
+                            val modelName = path.substringAfterLast("/").replace("%20", " ")
+                                .removeSuffix(".csv").removeSuffix(".CSV")
                             resultList.add(
                                     DeviceCodesRetrofitModel(
                                             type = type,
                                             brand = brand,
-                                            codes = codeMap
+                                            codes = codeMap,
+                                            model = modelName
                                     )
                             )
                         }

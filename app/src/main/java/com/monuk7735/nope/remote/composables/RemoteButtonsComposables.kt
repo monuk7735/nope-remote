@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import com.monuk7735.nope.remote.ui.theme.icons.*
 
+fun formatButtonLabel(name: String): String = name.replace("_", " ").trim()
+
 @ExperimentalComposeUiApi
 @Composable
 fun RemoteButtonSingleEditable(
@@ -152,7 +154,7 @@ fun RemoteButtonSingleEditable(
                                         )
                                 } else {
                                         Text(
-                                                text = textIcon ?: name,
+                                                text = textIcon ?: formatButtonLabel(name),
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.error,
@@ -237,7 +239,7 @@ fun RemoteButtonSingle(
                                 )
                         } else {
                                 Text(
-                                        text = textIcon ?: name,
+                                        text = textIcon ?: formatButtonLabel(name),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary,
@@ -346,7 +348,7 @@ fun RemoteButtonOverflow(
                         contentAlignment = Alignment.Center
                 ) {
                         Text(
-                                text = remoteButtonModel.name,
+                                text = formatButtonLabel(remoteButtonModel.name),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center
                         )

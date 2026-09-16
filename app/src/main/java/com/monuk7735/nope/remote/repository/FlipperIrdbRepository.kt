@@ -92,7 +92,8 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
                         DeviceCodesRetrofitModel(
                             type = type,
                             brand = brand,
-                            codes = codeMap
+                            codes = codeMap,
+                            model = file.nameWithoutExtension
                         )
                     )
                 }

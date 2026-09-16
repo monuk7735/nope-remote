@@ -58,7 +58,7 @@ fun EditableRemote(
 
     val gridSizeXPx = if (layoutLimits.width > 0) layoutLimits.width / hCount.toFloat() else 0f
     val gridSizeYPx = if (layoutLimits.height > 0) layoutLimits.height / vCount.toFloat() else 0f
-    var buttonSize = LocalDensity.current.run { 68.dp.toPx() }
+    val buttonSize = LocalDensity.current.run { 72.dp.toPx() }
 
     if (gridEnabled && gridSizeXPx > 0 && gridSizeYPx > 0) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -93,30 +93,64 @@ fun EditableRemote(
                     offsetY = remoteButton.offsetY,
                     layoutLimits = layoutLimits,
                     onPosUpdate = { posX, posY ->
-                        var snappedX =
-                                if (gridEnabled && gridSizeXPx > 0) {
-                                    val steps = round(posX / gridSizeXPx)
-                                    gridSizeXPx * steps + (gridSizeXPx - buttonSize) / 2
-                                } else posX
+                        if (gridEnabled && gridSizeXPx > 0 && gridSizeYPx > 0) {
+                            val targetCol = round(posX / gridSizeXPx).toInt().coerceIn(0, hCount - 1)
+                            val targetRow = round(posY / gridSizeYPx).toInt().coerceIn(0, (vCount - 2).coerceAtLeast(0))
 
-                        var snappedY =
-                                if (gridEnabled && gridSizeYPx > 0) {
-                                    val steps = round(posY / gridSizeYPx)
-                                    gridSizeYPx * steps + (gridSizeYPx - buttonSize) / 2
-                                } else posY
+                            // Check if another button occupies the target slot
+                            val otherIndex = onScreenRemotes.indexOfFirst { other ->
+                                other.id != remoteButton.id &&
+                                round(other.offsetX / gridSizeXPx).toInt() == targetCol &&
+                                round(other.offsetY / gridSizeYPx).toInt() == targetRow
+                            }
 
-                        onScreenRemotes[index] =
-                                onScreenRemotes[index].copy(offsetX = snappedX, offsetY = snappedY)
+                            val snappedX = gridSizeXPx * targetCol + (gridSizeXPx - buttonSize) / 2
+                            val snappedY = gridSizeYPx * targetRow + (gridSizeYPx - buttonSize) / 2
 
-                        if (remoteDataDBModel != null)
-                                onUpdate(
-                                        remoteDataDBModel.copy(
-                                                onScreenRemoteButtonDBS = onScreenRemotes,
-                                                offScreenRemoteButtonDBS = offScreenRemotes
-                                        )
+                            if (otherIndex != -1) {
+                                // Swap positions with the occupying button
+                                val prevCol = round(remoteButton.offsetX / gridSizeXPx).toInt().coerceIn(0, hCount - 1)
+                                val prevRow = round(remoteButton.offsetY / gridSizeYPx).toInt().coerceIn(0, (vCount - 2).coerceAtLeast(0))
+                                val swappedOtherX = gridSizeXPx * prevCol + (gridSizeXPx - buttonSize) / 2
+                                val swappedOtherY = gridSizeYPx * prevRow + (gridSizeYPx - buttonSize) / 2
+
+                                onScreenRemotes[otherIndex] = onScreenRemotes[otherIndex].copy(
+                                    offsetX = swappedOtherX,
+                                    offsetY = swappedOtherY
                                 )
+                            }
+
+                            onScreenRemotes[index] = onScreenRemotes[index].copy(
+                                offsetX = snappedX,
+                                offsetY = snappedY
+                            )
+                        } else {
+                            onScreenRemotes[index] = onScreenRemotes[index].copy(
+                                offsetX = posX,
+                                offsetY = posY
+                            )
+                        }
+
+                        if (remoteDataDBModel != null) {
+                            onUpdate(
+                                remoteDataDBModel.copy(
+                                    onScreenRemoteButtonDBS = onScreenRemotes,
+                                    offScreenRemoteButtonDBS = offScreenRemotes
+                                )
+                            )
+                        }
                     },
-                    onRemove = { offScreenRemotes.add(onScreenRemotes.removeAt(index)) }
+                    onRemove = {
+                        offScreenRemotes.add(onScreenRemotes.removeAt(index))
+                        if (remoteDataDBModel != null) {
+                            onUpdate(
+                                remoteDataDBModel.copy(
+                                    onScreenRemoteButtonDBS = onScreenRemotes,
+                                    offScreenRemoteButtonDBS = offScreenRemotes
+                                )
+                            )
+                        }
+                    }
             )
         }
     }
@@ -131,9 +165,50 @@ fun EditableRemote(
                         (layoutLimits.bottom - layoutLimits.top).toDp() - 80.dp
                     },
             size = 80.dp,
-            onClick = {
-                onScreenRemotes.add(it)
-                offScreenRemotes.remove(it)
+            onClick = { buttonToAdd ->
+                val maxRows = (vCount - 1).coerceAtLeast(1)
+                val occupiedSlots = if (gridSizeXPx > 0 && gridSizeYPx > 0) {
+                    onScreenRemotes.map { b ->
+                        Pair(
+                            round(b.offsetX / gridSizeXPx).toInt().coerceIn(0, hCount - 1),
+                            round(b.offsetY / gridSizeYPx).toInt().coerceIn(0, maxRows - 1)
+                        )
+                    }.toSet()
+                } else emptySet()
+
+                // Find the first unoccupied slot from top-left
+                var targetSlot: Pair<Int, Int>? = null
+                for (r in 0 until maxRows) {
+                    for (c in 0 until hCount) {
+                        if (!occupiedSlots.contains(Pair(c, r))) {
+                            targetSlot = Pair(c, r)
+                            break
+                        }
+                    }
+                    if (targetSlot != null) break
+                }
+
+                val placedButton = if (targetSlot != null && gridSizeXPx > 0 && gridSizeYPx > 0) {
+                    val (c, r) = targetSlot
+                    buttonToAdd.copy(
+                        offsetX = gridSizeXPx * c + (gridSizeXPx - buttonSize) / 2,
+                        offsetY = gridSizeYPx * r + (gridSizeYPx - buttonSize) / 2
+                    )
+                } else {
+                    buttonToAdd
+                }
+
+                onScreenRemotes.add(placedButton)
+                offScreenRemotes.remove(buttonToAdd)
+
+                if (remoteDataDBModel != null) {
+                    onUpdate(
+                        remoteDataDBModel.copy(
+                            onScreenRemoteButtonDBS = onScreenRemotes,
+                            offScreenRemoteButtonDBS = offScreenRemotes
+                        )
+                    )
+                }
             }
     )
     RemoteButtonDigits(

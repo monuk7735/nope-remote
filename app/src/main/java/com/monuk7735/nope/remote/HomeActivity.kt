@@ -137,8 +137,7 @@ class HomeActivity : ComponentActivity() {
                 bottomBar = {
                     NavigationBar(
                             containerColor = MaterialTheme.colorScheme.surface,
-                            tonalElevation = 0.dp,
-                            modifier = Modifier.height(84.dp)
+                            tonalElevation = 0.dp
                     ) {
                         NavigationBarItem(
                                 selected = pagerState.currentPage == 0,
@@ -288,7 +287,7 @@ class HomeActivity : ComponentActivity() {
                                     state = remotesGridState,
                                     columns = GridCells.Adaptive(160.dp),
                                     modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(16.dp),
+                                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 88.dp),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
