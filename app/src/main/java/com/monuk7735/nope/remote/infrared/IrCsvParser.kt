@@ -43,17 +43,21 @@ object IrCsvParser {
             val subdevice = row[subdeviceIndex].toIntOrNull() ?: 0
             val function = row[functionCodeIndex].toIntOrNull() ?: 0
 
-            val generator: Protocol? = when {
-                protocolName.startsWith("48-NEC") -> NEC48k()
-                protocolName.equals("NECx2", ignoreCase = true) -> NECSamsung()
-                protocolName.startsWith("NEC") -> NECStandard()
-                else -> null
+            val (generator: Protocol?, frequency: Int) = when {
+                protocolName.startsWith("48-NEC", ignoreCase = true) -> Pair(NEC48k(), 48000)
+                protocolName.equals("NECx2", ignoreCase = true) -> Pair(NECSamsung(), 38000)
+                protocolName.startsWith("NEC", ignoreCase = true) -> Pair(NECStandard(), 38000)
+                protocolName.equals("Sony12", ignoreCase = true) -> Pair(SonySIRC(12), 40000)
+                protocolName.equals("Sony15", ignoreCase = true) -> Pair(SonySIRC(15), 40000)
+                protocolName.equals("Sony20", ignoreCase = true) -> Pair(SonySIRC(20), 40000)
+                protocolName.startsWith("Sony", ignoreCase = true) || protocolName.startsWith("SIRC", ignoreCase = true) -> Pair(SonySIRC(12), 40000)
+                protocolName.startsWith("RC5", ignoreCase = true) || protocolName.startsWith("RC-5", ignoreCase = true) -> Pair(RC5(), 36000)
+                protocolName.startsWith("Panasonic", ignoreCase = true) || protocolName.startsWith("Kaseikyo", ignoreCase = true) -> Pair(Panasonic(), 36700)
+                else -> Pair(null, 38000)
             }
 
             if (generator != null) {
                 val timings = generator.generate(device, subdevice, function)
-                val frequency = if (protocolName.startsWith("48-NEC")) 48000 else 38000
-
                 val hex = encodeToProntoHex(frequency, timings)
                 results[funcName] = hex
             }
