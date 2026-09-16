@@ -68,13 +68,28 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
         val letterDirName = if (firstChar.isDigit()) "0-9" else firstChar.uppercase()
         
         val targetProntoBrandDir = File(convertedProntoDir, "$letterDirName/$brand")
-        if (!targetProntoBrandDir.exists() || !targetProntoBrandDir.isDirectory) {
-            return@withContext emptyList()
+        val irFiles = mutableListOf<File>()
+        
+        if (targetProntoBrandDir.exists() && targetProntoBrandDir.isDirectory) {
+            targetProntoBrandDir.listFiles { file ->
+                !file.isDirectory && file.extension.equals("ir", ignoreCase = true)
+            }?.let { irFiles.addAll(it) }
         }
 
-        val irFiles = targetProntoBrandDir.listFiles { file ->
-            !file.isDirectory && file.extension.equals("ir", ignoreCase = true)
-        }?.toList() ?: emptyList()
+        // Also check the original brand directory for parsed Flipper remotes
+        val targetTypeDir = repoDir.listFiles { file ->
+            file.isDirectory && file.name.replace("_", " ") == type
+        }?.firstOrNull()
+        
+        val originalBrandDir = targetTypeDir?.listFiles { file ->
+            file.isDirectory && file.name == brand
+        }?.firstOrNull()
+        
+        if (originalBrandDir != null && originalBrandDir.exists() && originalBrandDir.isDirectory) {
+            originalBrandDir.listFiles { file ->
+                !file.isDirectory && file.extension.equals("ir", ignoreCase = true)
+            }?.let { irFiles.addAll(it) }
+        }
 
         if (irFiles.isEmpty()) return@withContext emptyList()
 
@@ -192,6 +207,7 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
 
             val (generator: Protocol?, freq: Int) = when {
                 protocol.equals("Samsung32", ignoreCase = true) -> Pair(NECSamsung(), 38000)
+                protocol.equals("NECext", ignoreCase = true) -> Pair(NECExtended(), 38000)
                 protocol.equals("NEC", ignoreCase = true) -> Pair(NECStandard(), 38000)
                 protocol.equals("NEC48", ignoreCase = true) -> Pair(NEC48k(), 48000)
                 protocol.startsWith("SIRC", ignoreCase = true) || protocol.startsWith("Sony", ignoreCase = true) -> Pair(SonySIRC(12), 40000)
