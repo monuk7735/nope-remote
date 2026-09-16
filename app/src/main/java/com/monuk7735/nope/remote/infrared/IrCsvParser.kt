@@ -55,7 +55,14 @@ object IrCsvParser {
                 protocolName.equals("Sony20", ignoreCase = true) -> Pair(SonySIRC(20), 40000)
                 protocolName.startsWith("Sony", ignoreCase = true) || protocolName.startsWith("SIRC", ignoreCase = true) -> Pair(SonySIRC(12), 40000)
                 protocolName.startsWith("RC5", ignoreCase = true) || protocolName.startsWith("RC-5", ignoreCase = true) -> Pair(RC5(), 36000)
+                protocolName.startsWith("RC6", ignoreCase = true) || protocolName.startsWith("MCE", ignoreCase = true) -> Pair(RC6Mode0(), 36000)
+                protocolName.equals("Nokia32", ignoreCase = true) -> Pair(Nokia32(), 36000)
                 protocolName.startsWith("Panasonic", ignoreCase = true) || protocolName.startsWith("Kaseikyo", ignoreCase = true) -> Pair(Panasonic(), 36700)
+                protocolName.startsWith("JVC", ignoreCase = true) -> Pair(JVC(), 38000)
+                protocolName.startsWith("Denon", ignoreCase = true) -> Pair(Denon(), 38000)
+                protocolName.startsWith("Mitsubishi", ignoreCase = true) -> Pair(Mitsubishi(), 38000)
+                protocolName.startsWith("Pioneer", ignoreCase = true) -> Pair(NECStandard(), 40000)
+                protocolName.startsWith("Aiwa", ignoreCase = true) -> Pair(NECExtended(), 38000)
                 else -> Pair(null, 38000)
             }
 

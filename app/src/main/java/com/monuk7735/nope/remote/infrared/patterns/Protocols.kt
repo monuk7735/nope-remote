@@ -60,6 +60,40 @@ class NEC48k : Protocol {
     }
 }
 
+class Nokia32 : Protocol {
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
+        val list = mutableListOf<Int>()
+        // Header
+        list.add(417)
+        list.add(278)
+        
+        val d = (device and 0xFF).toLong()
+        val s = (subdevice and 0xFF).toLong()
+        val f = (function and 0xFF).toLong()
+        val t = 0L
+        val x = 0L
+        
+        val payload = (d shl 24) or (s shl 16) or (t shl 15) or (x shl 8) or f
+        
+        // 32 bits encoded as 16 symbols of 2 bits each, MSB first
+        for (i in 15 downTo 0) {
+            val twoBits = (payload shr (i * 2)) and 0b11
+            val offTime = when (twoBits) {
+                0L -> 278
+                1L -> 444
+                2L -> 611
+                3L -> 778
+                else -> 278
+            }
+            list.add(167)
+            list.add(offTime.toInt())
+        }
+        
+        list.add(167)
+        return list
+    }
+}
+
 class NECExtended : Protocol {
     companion object {
         private const val FREQUENCY = 38028
@@ -277,3 +311,74 @@ class Panasonic : Protocol {
     }
 }
 
+class JVC : Protocol {
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
+        val def = object : IrCommandBuilder.SequenceDefinition {
+            override fun one(builder: IrCommandBuilder, index: Int) { builder.mark(527).space(1581) }
+            override fun zero(builder: IrCommandBuilder, index: Int) { builder.mark(527).space(527) }
+        }
+        return IrCommandBuilder(38000)
+            .mark(8400).space(4200)
+            .sequenceLSB(def, 8, device)
+            .sequenceLSB(def, 8, function)
+            .mark(527).space(15000) // Lead out
+            .build()
+    }
+}
+
+class Denon : Protocol {
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
+        val def = object : IrCommandBuilder.SequenceDefinition {
+            override fun one(builder: IrCommandBuilder, index: Int) { builder.mark(275).space(1900) }
+            override fun zero(builder: IrCommandBuilder, index: Int) { builder.mark(275).space(780) }
+        }
+        val f = function.toLong() and 0xFF
+        val invF = f.inv() and 0xFF
+        return IrCommandBuilder(38000)
+            .sequence(def, 5, device.toLong())
+            .sequence(def, 10, f shl 2)
+            .mark(275).space(45000)
+            // Send inverted
+            .sequence(def, 5, device.toLong())
+            .sequence(def, 10, (invF shl 2) or 0b11)
+            .mark(275).space(45000)
+            .build()
+    }
+}
+
+class Mitsubishi : Protocol {
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
+        val def = object : IrCommandBuilder.SequenceDefinition {
+            override fun one(builder: IrCommandBuilder, index: Int) { builder.mark(900).space(300) }
+            override fun zero(builder: IrCommandBuilder, index: Int) { builder.mark(300).space(900) }
+        }
+        return IrCommandBuilder(38000)
+            .mark(4800).space(2400)
+            .sequenceLSB(def, 8, device)
+            .sequenceLSB(def, 8, function)
+            .mark(300).space(24000)
+            .build()
+    }
+}
+
+class RC6Mode0 : Protocol {
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
+        val t = 444
+        val def = object : IrCommandBuilder.SequenceDefinition {
+            override fun one(builder: IrCommandBuilder, index: Int) { builder.mark(t).space(t) }
+            override fun zero(builder: IrCommandBuilder, index: Int) { builder.space(t).mark(t) }
+        }
+        return IrCommandBuilder(36000)
+            .mark(2666).space(889) // Header
+            .mark(t).space(t) // Start bit 1
+            // Mode 000
+            .space(t).mark(t).space(t).mark(t).space(t).mark(t)
+            // Toggle bit 0 (double time)
+            .space(t*2).mark(t*2)
+            // Device 8, Function 8 MSB
+            .sequence(def, 8, device.toLong())
+            .sequence(def, 8, function.toLong())
+            .space(15000)
+            .build()
+    }
+}
