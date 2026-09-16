@@ -97,6 +97,7 @@ class ProbonopdRepository(private val application: Application) : IRSourceReposi
 
             var currentCount = 0
             val resultList = mutableListOf<DeviceCodesRetrofitModel>()
+            var lastUnsupportedProtocolError: String? = null
 
             for (path in matchingFiles) {
                 currentCount++
@@ -128,11 +129,18 @@ class ProbonopdRepository(private val application: Application) : IRSourceReposi
                             )
                         }
                     }
+                } catch (e: IrCsvParser.UnsupportedProtocolException) {
+                    lastUnsupportedProtocolError = e.message
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
             progress?.postValue(null)
+            
+            if (resultList.isEmpty() && lastUnsupportedProtocolError != null) {
+                throw Exception(lastUnsupportedProtocolError)
+            }
+            
             return resultList
         }
         return emptyList()

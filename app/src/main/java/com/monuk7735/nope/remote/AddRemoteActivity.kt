@@ -13,6 +13,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
+import android.widget.Toast
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
@@ -55,6 +57,14 @@ class AddRemoteActivity : ComponentActivity() {
         val allBrands = viewModel.brands.observeAsState().value
         val allCodes = viewModel.codes.observeAsState().value
         val loadingProgress = viewModel.loadingProgress.observeAsState().value
+        val error = viewModel.error.observeAsState().value
+
+        LaunchedEffect(error) {
+            if (error != null) {
+                Toast.makeText(this@AddRemoteActivity, error, Toast.LENGTH_LONG).show()
+                viewModel.error.value = null
+            }
+        }
 
         val navController = rememberNavController()
 

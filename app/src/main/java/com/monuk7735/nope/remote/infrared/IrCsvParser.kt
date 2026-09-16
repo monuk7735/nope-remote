@@ -4,6 +4,9 @@ import com.monuk7735.nope.remote.infrared.patterns.*
 import kotlin.math.roundToInt
 
 object IrCsvParser {
+    
+    class UnsupportedProtocolException(message: String) : Exception(message)
+
     fun parseCsvAndGenerateHex(csvContent: String, functionQuery: String? = null): Map<String, String> {
         val lines = csvContent.lines()
         if (lines.isEmpty()) {
@@ -43,7 +46,7 @@ object IrCsvParser {
             val subdevice = row[subdeviceIndex].toIntOrNull() ?: 0
             val function = row[functionCodeIndex].toIntOrNull() ?: 0
 
-            val (generator: Protocol?, frequency: Int) = when {
+            val (generator: Protocol, frequency: Int) = when {
                 protocolName.startsWith("48-NEC", ignoreCase = true) -> Pair(NEC48k(), 48000)
                 protocolName.equals("NECx2", ignoreCase = true) -> Pair(NECSamsung(), 38000)
                 protocolName.startsWith("NEC", ignoreCase = true) -> Pair(NECStandard(), 38000)
@@ -63,14 +66,12 @@ object IrCsvParser {
                 protocolName.startsWith("Mitsubishi", ignoreCase = true) -> Pair(Mitsubishi(), 38000)
                 protocolName.startsWith("Pioneer", ignoreCase = true) -> Pair(NECStandard(), 40000)
                 protocolName.startsWith("Aiwa", ignoreCase = true) -> Pair(NECExtended(), 38000)
-                else -> Pair(null, 38000)
+                else -> throw UnsupportedProtocolException("Protocol '$protocolName' is not supported")
             }
 
-            if (generator != null) {
-                val timings = generator.generate(device, subdevice, function)
-                val hex = encodeToProntoHex(frequency, timings)
-                results[funcName] = hex
-            }
+            val timings = generator.generate(device, subdevice, function)
+            val hex = encodeToProntoHex(frequency, timings)
+            results[funcName] = hex
         }
         return results
     }

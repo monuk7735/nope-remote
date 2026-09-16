@@ -44,7 +44,12 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
 
     val types: MutableLiveData<List<DeviceTypesRetrofitModel>> = MutableLiveData()
     val brands: MutableLiveData<List<DeviceBrandsRetrofitModel>?> = MutableLiveData()
-    val codes: MutableLiveData<List<DeviceCodesRetrofitModel>?> = MutableLiveData()
+    private val _codes = MutableLiveData<List<DeviceCodesRetrofitModel>?>()
+    val codes: MutableLiveData<List<DeviceCodesRetrofitModel>?> get() = _codes
+
+    private val _error = MutableLiveData<String?>()
+    val error: MutableLiveData<String?> get() = _error
+
     val loadingProgress: MutableLiveData<Pair<Int, Int>?> = MutableLiveData()
 
     private var allCachedTypes: List<DeviceTypesRetrofitModel> = emptyList()
@@ -96,10 +101,15 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
     }
 
     fun getCodes(type: String, brand: String) {
-        codes.value = null
+        _codes.value = null
+        _error.value = null
         viewModelScope.launch {
-            val resultList = currentRepo.getCodes(type, brand, loadingProgress)
-            codes.postValue(resultList)
+            try {
+                val resultList = currentRepo.getCodes(type, brand, loadingProgress)
+                _codes.postValue(resultList)
+            } catch (e: Exception) {
+                _error.postValue(e.message)
+            }
         }
     }
 
