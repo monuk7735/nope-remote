@@ -20,7 +20,7 @@ class ProbonopdRepository(private val application: Application) : IRSourceReposi
         // Use directory from Enum
         val dirName = RepoDownloadManager.RepositoryInfo.PROBONOPD.directoryName
         val repoDir = File(context.filesDir, "repos/$dirName")
-        
+
         var indexFile = File(repoDir, "codes/index")
         var baseUrl = "file://${repoDir.absolutePath}/codes/"
 
@@ -64,9 +64,7 @@ class ProbonopdRepository(private val application: Application) : IRSourceReposi
         deviceIndex = tempIndex
     }
 
-    override fun isRepoInstalled(): Boolean {
-        return ensureIndex()
-    }
+    override fun isRepoInstalled(): Boolean = ensureIndex()
 
     override suspend fun getTypes(): List<DeviceTypesRetrofitModel> {
         if (ensureIndex()) {
@@ -80,15 +78,15 @@ class ProbonopdRepository(private val application: Application) : IRSourceReposi
             return deviceIndex?.get(type)?.keys?.sorted()?.map { brand ->
                 DeviceBrandsRetrofitModel(type = type, brand = brand)
             }
-                    ?: emptyList()
+                ?: emptyList()
         }
         return emptyList()
     }
 
     override suspend fun getCodes(
-            type: String,
-            brand: String,
-            progress: MutableLiveData<Pair<Int, Int>?>?
+        type: String,
+        brand: String,
+        progress: MutableLiveData<Pair<Int, Int>?>?,
     ): List<DeviceCodesRetrofitModel> {
         if (ensureIndex()) {
             val matchingFiles = deviceIndex?.get(type)?.get(brand) ?: emptyList()
@@ -120,12 +118,12 @@ class ProbonopdRepository(private val application: Application) : IRSourceReposi
                             val modelName = path.substringAfterLast("/").replace("%20", " ")
                                 .removeSuffix(".csv").removeSuffix(".CSV")
                             resultList.add(
-                                    DeviceCodesRetrofitModel(
-                                            type = type,
-                                            brand = brand,
-                                            codes = codeMap,
-                                            model = modelName
-                                    )
+                                DeviceCodesRetrofitModel(
+                                    type = type,
+                                    brand = brand,
+                                    codes = codeMap,
+                                    model = modelName,
+                                ),
                             )
                         }
                     }
@@ -136,11 +134,11 @@ class ProbonopdRepository(private val application: Application) : IRSourceReposi
                 }
             }
             progress?.postValue(null)
-            
+
             if (resultList.isEmpty() && lastUnsupportedProtocolError != null) {
                 throw Exception(lastUnsupportedProtocolError)
             }
-            
+
             return resultList
         }
         return emptyList()

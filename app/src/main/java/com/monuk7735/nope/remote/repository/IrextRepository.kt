@@ -22,24 +22,25 @@ class IrextRepository(private val application: Application) : IRSourceRepository
         // Use directory from Enum
         val dirName = RepoDownloadManager.RepositoryInfo.IREXT.directoryName
         val repoDir = File(context.filesDir, "repos/$dirName")
-        
+
         val dbFile = File(repoDir, "irext_db_20260519_sqlite3.db")
         var genericDbFile = if (dbFile.exists()) dbFile else null
-        
+
         if (genericDbFile == null && repoDir.exists()) {
-             genericDbFile = repoDir.walk().find { it.extension == "db" || it.extension == "sqlite" }
+            genericDbFile =
+                repoDir.walk().find { it.extension == "db" || it.extension == "sqlite" }
         }
 
         if (genericDbFile != null && genericDbFile.exists()) {
             if (genericDbFile.length() < 1024 * 10) {
                 return false
             }
-            
+
             try {
                 sqliteDb = SQLiteDatabase.openDatabase(
                     genericDbFile.absolutePath,
                     null,
-                    SQLiteDatabase.OPEN_READONLY
+                    SQLiteDatabase.OPEN_READONLY,
                 )
                 return true
             } catch (e: Exception) {
@@ -50,15 +51,16 @@ class IrextRepository(private val application: Application) : IRSourceRepository
         return false
     }
 
-    override fun isRepoInstalled(): Boolean {
-        return ensureDb()
-    }
+    override fun isRepoInstalled(): Boolean = ensureDb()
 
     override suspend fun getTypes(): List<DeviceTypesRetrofitModel> {
         if (ensureDb()) {
             val list = mutableListOf<DeviceTypesRetrofitModel>()
             try {
-                val cursor = sqliteDb?.rawQuery("SELECT DISTINCT name_en FROM category WHERE name_en != 'AC' ORDER BY name_en", null)
+                val cursor = sqliteDb?.rawQuery(
+                    "SELECT DISTINCT name_en FROM category WHERE name_en != 'AC' ORDER BY name_en",
+                    null,
+                )
                 cursor?.use {
                     if (it.moveToFirst()) {
                         do {
@@ -79,12 +81,17 @@ class IrextRepository(private val application: Application) : IRSourceRepository
         if (ensureDb()) {
             val list = mutableListOf<DeviceBrandsRetrofitModel>()
             try {
-                val query = "SELECT DISTINCT b.name_en FROM brand b JOIN category c ON b.category_id = c.id WHERE c.name_en = ? AND b.name_en IS NOT NULL AND length(b.name_en) > 0 ORDER BY b.name_en"
+                val query =
+                    "SELECT DISTINCT b.name_en FROM brand b JOIN category c " +
+                        "ON b.category_id = c.id WHERE c.name_en = ? " +
+                        "AND b.name_en IS NOT NULL AND length(b.name_en) > 0 ORDER BY b.name_en"
                 val cursor = sqliteDb?.rawQuery(query, arrayOf(type))
                 cursor?.use {
                     if (it.moveToFirst()) {
                         do {
-                            list.add(DeviceBrandsRetrofitModel(type = type, brand = it.getString(0)))
+                            list.add(
+                                DeviceBrandsRetrofitModel(type = type, brand = it.getString(0)),
+                            )
                         } while (it.moveToNext())
                     }
                 }
@@ -100,7 +107,7 @@ class IrextRepository(private val application: Application) : IRSourceRepository
     override suspend fun getCodes(
         type: String,
         brand: String,
-        progress: MutableLiveData<Pair<Int, Int>?>?
+        progress: MutableLiveData<Pair<Int, Int>?>?,
     ): List<DeviceCodesRetrofitModel> {
         if (ensureDb()) {
             val resultList = mutableListOf<DeviceCodesRetrofitModel>()
@@ -113,7 +120,7 @@ class IrextRepository(private val application: Application) : IRSourceRepository
                    JOIN category c ON ri.category_id = c.id
                    WHERE c.name_en = ? AND b.name_en = ? AND dr.key_name IS NOT NULL AND length(dr.key_name) > 0
                    ORDER BY ri.remote
-               """.trimIndent()
+            """.trimIndent()
 
             try {
                 val cursor = sqliteDb?.rawQuery(query, arrayOf(type, brand))
@@ -138,9 +145,18 @@ class IrextRepository(private val application: Application) : IRSourceRepository
                             val keyValue = it.getString(3)
                             try {
                                 if (!keyValue.isNullOrBlank()) {
-                                    val timings = keyValue.split(",").mapNotNull { t -> t.trim().toIntOrNull() }
+                                    val timings = keyValue.split(",").mapNotNull { t ->
+                                        t.trim().toIntOrNull()
+                                    }
                                     if (timings.isNotEmpty()) {
-                                        val freq = if (protocol.startsWith("48-NEC")) 48000 else 38000
+                                        val freq = if (protocol.startsWith(
+                                                "48-NEC",
+                                            )
+                                        ) {
+                                            48000
+                                        } else {
+                                            38000
+                                        }
                                         val hex = IrCsvParser.encodeToProntoHex(freq, timings)
 
                                         val keys = remoteMap.getOrPut(remoteName) { mutableMapOf() }
@@ -155,7 +171,6 @@ class IrextRepository(private val application: Application) : IRSourceRepository
                 }
                 progress?.postValue(null)
 
-
                 remoteMap.forEach { (remoteName, codes) ->
                     if (codes.isNotEmpty()) {
                         resultList.add(
@@ -163,8 +178,8 @@ class IrextRepository(private val application: Application) : IRSourceRepository
                                 type = type,
                                 brand = brand,
                                 codes = codes,
-                                model = remoteName
-                            )
+                                model = remoteName,
+                            ),
                         )
                     }
                 }
@@ -176,7 +191,7 @@ class IrextRepository(private val application: Application) : IRSourceRepository
         }
         return emptyList()
     }
-    
+
     fun close() {
         sqliteDb?.close()
     }
@@ -184,9 +199,11 @@ class IrextRepository(private val application: Application) : IRSourceRepository
     private fun handleCorruption() {
         try {
             sqliteDb?.close()
-        } catch (e: Exception) { e.printStackTrace() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         sqliteDb = null
-        
+
         val context = application
         val dirName = RepoDownloadManager.RepositoryInfo.IREXT.directoryName
         val repoDir = File(context.filesDir, "repos/$dirName")

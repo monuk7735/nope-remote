@@ -9,34 +9,45 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
-import com.monuk7735.nope.remote.repository.ProbonopdRepository
-import com.monuk7735.nope.remote.repository.IrextRepository
-import com.monuk7735.nope.remote.service.RepoDownloadManager
-import com.monuk7735.nope.remote.repository.IRSourceRepository
-import com.monuk7735.nope.remote.repository.RemoteDataRepository
-import com.monuk7735.nope.remote.repository.MiRemoteDumpRepository
-import com.monuk7735.nope.remote.repository.FlipperIrdbRepository
 import com.monuk7735.nope.remote.repository.FlipperDevicesIRDBRepository
+import com.monuk7735.nope.remote.repository.FlipperIrdbRepository
+import com.monuk7735.nope.remote.repository.IRSourceRepository
+import com.monuk7735.nope.remote.repository.IrextRepository
+import com.monuk7735.nope.remote.repository.MiRemoteDumpRepository
+import com.monuk7735.nope.remote.repository.ProbonopdRepository
+import com.monuk7735.nope.remote.repository.RemoteDataRepository
+import com.monuk7735.nope.remote.service.RepoDownloadManager
 import kotlinx.coroutines.launch
 
 class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(application) {
 
     private val remoteDataRepository: RemoteDataRepository =
-            RemoteDataRepository(remoteDao = RemoteDatabase.getDatabase(application).remoteDao())
+        RemoteDataRepository(remoteDao = RemoteDatabase.getDatabase(application).remoteDao())
 
     private val allRepositories = listOf(
         Pair(RepoDownloadManager.RepositoryInfo.PROBONOPD.title, ProbonopdRepository(application)),
         Pair(RepoDownloadManager.RepositoryInfo.IREXT.title, IrextRepository(application)),
-        Pair(RepoDownloadManager.RepositoryInfo.MI_REMOTE.title, MiRemoteDumpRepository(application)),
-        Pair(RepoDownloadManager.RepositoryInfo.FLIPPER_IRDB.title, FlipperIrdbRepository(application)),
-        Pair(RepoDownloadManager.RepositoryInfo.FLIPPER_DEVICES_IRDB.title, FlipperDevicesIRDBRepository(application))
+        Pair(
+            RepoDownloadManager.RepositoryInfo.MI_REMOTE.title,
+            MiRemoteDumpRepository(application),
+        ),
+        Pair(
+            RepoDownloadManager.RepositoryInfo.FLIPPER_IRDB.title,
+            FlipperIrdbRepository(application),
+        ),
+        Pair(
+            RepoDownloadManager.RepositoryInfo.FLIPPER_DEVICES_IRDB.title,
+            FlipperDevicesIRDBRepository(application),
+        ),
     )
 
-    private val installedRepoPairs = allRepositories.filter { it.second.isRepoInstalled() }.ifEmpty { listOf(allRepositories[0]) }
+    private val installedRepoPairs = allRepositories.filter {
+        it.second.isRepoInstalled()
+    }.ifEmpty { listOf(allRepositories[0]) }
 
     private val repositories = installedRepoPairs.map { it.second }
     val availableRepos = installedRepoPairs.map { it.first }
-    
+
     val selectedRepoIndex = MutableLiveData(0)
 
     private val currentRepo: IRSourceRepository
@@ -120,7 +131,5 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch { remoteDataRepository.addRemote(remoteDataDBModel) }
     }
 
-    fun isRepoInstalled(): Boolean {
-        return repositories.any { it.isRepoInstalled() }
-    }
+    fun isRepoInstalled(): Boolean = repositories.any { it.isRepoInstalled() }
 }

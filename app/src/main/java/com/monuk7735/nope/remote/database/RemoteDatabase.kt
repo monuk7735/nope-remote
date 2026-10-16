@@ -13,10 +13,10 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 @Database(
     entities = [
         RemoteDataDBModel::class,
-        MacroDataDBModel::class
+        MacroDataDBModel::class,
     ],
     version = 4,
-    exportSchema = false
+    exportSchema = false,
 )
 @TypeConverters(Converters::class)
 abstract class RemoteDatabase : RoomDatabase() {
@@ -28,11 +28,13 @@ abstract class RemoteDatabase : RoomDatabase() {
     companion object {
 
         @Volatile
-        private var INSTANCE: RemoteDatabase? = null
+        private var instance: RemoteDatabase? = null
 
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE remotes ADD COLUMN preferCustomUi INTEGER NOT NULL DEFAULT 1")
+                db.execSQL(
+                    "ALTER TABLE remotes ADD COLUMN preferCustomUi INTEGER NOT NULL DEFAULT 1",
+                )
             }
         }
 
@@ -43,24 +45,24 @@ abstract class RemoteDatabase : RoomDatabase() {
         }
 
         fun getDatabase(context: Context): RemoteDatabase {
-            val tempInstance = INSTANCE
-            if (tempInstance != null)
+            val tempInstance = instance
+            if (tempInstance != null) {
                 return tempInstance
+            }
 
             synchronized(this) {
-                val instance = Room.databaseBuilder(
+                val newInstance = Room.databaseBuilder(
                     context.applicationContext,
                     RemoteDatabase::class.java,
-                    "remotes"
+                    "remotes",
                 )
                     .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration(false)
                     .build()
 
-                INSTANCE = instance
-                return instance
+                instance = newInstance
+                return newInstance
             }
         }
     }
-
 }

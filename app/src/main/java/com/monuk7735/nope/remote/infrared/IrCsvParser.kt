@@ -1,13 +1,30 @@
 package com.monuk7735.nope.remote.infrared
 
-import com.monuk7735.nope.remote.infrared.patterns.*
+import com.monuk7735.nope.remote.infrared.patterns.Denon
+import com.monuk7735.nope.remote.infrared.patterns.JVC
+import com.monuk7735.nope.remote.infrared.patterns.Mitsubishi
+import com.monuk7735.nope.remote.infrared.patterns.NEC48k
+import com.monuk7735.nope.remote.infrared.patterns.NECExtended
+import com.monuk7735.nope.remote.infrared.patterns.NECSamsung
+import com.monuk7735.nope.remote.infrared.patterns.NECStandard
+import com.monuk7735.nope.remote.infrared.patterns.Nokia32
+import com.monuk7735.nope.remote.infrared.patterns.Panasonic
+import com.monuk7735.nope.remote.infrared.patterns.Protocol
+import com.monuk7735.nope.remote.infrared.patterns.RC5
+import com.monuk7735.nope.remote.infrared.patterns.RC6Mode0
+import com.monuk7735.nope.remote.infrared.patterns.Samsung20
+import com.monuk7735.nope.remote.infrared.patterns.Samsung36
+import com.monuk7735.nope.remote.infrared.patterns.SonySIRC
 import kotlin.math.roundToInt
 
 object IrCsvParser {
-    
+
     class UnsupportedProtocolException(message: String) : Exception(message)
 
-    fun parseCsvAndGenerateHex(csvContent: String, functionQuery: String? = null): Map<String, String> {
+    fun parseCsvAndGenerateHex(
+        csvContent: String,
+        functionQuery: String? = null,
+    ): Map<String, String> {
         val lines = csvContent.lines()
         if (lines.isEmpty()) {
             return emptyMap()
@@ -15,13 +32,20 @@ object IrCsvParser {
 
         val header = lines[0].split(",").map { it.trim() }
 
-        val funcIndex = header.indexOfFirst { it.equals("functionname", ignoreCase = true) || it.equals("function", ignoreCase = true) }
+        val funcIndex = header.indexOfFirst {
+            it.equals("functionname", ignoreCase = true) ||
+                it.equals("function", ignoreCase = true)
+        }
         val protocolIndex = header.indexOfFirst { it.equals("protocol", ignoreCase = true) }
         val deviceIndex = header.indexOfFirst { it.equals("device", ignoreCase = true) }
         val subdeviceIndex = header.indexOfFirst { it.equals("subdevice", ignoreCase = true) }
         val functionCodeIndex = header.indexOfLast { it.equals("function", ignoreCase = true) }
 
-        if (funcIndex == -1 || protocolIndex == -1 || deviceIndex == -1 || functionCodeIndex == -1) {
+        if (funcIndex == -1 ||
+            protocolIndex == -1 ||
+            deviceIndex == -1 ||
+            functionCodeIndex == -1
+        ) {
             return emptyMap()
         }
 
@@ -56,17 +80,29 @@ object IrCsvParser {
                 protocolName.equals("Sony12", ignoreCase = true) -> Pair(SonySIRC(12), 40000)
                 protocolName.equals("Sony15", ignoreCase = true) -> Pair(SonySIRC(15), 40000)
                 protocolName.equals("Sony20", ignoreCase = true) -> Pair(SonySIRC(20), 40000)
-                protocolName.startsWith("Sony", ignoreCase = true) || protocolName.startsWith("SIRC", ignoreCase = true) -> Pair(SonySIRC(12), 40000)
-                protocolName.startsWith("RC5", ignoreCase = true) || protocolName.startsWith("RC-5", ignoreCase = true) -> Pair(RC5(), 36000)
-                protocolName.startsWith("RC6", ignoreCase = true) || protocolName.startsWith("MCE", ignoreCase = true) -> Pair(RC6Mode0(), 36000)
+                protocolName.startsWith("Sony", ignoreCase = true) ||
+                    protocolName.startsWith("SIRC", ignoreCase = true) -> Pair(SonySIRC(12), 40000)
+                protocolName.startsWith("RC5", ignoreCase = true) ||
+                    protocolName.startsWith("RC-5", ignoreCase = true) -> Pair(RC5(), 36000)
+                protocolName.startsWith("RC6", ignoreCase = true) ||
+                    protocolName.startsWith("MCE", ignoreCase = true) -> Pair(RC6Mode0(), 36000)
                 protocolName.equals("Nokia32", ignoreCase = true) -> Pair(Nokia32(), 36000)
-                protocolName.startsWith("Panasonic", ignoreCase = true) || protocolName.startsWith("Kaseikyo", ignoreCase = true) -> Pair(Panasonic(), 36700)
+                protocolName.startsWith("Panasonic", ignoreCase = true) ||
+                    protocolName.startsWith(
+                        "Kaseikyo",
+                        ignoreCase = true,
+                    ) -> Pair(Panasonic(), 36700)
                 protocolName.startsWith("JVC", ignoreCase = true) -> Pair(JVC(), 38000)
                 protocolName.startsWith("Denon", ignoreCase = true) -> Pair(Denon(), 38000)
-                protocolName.startsWith("Mitsubishi", ignoreCase = true) -> Pair(Mitsubishi(), 38000)
+                protocolName.startsWith(
+                    "Mitsubishi",
+                    ignoreCase = true,
+                ) -> Pair(Mitsubishi(), 38000)
                 protocolName.startsWith("Pioneer", ignoreCase = true) -> Pair(NECStandard(), 40000)
                 protocolName.startsWith("Aiwa", ignoreCase = true) -> Pair(NECExtended(), 38000)
-                else -> throw UnsupportedProtocolException("Protocol '$protocolName' is not supported")
+                else -> throw UnsupportedProtocolException(
+                    "Protocol '$protocolName' is not supported",
+                )
             }
 
             val timings = generator.generate(device, subdevice, function)
@@ -86,9 +122,9 @@ object IrCsvParser {
         val period = 1000000.0 / frequency
         val burstPairs = mutableListOf<Pair<Int, Int>>()
         for (i in 0 until timings.size - 1 step 2) {
-             val mark = (timings[i] / period).roundToInt()
-             val space = (timings[i+1] / period).roundToInt()
-             burstPairs.add(Pair(mark, space))
+            val mark = (timings[i] / period).roundToInt()
+            val space = (timings[i + 1] / period).roundToInt()
+            burstPairs.add(Pair(mark, space))
         }
 
         var pairsCount = burstPairs.size
@@ -105,9 +141,9 @@ object IrCsvParser {
         }
 
         if (lastIsMark) {
-             val mark = (timings.last() / period).roundToInt()
-             val space = 0x06C3
-             sb.append(String.format("%04X %04X ", mark, space)) 
+            val mark = (timings.last() / period).roundToInt()
+            val space = 0x06C3
+            sb.append(String.format("%04X %04X ", mark, space))
         }
 
         return sb.toString().trim()

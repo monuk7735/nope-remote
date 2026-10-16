@@ -20,5 +20,4 @@ class IRPatternDecoder(hexData: String) {
 
         irPattern = IRPattern(IRPatternType.Cycles, frequency, dec.toIntArray())
     }
-
 }

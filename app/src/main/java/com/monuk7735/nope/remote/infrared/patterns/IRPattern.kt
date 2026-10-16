@@ -5,10 +5,12 @@ import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-class IRPattern(val irPatternType: IRPatternType, val frequency: Int, val data: IntArray) : Parcelable {
+class IRPattern(val irPatternType: IRPatternType, val frequency: Int, val data: IntArray) :
+    Parcelable {
 
     @IgnoredOnParcel
     var intervals = IntArray(data.size)
+
     @IgnoredOnParcel
     var cycles = IntArray(data.size)
 

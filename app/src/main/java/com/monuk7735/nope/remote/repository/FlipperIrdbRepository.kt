@@ -3,12 +3,21 @@ package com.monuk7735.nope.remote.repository
 import android.content.Context
 import androidx.lifecycle.MutableLiveData
 import com.monuk7735.nope.remote.infrared.IrCsvParser
-import com.monuk7735.nope.remote.infrared.patterns.*
+import com.monuk7735.nope.remote.infrared.patterns.NEC48k
+import com.monuk7735.nope.remote.infrared.patterns.NECExtended
+import com.monuk7735.nope.remote.infrared.patterns.NECSamsung
+import com.monuk7735.nope.remote.infrared.patterns.NECStandard
+import com.monuk7735.nope.remote.infrared.patterns.Panasonic
+import com.monuk7735.nope.remote.infrared.patterns.Protocol
+import com.monuk7735.nope.remote.infrared.patterns.RC5
+import com.monuk7735.nope.remote.infrared.patterns.SonySIRC
 import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
 import com.monuk7735.nope.remote.service.RepoDownloadManager
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
 
@@ -18,19 +27,19 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
             val base = File(context.filesDir, "repos/$repoDirName")
             return File(base, "Flipper-IRDB-main")
         }
-        
+
     private val convertedProntoDir: File
         get() = File(repoDir, "_Converted_/Pronto")
 
-    override fun isRepoInstalled(): Boolean {
-        return repoDir.exists() && repoDir.isDirectory && convertedProntoDir.exists()
-    }
+    override fun isRepoInstalled(): Boolean =
+        repoDir.exists() && repoDir.isDirectory && convertedProntoDir.exists()
 
-    override suspend fun getTypes(): List<DeviceTypesRetrofitModel> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    override suspend fun getTypes(): List<DeviceTypesRetrofitModel> = withContext(Dispatchers.IO) {
         if (!isRepoInstalled()) return@withContext emptyList()
 
-        val ignoredDirs = setOf(".git", ".github", "_Converted_", "ACs") // ACs often have separate complex protocols not present in pronto
-        
+        // ACs often have separate complex protocols not present in pronto
+        val ignoredDirs = setOf(".git", ".github", "_Converted_", "ACs")
+
         repoDir.listFiles { file ->
             file.isDirectory && !file.name.startsWith(".") && !ignoredDirs.contains(file.name)
         }?.map { dir ->
@@ -39,26 +48,27 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
         }?.sortedBy { it.type } ?: emptyList()
     }
 
-    override suspend fun getBrands(type: String): List<DeviceBrandsRetrofitModel> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        if (!isRepoInstalled()) return@withContext emptyList()
+    override suspend fun getBrands(type: String): List<DeviceBrandsRetrofitModel> =
+        withContext(Dispatchers.IO) {
+            if (!isRepoInstalled()) return@withContext emptyList()
 
-        // Find the original type directory which might have underscores
-        val targetTypeDir = repoDir.listFiles { file ->
-            file.isDirectory && file.name.replace("_", " ") == type
-        }?.firstOrNull() ?: return@withContext emptyList()
+            // Find the original type directory which might have underscores
+            val targetTypeDir = repoDir.listFiles { file ->
+                file.isDirectory && file.name.replace("_", " ") == type
+            }?.firstOrNull() ?: return@withContext emptyList()
 
-        targetTypeDir.listFiles { file ->
-            file.isDirectory && !file.name.startsWith(".")
-        }?.map { dir ->
-            DeviceBrandsRetrofitModel(type = type, brand = dir.name)
-        }?.sortedBy { it.brand } ?: emptyList()
-    }
+            targetTypeDir.listFiles { file ->
+                file.isDirectory && !file.name.startsWith(".")
+            }?.map { dir ->
+                DeviceBrandsRetrofitModel(type = type, brand = dir.name)
+            }?.sortedBy { it.brand } ?: emptyList()
+        }
 
     override suspend fun getCodes(
         type: String,
         brand: String,
-        progress: MutableLiveData<Pair<Int, Int>?>?
-    ): List<DeviceCodesRetrofitModel> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        progress: MutableLiveData<Pair<Int, Int>?>?,
+    ): List<DeviceCodesRetrofitModel> = withContext(Dispatchers.IO) {
         if (!isRepoInstalled()) return@withContext emptyList()
 
         // Map brand to the Pronto converted directory.
@@ -66,10 +76,10 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
         // 0-9 brands are under `_Converted_/Pronto/0-9/`
         val firstChar = brand.firstOrNull() ?: return@withContext emptyList()
         val letterDirName = if (firstChar.isDigit()) "0-9" else firstChar.uppercase()
-        
+
         val targetProntoBrandDir = File(convertedProntoDir, "$letterDirName/$brand")
         val irFiles = mutableListOf<File>()
-        
+
         if (targetProntoBrandDir.exists() && targetProntoBrandDir.isDirectory) {
             targetProntoBrandDir.listFiles { file ->
                 !file.isDirectory && file.extension.equals("ir", ignoreCase = true)
@@ -80,11 +90,11 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
         val targetTypeDir = repoDir.listFiles { file ->
             file.isDirectory && file.name.replace("_", " ") == type
         }?.firstOrNull()
-        
+
         val originalBrandDir = targetTypeDir?.listFiles { file ->
             file.isDirectory && file.name == brand
         }?.firstOrNull()
-        
+
         if (originalBrandDir != null && originalBrandDir.exists() && originalBrandDir.isDirectory) {
             originalBrandDir.listFiles { file ->
                 !file.isDirectory && file.extension.equals("ir", ignoreCase = true)
@@ -109,8 +119,8 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
                             type = type,
                             brand = brand,
                             codes = codeMap,
-                            model = file.nameWithoutExtension
-                        )
+                            model = file.nameWithoutExtension,
+                        ),
                     )
                 }
             } catch (e: Exception) {
@@ -125,7 +135,7 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
     private fun parseRawFlipperIr(content: String): Map<String, String> {
         val result = mutableMapOf<String, String>()
         val lines = content.lines()
-        
+
         var currentName: String? = null
         var currentType: String? = null
         var currentFrequency: Int? = null
@@ -133,14 +143,28 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
         var currentProtocol: String? = null
         var currentAddress: String? = null
         var currentCommand: String? = null
-        
+
         for (line in lines) {
             val trimmed = line.trim()
             if (trimmed.startsWith("#") || trimmed.isEmpty()) {
-                if (currentName != null && currentType == "raw" && currentFrequency != null && currentData != null) {
+                if (currentName != null &&
+                    currentType == "raw" &&
+                    currentFrequency != null &&
+                    currentData != null
+                ) {
                     processRawCommand(currentName, currentFrequency, currentData, result)
-                } else if (currentName != null && currentType == "parsed" && currentProtocol != null && currentCommand != null) {
-                    processParsedCommand(currentName, currentProtocol, currentAddress ?: "", currentCommand, result)
+                } else if (currentName != null &&
+                    currentType == "parsed" &&
+                    currentProtocol != null &&
+                    currentCommand != null
+                ) {
+                    processParsedCommand(
+                        currentName,
+                        currentProtocol,
+                        currentAddress ?: "",
+                        currentCommand,
+                        result,
+                    )
                 }
                 currentName = null
                 currentType = null
@@ -151,7 +175,7 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
                 currentCommand = null
                 continue
             }
-            
+
             if (trimmed.startsWith("name:")) {
                 currentName = trimmed.substringAfter("name:").trim()
             } else if (trimmed.startsWith("type:")) {
@@ -168,17 +192,36 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
                 currentCommand = trimmed.substringAfter("command:").trim()
             }
         }
-        
-        if (currentName != null && currentType == "raw" && currentFrequency != null && currentData != null) {
+
+        if (currentName != null &&
+            currentType == "raw" &&
+            currentFrequency != null &&
+            currentData != null
+        ) {
             processRawCommand(currentName, currentFrequency, currentData, result)
-        } else if (currentName != null && currentType == "parsed" && currentProtocol != null && currentCommand != null) {
-            processParsedCommand(currentName, currentProtocol, currentAddress ?: "", currentCommand, result)
+        } else if (currentName != null &&
+            currentType == "parsed" &&
+            currentProtocol != null &&
+            currentCommand != null
+        ) {
+            processParsedCommand(
+                currentName,
+                currentProtocol,
+                currentAddress ?: "",
+                currentCommand,
+                result,
+            )
         }
 
         return result
     }
-    
-    private fun processRawCommand(name: String, freq: Int, data: String, result: MutableMap<String, String>) {
+
+    private fun processRawCommand(
+        name: String,
+        freq: Int,
+        data: String,
+        result: MutableMap<String, String>,
+    ) {
         try {
             val timings = data.split("\\s+".toRegex()).mapNotNull { it.toIntOrNull() }
             if (timings.isNotEmpty()) {
@@ -196,7 +239,7 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
         protocol: String,
         addressHex: String,
         commandHex: String,
-        result: MutableMap<String, String>
+        result: MutableMap<String, String>,
     ) {
         try {
             val addrBytes = addressHex.split("\\s+".toRegex()).mapNotNull { it.toIntOrNull(16) }
@@ -210,9 +253,11 @@ class FlipperIrdbRepository(private val context: Context) : IRSourceRepository {
                 protocol.equals("NECext", ignoreCase = true) -> Pair(NECExtended(), 38000)
                 protocol.equals("NEC", ignoreCase = true) -> Pair(NECStandard(), 38000)
                 protocol.equals("NEC48", ignoreCase = true) -> Pair(NEC48k(), 48000)
-                protocol.startsWith("SIRC", ignoreCase = true) || protocol.startsWith("Sony", ignoreCase = true) -> Pair(SonySIRC(12), 40000)
+                protocol.startsWith("SIRC", ignoreCase = true) ||
+                    protocol.startsWith("Sony", ignoreCase = true) -> Pair(SonySIRC(12), 40000)
                 protocol.equals("RC5", ignoreCase = true) -> Pair(RC5(), 36000)
-                protocol.equals("Panasonic", ignoreCase = true) || protocol.equals("Kaseikyo", ignoreCase = true) -> Pair(Panasonic(), 36700)
+                protocol.equals("Panasonic", ignoreCase = true) ||
+                    protocol.equals("Kaseikyo", ignoreCase = true) -> Pair(Panasonic(), 36700)
                 else -> Pair(null, 38000)
             }
 

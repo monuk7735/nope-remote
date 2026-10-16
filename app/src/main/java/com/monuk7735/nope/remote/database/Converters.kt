@@ -12,35 +12,22 @@ class Converters {
     private val gson = Gson()
 
     @TypeConverter
-    fun fromListRemoteButtonDBModel(data: List<RemoteButtonDBModel>): String {
-        return gson.toJson(data)
-    }
+    fun fromListRemoteButtonDBModel(data: List<RemoteButtonDBModel>): String = gson.toJson(data)
 
     @TypeConverter
-    fun toListRemoteButtonDBModel(data: String): List<RemoteButtonDBModel> {
-        return gson.fromJson(data, object : TypeToken<List<RemoteButtonDBModel>>() {}.type)
-    }
+    fun toListRemoteButtonDBModel(data: String): List<RemoteButtonDBModel> =
+        gson.fromJson(data, object : TypeToken<List<RemoteButtonDBModel>>() {}.type)
 
     @TypeConverter
-    fun fromListOfMacroTransmit(data: List<MacroTransmit>): String {
-        return gson.toJson(data)
-    }
+    fun fromListOfMacroTransmit(data: List<MacroTransmit>): String = gson.toJson(data)
 
     @TypeConverter
-    fun toListOfMacroTransmit(data: String): List<MacroTransmit> {
-        return gson.fromJson(data, object : TypeToken<List<MacroTransmit>>() {}.type)
-    }
+    fun toListOfMacroTransmit(data: String): List<MacroTransmit> =
+        gson.fromJson(data, object : TypeToken<List<MacroTransmit>>() {}.type)
 
     @TypeConverter
-    fun fromDate(data: Date): String {
-        return gson.toJson(data)
-    }
+    fun fromDate(data: Date): String = gson.toJson(data)
 
     @TypeConverter
-    fun toDate(data: String): Date {
-        return gson.fromJson(data, object : TypeToken<Date>() {}.type)
-    }
-
-
-
+    fun toDate(data: String): Date = gson.fromJson(data, object : TypeToken<Date>() {}.type)
 }

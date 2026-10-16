@@ -3,23 +3,23 @@ package com.monuk7735.nope.remote.viewmodels
 import android.app.Application
 import android.content.Context
 import android.hardware.ConsumerIrManager
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
 import com.monuk7735.nope.remote.database.RemoteDatabase
 import com.monuk7735.nope.remote.infrared.IRController
+import com.monuk7735.nope.remote.models.custom.macros.MacroTransmit
 import com.monuk7735.nope.remote.models.database.MacroDataDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.repository.MacroDataRepository
 import com.monuk7735.nope.remote.repository.RemoteDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import com.monuk7735.nope.remote.models.custom.macros.MacroTransmit
 
 class AddEditMacroViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -27,11 +27,11 @@ class AddEditMacroViewModel(application: Application) : AndroidViewModel(applica
         IRController(application.getSystemService(Context.CONSUMER_IR_SERVICE) as ConsumerIrManager)
 
     private val remoteDataRepository: RemoteDataRepository = RemoteDataRepository(
-        remoteDao = RemoteDatabase.getDatabase(application).remoteDao()
+        remoteDao = RemoteDatabase.getDatabase(application).remoteDao(),
     )
 
     private val macroDataRepository: MacroDataRepository = MacroDataRepository(
-        macroDao = RemoteDatabase.getDatabase(application).macroDao()
+        macroDao = RemoteDatabase.getDatabase(application).macroDao(),
     )
 
     val allRemotes: LiveData<List<RemoteDataDBModel>> = remoteDataRepository.allRemotes
@@ -71,8 +71,9 @@ class AddEditMacroViewModel(application: Application) : AndroidViewModel(applica
 
     fun getRemote(id: Int): RemoteDataDBModel? {
         allRemotes.value?.forEach {
-            if (it.id == id)
+            if (it.id == id) {
                 return it
+            }
         }
         return null
     }
@@ -89,10 +90,9 @@ class AddEditMacroViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    fun updateMacro(macroDataDBModel: MacroDataDBModel){
+    fun updateMacro(macroDataDBModel: MacroDataDBModel) {
         viewModelScope.launch(Dispatchers.IO) {
             macroDataRepository.updateMacro(macroDataDBModel)
         }
     }
-
 }

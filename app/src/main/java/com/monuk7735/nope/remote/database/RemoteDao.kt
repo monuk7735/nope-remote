@@ -1,7 +1,12 @@
 package com.monuk7735.nope.remote.database
 
 import androidx.lifecycle.LiveData
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 
 @Dao
@@ -24,5 +29,4 @@ interface RemoteDao {
 
     @Delete
     suspend fun deleteRemote(remoteDB: RemoteDataDBModel)
-
 }

@@ -8,21 +8,21 @@ enum class DownloadState {
     DOWNLOADING,
     EXTRACTING,
     INSTALLED,
-    ERROR
+    ERROR,
 }
 
 data class RepoState(
     val state: DownloadState = DownloadState.IDLE,
     val progress: Float = 0f,
     val message: String = "",
-    val isIndeterminate: Boolean = false
+    val isIndeterminate: Boolean = false,
 )
 
 object RepoDownloadManager {
     enum class DownloadMode {
         ZIP_ARCHIVE,
         DIRECT_FILE,
-        TAR_XZ
+        TAR_XZ,
     }
 
     enum class RepositoryInfo(
@@ -30,52 +30,56 @@ object RepoDownloadManager {
         val directoryName: String,
         val url: String, // The actual download URL (ZIP or DB)
         val displayUrl: String, // The URL to open in browser
-        val mode: DownloadMode
+        val mode: DownloadMode,
     ) {
         PROBONOPD(
             "IRDB by Probonopd",
             "irdb_probonopd",
             "https://github.com/probonopd/irdb/archive/refs/heads/master.zip",
             "https://github.com/probonopd/irdb",
-            DownloadMode.ZIP_ARCHIVE
+            DownloadMode.ZIP_ARCHIVE,
         ),
         IREXT(
             "IRDB by IREXT",
             "irdb_irext",
             "https://github.com/irext/database/raw/master/db/irext_db_20260519_sqlite3.db",
             "https://github.com/irext/database",
-            DownloadMode.DIRECT_FILE
+            DownloadMode.DIRECT_FILE,
         ),
         MI_REMOTE(
             "Mi Remote Database",
             "mi_remote_dump",
             "https://github.com/ysard/mi_remote_database/releases/download/v2.1/database_dump.tar.xz",
             "https://github.com/ysard/mi_remote_database",
-            DownloadMode.TAR_XZ
+            DownloadMode.TAR_XZ,
         ),
         FLIPPER_IRDB(
             "Flipper-IRDB",
             "flipper_irdb",
             "https://github.com/Lucaslhm/Flipper-IRDB/archive/refs/heads/main.zip",
             "https://github.com/Lucaslhm/Flipper-IRDB",
-            DownloadMode.ZIP_ARCHIVE
+            DownloadMode.ZIP_ARCHIVE,
         ),
         FLIPPER_DEVICES_IRDB(
             "Flipper Devices IRDB",
             "flipper_devices_irdb",
             "https://github.com/flipperdevices/IRDB/archive/refs/heads/dev.zip",
             "https://github.com/flipperdevices/IRDB",
-            DownloadMode.ZIP_ARCHIVE
-        );
+            DownloadMode.ZIP_ARCHIVE,
+        ),
+        ;
 
         companion object {
-            fun fromDirectory(dir: String): RepositoryInfo? = values().find { it.directoryName == dir }
+            fun fromDirectory(dir: String): RepositoryInfo? = values().find {
+                it.directoryName ==
+                    dir
+            }
         }
     }
 
-    private val _repoStates = java.util.concurrent.ConcurrentHashMap<String, RepoState>()
-    val repoStates: androidx.lifecycle.MutableLiveData<Map<String, RepoState>> = androidx.lifecycle.MutableLiveData(emptyMap())
-    
+    private val _repoStates = ConcurrentHashMap<String, RepoState>()
+    val repoStates: MutableLiveData<Map<String, RepoState>> = MutableLiveData(emptyMap())
+
     // Command output log (global)
     val commandOutput: MutableLiveData<String> = MutableLiveData("")
 
@@ -84,10 +88,8 @@ object RepoDownloadManager {
         currentMap[repoId] = state
         repoStates.postValue(currentMap)
     }
-    
-    fun getState(repoId: String): RepoState {
-        return repoStates.value?.get(repoId) ?: RepoState()
-    }
+
+    fun getState(repoId: String): RepoState = repoStates.value?.get(repoId) ?: RepoState()
 
     fun log(message: String) {
         android.util.Log.d("RepoDownloadManager", message)

@@ -1,10 +1,8 @@
 package com.monuk7735.nope.remote.viewmodels
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.monuk7735.nope.remote.database.RemoteDatabase
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
@@ -17,12 +15,10 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
     var staticRemote: RemoteDataDBModel? = null
 
     private val remoteDataRepository: RemoteDataRepository = RemoteDataRepository(
-        remoteDao = RemoteDatabase.getDatabase(application).remoteDao()
+        remoteDao = RemoteDatabase.getDatabase(application).remoteDao(),
     )
 
-    fun getLiveRemote(id: Int): LiveData<RemoteDataDBModel> {
-        return remoteDataRepository.getLiveRemote(id)
-    }
+    fun getLiveRemote(id: Int): LiveData<RemoteDataDBModel> = remoteDataRepository.getLiveRemote(id)
 
     fun updateRemote(remoteDataDBModel: RemoteDataDBModel) {
         viewModelScope.launch(Dispatchers.IO) {

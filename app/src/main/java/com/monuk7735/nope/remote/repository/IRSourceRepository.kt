@@ -10,8 +10,8 @@ interface IRSourceRepository {
     suspend fun getTypes(): List<DeviceTypesRetrofitModel>
     suspend fun getBrands(type: String): List<DeviceBrandsRetrofitModel>
     suspend fun getCodes(
-            type: String,
-            brand: String,
-            progress: MutableLiveData<Pair<Int, Int>?>? = null
+        type: String,
+        brand: String,
+        progress: MutableLiveData<Pair<Int, Int>?>? = null,
     ): List<DeviceCodesRetrofitModel>
 }

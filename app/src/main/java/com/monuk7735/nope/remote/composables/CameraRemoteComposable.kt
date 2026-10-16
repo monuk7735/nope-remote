@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.monuk7735.nope.remote.infrared.IRController
@@ -27,10 +26,7 @@ import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 
 @Composable
-fun CameraRemote(
-    remoteDataDBModel: RemoteDataDBModel?,
-    shutterButton: RemoteButtonDBModel
-) {
+fun CameraRemote(remoteDataDBModel: RemoteDataDBModel?, shutterButton: RemoteButtonDBModel) {
     val irController =
         LocalContext.current.run {
             val manager = getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
@@ -50,7 +46,7 @@ fun CameraRemote(
 
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
@@ -60,13 +56,13 @@ fun CameraRemote(
                 .clickable {
                     shutterButton.transmit(irController, vibrator)
                 },
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Rounded.CameraAlt,
                 contentDescription = "Shutter",
                 modifier = Modifier.size(120.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }

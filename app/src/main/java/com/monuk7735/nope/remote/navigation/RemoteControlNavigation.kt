@@ -7,5 +7,4 @@ sealed class RemoteControlNavigation(val route: String) {
     object RemoteControlSettings : RemoteControlNavigation("remote_control_settings")
 
     object RemoteControlEditLayout : RemoteControlNavigation("remote_control_layout")
-
 }

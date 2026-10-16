@@ -4,9 +4,7 @@ import androidx.lifecycle.LiveData
 import com.monuk7735.nope.remote.database.MacroDao
 import com.monuk7735.nope.remote.models.database.MacroDataDBModel
 
-class MacroDataRepository(
-    private val macroDao: MacroDao
-) {
+class MacroDataRepository(private val macroDao: MacroDao) {
     val allMacros: LiveData<List<MacroDataDBModel>> = macroDao.getAllMacros()
 
     fun getMacroByID(id: Int): LiveData<MacroDataDBModel> = macroDao.getMacroById(id)
@@ -15,11 +13,11 @@ class MacroDataRepository(
         macroDao.addMacro(macroDataDBModel)
     }
 
-    suspend fun deleteMacro(macroDataDBModel: MacroDataDBModel){
+    suspend fun deleteMacro(macroDataDBModel: MacroDataDBModel) {
         macroDao.deleteMacro(macroDataDBModel)
     }
 
-    suspend fun updateMacro(macroDataDBModel: MacroDataDBModel){
+    suspend fun updateMacro(macroDataDBModel: MacroDataDBModel) {
         macroDao.updateMacro(macroDataDBModel)
     }
 }

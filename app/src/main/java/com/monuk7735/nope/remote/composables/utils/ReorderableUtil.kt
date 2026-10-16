@@ -1,26 +1,24 @@
 package com.monuk7735.nope.remote.composables.utils
 
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.zIndex
 
 @Composable
-fun rememberReorderableState(listState: LazyListState, onMove: (Int, Int) -> Unit): ReorderableState {
-    return remember { ReorderableState(listState, onMove) }
-}
+fun rememberReorderableState(
+    listState: LazyListState,
+    onMove: (Int, Int) -> Unit,
+): ReorderableState = remember { ReorderableState(listState, onMove) }
 
-class ReorderableState(
-    val listState: LazyListState,
-    val onMove: (Int, Int) -> Unit
-) {
+class ReorderableState(val listState: LazyListState, val onMove: (Int, Int) -> Unit) {
     var draggingItemIndex by mutableStateOf<Int?>(null)
         private set
 
@@ -40,12 +38,18 @@ class ReorderableState(
             .firstOrNull { item ->
                 val itemStart = item.offset
                 val itemEnd = item.offset + item.size
-                val currentOffset = (draggingItemIndex?.let { listState.layoutInfo.visibleItemsInfo.find { i -> i.index == it }?.offset } ?: 0) + dragOffset
-                
-                 currentOffset.toInt() in itemStart..itemEnd
+                val draggedItem = draggingItemIndex?.let { idx ->
+                    listState.layoutInfo.visibleItemsInfo.find { i -> i.index == idx }
+                }
+                val currentOffset = (draggedItem?.offset ?: 0) + dragOffset
+
+                currentOffset.toInt() in itemStart..itemEnd
             }?.index
 
-        if (hoveredIndex != null && hoveredIndex != draggingItemIndex && draggingItemIndex != null) {
+        if (hoveredIndex != null &&
+            hoveredIndex != draggingItemIndex &&
+            draggingItemIndex != null
+        ) {
             onMove(draggingItemIndex!!, hoveredIndex)
             draggingItemIndex = hoveredIndex
             dragOffset = 0f
@@ -58,22 +62,26 @@ class ReorderableState(
     }
 }
 
-fun Modifier.draggedItem(
-    reorderableState: ReorderableState,
-    index: Int
-): Modifier = this.then(
+fun Modifier.draggedItem(reorderableState: ReorderableState, index: Int): Modifier = this.then(
     Modifier
         .zIndex(if (reorderableState.draggingItemIndex == index) 1f else 0f)
         .graphicsLayer {
-            translationY = if (reorderableState.draggingItemIndex == index) reorderableState.draggedItemOffset else 0f
-        }
+            translationY =
+                if (reorderableState.draggingItemIndex ==
+                    index
+                ) {
+                    reorderableState.draggedItemOffset
+                } else {
+                    0f
+                }
+        },
 )
 
-fun Modifier.detectReorder(reorderableState: ReorderableState, index: Int): Modifier {
-    return this.pointerInput(Unit) {
+fun Modifier.detectReorder(reorderableState: ReorderableState, index: Int): Modifier =
+    this.pointerInput(Unit) {
         detectDragGesturesAfterLongPress(
-            onDragStart = { 
-                reorderableState.onDragStart(index) 
+            onDragStart = {
+                reorderableState.onDragStart(index)
             },
             onDrag = { _, dragAmount ->
                 reorderableState.onDrag(dragAmount.y)
@@ -83,7 +91,6 @@ fun Modifier.detectReorder(reorderableState: ReorderableState, index: Int): Modi
             },
             onDragCancel = {
                 reorderableState.onDragStop()
-            }
+            },
         )
     }
-}

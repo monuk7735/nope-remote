@@ -11,7 +11,7 @@ val Add: ImageVector
         }
         add = materialIcon(name = "Exit") {
             materialPath {
-                moveTo(19f,13f)
+                moveTo(19f, 13f)
                 horizontalLineToRelative(-6f)
                 verticalLineToRelative(6f)
                 horizontalLineToRelative(-2f)

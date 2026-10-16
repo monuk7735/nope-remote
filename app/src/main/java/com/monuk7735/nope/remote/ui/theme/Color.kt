@@ -12,8 +12,6 @@ val DarkPrimaryLight = Color(0xff57687c)
 val DarkPrimaryDark = Color(0xff031828)
 val DarkOnPrimary = Color(0xffecf0f1)
 
-
-
 val md_theme_light_primary = Color(0xFF6750A4)
 val md_theme_light_onPrimary = Color(0xFFFFFFFF)
 val md_theme_light_primaryContainer = Color(0xFFEADDFF)

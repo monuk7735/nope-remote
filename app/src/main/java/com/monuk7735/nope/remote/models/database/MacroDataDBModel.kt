@@ -15,16 +15,13 @@ data class MacroDataDBModel(
     @PrimaryKey(autoGenerate = true)
     val id: Int,
     val name: String,
-    val macroUnits: List<MacroTransmit>
+    val macroUnits: List<MacroTransmit>,
 ) : Parcelable {
-    suspend fun execute(
-        irController: IRController?,
-        vibrator: Vibrator,
-    ) {
+    suspend fun execute(irController: IRController?, vibrator: Vibrator) {
         macroUnits.forEach {
             irController?.transmit(
                 it.irPattern,
-                vibrator
+                vibrator,
             )
             delay(500)
         }

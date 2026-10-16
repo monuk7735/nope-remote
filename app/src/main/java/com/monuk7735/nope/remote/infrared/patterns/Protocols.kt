@@ -14,12 +14,17 @@ class NECStandard : Protocol {
         private const val BIT_MARK = 560
         private const val ONE_SPACE = 1690
         private const val ZERO_SPACE = 560
-        
-        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(
+            BIT_MARK,
+            ONE_SPACE,
+            BIT_MARK,
+            ZERO_SPACE,
+        )
     }
 
-    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
-        return IrCommandBuilder(FREQUENCY)
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> =
+        IrCommandBuilder(FREQUENCY)
             .pair(HDR_MARK, HDR_SPACE)
             .sequenceLSB(SEQUENCE_DEF, 8, device)
             .sequenceLSB(SEQUENCE_DEF, 8, device.inv())
@@ -27,7 +32,6 @@ class NECStandard : Protocol {
             .sequenceLSB(SEQUENCE_DEF, 8, function.inv())
             .mark(BIT_MARK)
             .build()
-    }
 }
 
 class NECSamsung : Protocol {
@@ -38,12 +42,17 @@ class NECSamsung : Protocol {
         private const val BIT_MARK = 560
         private const val ONE_SPACE = 1690
         private const val ZERO_SPACE = 560
-        
-        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(
+            BIT_MARK,
+            ONE_SPACE,
+            BIT_MARK,
+            ZERO_SPACE,
+        )
     }
 
-    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
-        return IrCommandBuilder(FREQUENCY)
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> =
+        IrCommandBuilder(FREQUENCY)
             .pair(HDR_MARK, HDR_SPACE)
             .sequenceLSB(SEQUENCE_DEF, 8, device)
             .sequenceLSB(SEQUENCE_DEF, 8, device)
@@ -51,13 +60,11 @@ class NECSamsung : Protocol {
             .sequenceLSB(SEQUENCE_DEF, 8, function.inv())
             .mark(BIT_MARK)
             .build()
-    }
 }
 
 class NEC48k : Protocol {
-    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
-        return NECStandard().generate(device, subdevice, function)
-    }
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> =
+        NECStandard().generate(device, subdevice, function)
 }
 
 class Nokia32 : Protocol {
@@ -66,15 +73,15 @@ class Nokia32 : Protocol {
         // Header
         list.add(417)
         list.add(278)
-        
+
         val d = (device and 0xFF).toLong()
         val s = (subdevice and 0xFF).toLong()
         val f = (function and 0xFF).toLong()
         val t = 0L
         val x = 0L
-        
+
         val payload = (d shl 24) or (s shl 16) or (t shl 15) or (x shl 8) or f
-        
+
         // 32 bits encoded as 16 symbols of 2 bits each, MSB first
         for (i in 15 downTo 0) {
             val twoBits = (payload shr (i * 2)) and 0b11
@@ -88,7 +95,7 @@ class Nokia32 : Protocol {
             list.add(167)
             list.add(offTime.toInt())
         }
-        
+
         list.add(167)
         return list
     }
@@ -102,12 +109,17 @@ class NECExtended : Protocol {
         private const val BIT_MARK = 560
         private const val ONE_SPACE = 1690
         private const val ZERO_SPACE = 560
-        
-        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(
+            BIT_MARK,
+            ONE_SPACE,
+            BIT_MARK,
+            ZERO_SPACE,
+        )
     }
 
-    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
-        return IrCommandBuilder(FREQUENCY)
+    override fun generate(device: Int, subdevice: Int, function: Int): List<Int> =
+        IrCommandBuilder(FREQUENCY)
             .pair(HDR_MARK, HDR_SPACE)
             .sequenceLSB(SEQUENCE_DEF, 8, device)
             .sequenceLSB(SEQUENCE_DEF, 8, subdevice)
@@ -115,7 +127,6 @@ class NECExtended : Protocol {
             .sequenceLSB(SEQUENCE_DEF, 8, function.inv())
             .mark(BIT_MARK)
             .build()
-    }
 }
 
 class Samsung20 : Protocol {
@@ -127,7 +138,12 @@ class Samsung20 : Protocol {
         private const val ONE_SPACE = 1692
         private const val ZERO_SPACE = 564
 
-        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(
+            BIT_MARK,
+            ONE_SPACE,
+            BIT_MARK,
+            ZERO_SPACE,
+        )
     }
 
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
@@ -154,7 +170,12 @@ class Samsung36 : Protocol {
         private const val ONE_SPACE = 1500
         private const val ZERO_SPACE = 500
 
-        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(
+            BIT_MARK,
+            ONE_SPACE,
+            BIT_MARK,
+            ZERO_SPACE,
+        )
     }
 
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
@@ -187,7 +208,12 @@ class SonySIRC(private val bits: Int = 12) : Protocol {
         private const val REPEAT_COUNT = 3
         private const val FRAME_PERIOD = 45000
 
-        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(ONE_MARK, ONE_SPACE, ZERO_MARK, ZERO_SPACE)
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(
+            ONE_MARK,
+            ONE_SPACE,
+            ZERO_MARK,
+            ZERO_SPACE,
+        )
     }
 
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
@@ -212,9 +238,9 @@ class SonySIRC(private val bits: Int = 12) : Protocol {
         }
 
         val packetDuration = (HDR_MARK + HDR_SPACE) +
-                bitDuration(func, 7) +
-                bitDuration(dev, devBits) +
-                (if (subBits > 0) bitDuration(sub, subBits) else 0)
+            bitDuration(func, 7) +
+            bitDuration(dev, devBits) +
+            (if (subBits > 0) bitDuration(sub, subBits) else 0)
 
         val gap = (FRAME_PERIOD - packetDuration).coerceAtLeast(10000)
 
@@ -279,7 +305,12 @@ class Panasonic : Protocol {
         private const val ONE_SPACE = 1296
         private const val ZERO_SPACE = 432
 
-        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(BIT_MARK, ONE_SPACE, BIT_MARK, ZERO_SPACE)
+        private val SEQUENCE_DEF = IrCommandBuilder.simpleSequence(
+            BIT_MARK,
+            ONE_SPACE,
+            BIT_MARK,
+            ZERO_SPACE,
+        )
     }
 
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
@@ -314,8 +345,12 @@ class Panasonic : Protocol {
 class JVC : Protocol {
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
         val def = object : IrCommandBuilder.SequenceDefinition {
-            override fun one(builder: IrCommandBuilder, index: Int) { builder.mark(527).space(1581) }
-            override fun zero(builder: IrCommandBuilder, index: Int) { builder.mark(527).space(527) }
+            override fun one(builder: IrCommandBuilder, index: Int) {
+                builder.mark(527).space(1581)
+            }
+            override fun zero(builder: IrCommandBuilder, index: Int) {
+                builder.mark(527).space(527)
+            }
         }
         return IrCommandBuilder(38000)
             .mark(8400).space(4200)
@@ -329,8 +364,12 @@ class JVC : Protocol {
 class Denon : Protocol {
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
         val def = object : IrCommandBuilder.SequenceDefinition {
-            override fun one(builder: IrCommandBuilder, index: Int) { builder.mark(275).space(1900) }
-            override fun zero(builder: IrCommandBuilder, index: Int) { builder.mark(275).space(780) }
+            override fun one(builder: IrCommandBuilder, index: Int) {
+                builder.mark(275).space(1900)
+            }
+            override fun zero(builder: IrCommandBuilder, index: Int) {
+                builder.mark(275).space(780)
+            }
         }
         val f = function.toLong() and 0xFF
         val invF = f.inv() and 0xFF
@@ -349,8 +388,12 @@ class Denon : Protocol {
 class Mitsubishi : Protocol {
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
         val def = object : IrCommandBuilder.SequenceDefinition {
-            override fun one(builder: IrCommandBuilder, index: Int) { builder.mark(900).space(300) }
-            override fun zero(builder: IrCommandBuilder, index: Int) { builder.mark(300).space(900) }
+            override fun one(builder: IrCommandBuilder, index: Int) {
+                builder.mark(900).space(300)
+            }
+            override fun zero(builder: IrCommandBuilder, index: Int) {
+                builder.mark(300).space(900)
+            }
         }
         return IrCommandBuilder(38000)
             .mark(4800).space(2400)
@@ -365,8 +408,12 @@ class RC6Mode0 : Protocol {
     override fun generate(device: Int, subdevice: Int, function: Int): List<Int> {
         val t = 444
         val def = object : IrCommandBuilder.SequenceDefinition {
-            override fun one(builder: IrCommandBuilder, index: Int) { builder.mark(t).space(t) }
-            override fun zero(builder: IrCommandBuilder, index: Int) { builder.space(t).mark(t) }
+            override fun one(builder: IrCommandBuilder, index: Int) {
+                builder.mark(t).space(t)
+            }
+            override fun zero(builder: IrCommandBuilder, index: Int) {
+                builder.space(t).mark(t)
+            }
         }
         return IrCommandBuilder(36000)
             .mark(2666).space(889) // Header
@@ -374,7 +421,7 @@ class RC6Mode0 : Protocol {
             // Mode 000
             .space(t).mark(t).space(t).mark(t).space(t).mark(t)
             // Toggle bit 0 (double time)
-            .space(t*2).mark(t*2)
+            .space(t * 2).mark(t * 2)
             // Device 8, Function 8 MSB
             .sequence(def, 8, device.toLong())
             .sequence(def, 8, function.toLong())

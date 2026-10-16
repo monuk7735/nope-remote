@@ -1,8 +1,8 @@
 package com.monuk7735.nope.remote.ui.theme
 
 import android.app.Activity
+import android.content.Context
 import android.content.SharedPreferences
-import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -11,24 +11,17 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import android.content.Context
+import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.monuk7735.nope.remote.R
 import com.monuk7735.nope.remote.utils.SystemBarHelper
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateOf
 
-data class ThemeSettings(
-    val useDarkTheme: Boolean,
-    val useDynamicColors: Boolean
-)
+data class ThemeSettings(val useDarkTheme: Boolean, val useDynamicColors: Boolean)
 
 @Composable
 fun rememberThemeSettings(): ThemeSettings {
@@ -37,12 +30,14 @@ fun rememberThemeSettings(): ThemeSettings {
     val sharedPrefs = remember {
         context.getSharedPreferences(
             sharedPrefName,
-            Context.MODE_PRIVATE
+            Context.MODE_PRIVATE,
         )
     }
 
     val darkModeKey = androidx.compose.ui.res.stringResource(R.string.pref_settings_dark_mode)
-    val dynamicColorKey = androidx.compose.ui.res.stringResource(R.string.pref_settings_dynamic_color)
+    val dynamicColorKey = androidx.compose.ui.res.stringResource(
+        R.string.pref_settings_dynamic_color,
+    )
     val systemInDarkTheme = isSystemInDarkTheme()
 
     val (settings, setSettings) = remember {
@@ -53,8 +48,8 @@ fun rememberThemeSettings(): ThemeSettings {
                     2 -> true
                     else -> systemInDarkTheme // Initial state using captured value
                 },
-                useDynamicColors = sharedPrefs.getBoolean(dynamicColorKey, true)
-            )
+                useDynamicColors = sharedPrefs.getBoolean(dynamicColorKey, true),
+            ),
         )
     }
 
@@ -66,10 +61,11 @@ fun rememberThemeSettings(): ThemeSettings {
                         useDarkTheme = when (prefs.getInt(darkModeKey, 0)) {
                             1 -> false
                             2 -> true
-                            else -> false // Value ignored as it is overridden by finalDarkMode logic
+                            // Value ignored as it is overridden by finalDarkMode logic
+                            else -> false
                         },
-                        useDynamicColors = prefs.getBoolean(dynamicColorKey, true)
-                    )
+                        useDynamicColors = prefs.getBoolean(dynamicColorKey, true),
+                    ),
                 )
             }
         }
@@ -78,13 +74,13 @@ fun rememberThemeSettings(): ThemeSettings {
             sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
         }
     }
-    
+
     val finalDarkMode = remember(settings, systemInDarkTheme) {
         val prefMode = sharedPrefs.getInt(darkModeKey, 0)
         when (prefMode) {
-             1 -> false
-             2 -> true
-             else -> systemInDarkTheme
+            1 -> false
+            2 -> true
+            else -> systemInDarkTheme
         }
     }
 
@@ -152,7 +148,7 @@ private val DarkThemeColorScheme = darkColorScheme(
 fun NopeRemoteTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
     useDynamicColors: Boolean = true,
-    content: @Composable() () -> Unit,
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
         useDynamicColors && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -168,7 +164,7 @@ fun NopeRemoteTheme(
         SideEffect {
             val window = (view.context as Activity).window
             SystemBarHelper.setTransparentSystemBars(window)
-            
+
             val insetsController = WindowCompat.getInsetsController(window, view)
             insetsController.isAppearanceLightStatusBars = !useDarkTheme
             insetsController.isAppearanceLightNavigationBars = !useDarkTheme
@@ -178,7 +174,6 @@ fun NopeRemoteTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = AppTypography,
-        content = content
+        content = content,
     )
-
 }

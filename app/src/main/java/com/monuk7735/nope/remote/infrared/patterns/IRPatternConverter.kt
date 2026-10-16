@@ -1,9 +1,8 @@
 package com.monuk7735.nope.remote.infrared.patterns
 
-class IRPatternConverter (){
+class IRPatternConverter {
 
     fun count2duration(frequency: Int, countPattern: IntArray): IntArray {
-
         val pulses = 1000000 / frequency
 
         val toRet: ArrayList<Int> = ArrayList()
@@ -15,5 +14,4 @@ class IRPatternConverter (){
 
         return toRet.toIntArray()
     }
-
 }

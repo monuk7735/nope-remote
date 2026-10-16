@@ -2,15 +2,52 @@ package com.monuk7735.nope.remote.models.database
 
 import android.os.Parcelable
 import android.os.Vibrator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Input
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.automirrored.outlined.VolumeDown
+import androidx.compose.material.icons.automirrored.outlined.VolumeOff
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.ArrowCircleDown
+import androidx.compose.material.icons.outlined.ArrowCircleUp
+import androidx.compose.material.icons.outlined.AspectRatio
+import androidx.compose.material.icons.outlined.Audiotrack
+import androidx.compose.material.icons.outlined.Bedtime
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.FastRewind
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.FiberManualRecord
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.NorthEast
+import androidx.compose.material.icons.outlined.NorthWest
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.PowerSettingsNew
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SkipNext
+import androidx.compose.material.icons.outlined.SkipPrevious
+import androidx.compose.material.icons.outlined.SouthEast
+import androidx.compose.material.icons.outlined.SouthWest
+import androidx.compose.material.icons.outlined.Stop
+import androidx.compose.material.icons.outlined.Subtitles
+import androidx.compose.material.icons.outlined.ZoomIn
+import androidx.compose.material.icons.outlined.ZoomOut
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.infrared.patterns.IRPattern
-import com.monuk7735.nope.remote.ui.theme.icons.*
 import kotlinx.parcelize.Parcelize
-
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.ui.graphics.vector.ImageVector
 
 @Parcelize
 data class RemoteButtonDBModel(
@@ -58,83 +95,93 @@ data class RemoteButtonDBModel(
     }
 
     companion object {
-        private fun getIconFromMap(name: String): ImageVector? {
-            return when (name) {
-                // Navigation
-                "UP", "CURSOR UP", "DIRECTION UP", "ARROW UP" -> Icons.Outlined.KeyboardArrowUp
-                "DOWN", "CURSOR DOWN", "DIRECTION DOWN", "ARROW DOWN" -> Icons.Outlined.KeyboardArrowDown
-                "LEFT", "CURSOR LEFT", "DIRECTION LEFT", "ARROW LEFT" -> Icons.AutoMirrored.Outlined.KeyboardArrowLeft
-                "RIGHT", "CURSOR RIGHT", "DIRECTION RIGHT", "ARROW RIGHT" -> Icons.AutoMirrored.Outlined.KeyboardArrowRight
-                "UP LEFT", "UP-LEFT", "TOP LEFT", "TOP-LEFT" -> Icons.Outlined.NorthWest
-                "UP RIGHT", "UP-RIGHT", "TOP RIGHT", "TOP-RIGHT" -> Icons.Outlined.NorthEast
-                "DOWN LEFT", "DOWN-LEFT", "BOTTOM LEFT", "BOTTOM-LEFT" -> Icons.Outlined.SouthWest
-                "DOWN RIGHT", "DOWN-RIGHT", "BOTTOM RIGHT", "BOTTOM-RIGHT" -> Icons.Outlined.SouthEast
-                "OK", "ENTER", "SELECT", "CENTER" -> Icons.Outlined.CheckCircle
-                "BACK", "RETURN", "PREV", "PREVIOUS" -> Icons.AutoMirrored.Outlined.ArrowBack
+        private fun getIconFromMap(name: String): ImageVector? = when (name) {
+            // Navigation
+            "UP", "CURSOR UP", "DIRECTION UP", "ARROW UP" -> Icons.Outlined.KeyboardArrowUp
+            "DOWN", "CURSOR DOWN", "DIRECTION DOWN", "ARROW DOWN" ->
+                Icons.Outlined.KeyboardArrowDown
+            "LEFT", "CURSOR LEFT", "DIRECTION LEFT", "ARROW LEFT" ->
+                Icons.AutoMirrored.Outlined.KeyboardArrowLeft
+            "RIGHT", "CURSOR RIGHT", "DIRECTION RIGHT", "ARROW RIGHT" ->
+                Icons.AutoMirrored.Outlined.KeyboardArrowRight
+            "UP LEFT", "UP-LEFT", "TOP LEFT", "TOP-LEFT" -> Icons.Outlined.NorthWest
+            "UP RIGHT", "UP-RIGHT", "TOP RIGHT", "TOP-RIGHT" -> Icons.Outlined.NorthEast
+            "DOWN LEFT", "DOWN-LEFT", "BOTTOM LEFT", "BOTTOM-LEFT" ->
+                Icons.Outlined.SouthWest
+            "DOWN RIGHT", "DOWN-RIGHT", "BOTTOM RIGHT", "BOTTOM-RIGHT" ->
+                Icons.Outlined.SouthEast
+            "OK", "ENTER", "SELECT", "CENTER" -> Icons.Outlined.CheckCircle
+            "BACK", "RETURN", "PREV", "PREVIOUS" -> Icons.AutoMirrored.Outlined.ArrowBack
 
-                // Menu / UI
-                "MENU" -> Icons.Outlined.Menu
-                "HOME", "HOMEPAGE" -> Icons.Outlined.Home
-                "EXIT", "CLOSE", "CANCEL" -> Icons.Outlined.Close
-                "INFO", "DISPLAY", "DISP", "OSD" -> Icons.Outlined.Info
-                "GUIDE", "EPG" -> Icons.Outlined.Map
-                "SETUP", "SETTINGS", "SETTING", "TOOL", "TOOLS", "OPT", "OPTION", "OPTIONS" -> Icons.Outlined.Settings
-                "SEARCH" -> Icons.Outlined.Search
+            // Menu / UI
+            "MENU" -> Icons.Outlined.Menu
+            "HOME", "HOMEPAGE" -> Icons.Outlined.Home
+            "EXIT", "CLOSE", "CANCEL" -> Icons.Outlined.Close
+            "INFO", "DISPLAY", "DISP", "OSD" -> Icons.Outlined.Info
+            "GUIDE", "EPG" -> Icons.Outlined.Map
+            "SETUP", "SETTINGS", "SETTING", "TOOL", "TOOLS",
+            "OPT", "OPTION", "OPTIONS",
+            -> Icons.Outlined.Settings
+            "SEARCH" -> Icons.Outlined.Search
 
-                // Power
-                "POWER", "PWR", "POWER ON", "POWER OFF" -> Icons.Outlined.PowerSettingsNew
+            // Power
+            "POWER", "PWR", "POWER ON", "POWER OFF" -> Icons.Outlined.PowerSettingsNew
 
-                // Volume
-                "VOL+", "VOL +", "VOL UP", "VOLUME UP", "VOLUME+" -> Icons.AutoMirrored.Outlined.VolumeUp
-                "VOL-", "VOL -", "VOL DOWN", "VOLUME DOWN", "VOLUME-" -> Icons.AutoMirrored.Outlined.VolumeDown
-                "MUTE" -> Icons.AutoMirrored.Outlined.VolumeOff
+            // Volume
+            "VOL+", "VOL +", "VOL UP", "VOLUME UP", "VOLUME+" ->
+                Icons.AutoMirrored.Outlined.VolumeUp
+            "VOL-", "VOL -", "VOL DOWN", "VOLUME DOWN", "VOLUME-" ->
+                Icons.AutoMirrored.Outlined.VolumeDown
+            "MUTE" -> Icons.AutoMirrored.Outlined.VolumeOff
 
-                // Channel
-                "CH+", "CH +", "CH UP", "CHANNEL UP", "CHANNEL+", "PROG+", "PROG UP", "PAGE+", "PAGE UP" -> Icons.Outlined.ArrowCircleUp
-                "CH-", "CH -", "CH DOWN", "CHANNEL DOWN", "CHANNEL-", "PROG-", "PROG DOWN", "PAGE-", "PAGE DOWN" -> Icons.Outlined.ArrowCircleDown
-                "PREV CH", "PREVIOUS CHANNEL", "LAST" -> Icons.AutoMirrored.Outlined.ArrowBack
+            // Channel
+            "CH+", "CH +", "CH UP", "CHANNEL UP", "CHANNEL+",
+            "PROG+", "PROG UP", "PAGE+", "PAGE UP",
+            -> Icons.Outlined.ArrowCircleUp
+            "CH-", "CH -", "CH DOWN", "CHANNEL DOWN", "CHANNEL-",
+            "PROG-", "PROG DOWN", "PAGE-", "PAGE DOWN",
+            -> Icons.Outlined.ArrowCircleDown
+            "PREV CH", "PREVIOUS CHANNEL", "LAST" -> Icons.AutoMirrored.Outlined.ArrowBack
 
-                // Media
-                "PLAY" -> Icons.Outlined.PlayArrow
-                "PAUSE" -> Icons.Outlined.Pause
-                "STOP" -> Icons.Outlined.Stop
-                "REW", "REV", "REWIND", "BACKWARD" -> Icons.Outlined.FastRewind
-                "FWD", "FORWARD", "FAST FORWARD" -> Icons.Outlined.FastForward
-                "NEXT", "SKIP NEXT", "SKIP+" -> Icons.Outlined.SkipNext
-                "PREV TRACK", "SKIP PREV", "SKIP-" -> Icons.Outlined.SkipPrevious
-                "REC", "RECORD" -> Icons.Outlined.FiberManualRecord
+            // Media
+            "PLAY" -> Icons.Outlined.PlayArrow
+            "PAUSE" -> Icons.Outlined.Pause
+            "STOP" -> Icons.Outlined.Stop
+            "REW", "REV", "REWIND", "BACKWARD" -> Icons.Outlined.FastRewind
+            "FWD", "FORWARD", "FAST FORWARD" -> Icons.Outlined.FastForward
+            "NEXT", "SKIP NEXT", "SKIP+" -> Icons.Outlined.SkipNext
+            "PREV TRACK", "SKIP PREV", "SKIP-" -> Icons.Outlined.SkipPrevious
+            "REC", "RECORD" -> Icons.Outlined.FiberManualRecord
 
-                // Input
-                "INPUT", "SOURCE", "HDMI", "AV", "AUX" -> Icons.AutoMirrored.Outlined.Input
+            // Input
+            "INPUT", "SOURCE", "HDMI", "AV", "AUX" -> Icons.AutoMirrored.Outlined.Input
 
-                // Color
-                "RED" -> Icons.Outlined.Circle
-                "GREEN" -> Icons.Outlined.Circle
-                "YELLOW" -> Icons.Outlined.Circle
-                "BLUE" -> Icons.Outlined.Circle
+            // Color
+            "RED" -> Icons.Outlined.Circle
+            "GREEN" -> Icons.Outlined.Circle
+            "YELLOW" -> Icons.Outlined.Circle
+            "BLUE" -> Icons.Outlined.Circle
 
-                // New Standards
-                "SUBTITLE", "SUB", "CAPTION", "CC" -> Icons.Outlined.Subtitles
-                "AUDIO", "LANG", "LANGUAGE" -> Icons.Outlined.Audiotrack
-                "ASPECT", "RATIO", "ZOOM", "SIZE", "WIDE" -> Icons.Outlined.AspectRatio
-                "ZOOM+", "ZOOM +", "ZOOM IN", "ZOOMIN", "ZOOM UP", "ZM+" -> Icons.Outlined.ZoomIn
-                "ZOOM-", "ZOOM -", "ZOOM OUT", "ZOOMOUT", "ZOOM DOWN", "ZM-" -> Icons.Outlined.ZoomOut
-                "LIST", "CH LIST", "CHANNEL LIST" -> Icons.AutoMirrored.Outlined.List
-                "FAV", "FAVORITE", "FAVORITES" -> Icons.Outlined.Favorite
-                "SLEEP", "TIMER" -> Icons.Outlined.Bedtime
+            // New Standards
+            "SUBTITLE", "SUB", "CAPTION", "CC" -> Icons.Outlined.Subtitles
+            "AUDIO", "LANG", "LANGUAGE" -> Icons.Outlined.Audiotrack
+            "ASPECT", "RATIO", "ZOOM", "SIZE", "WIDE" -> Icons.Outlined.AspectRatio
+            "ZOOM+", "ZOOM +", "ZOOM IN", "ZOOMIN", "ZOOM UP", "ZM+" ->
+                Icons.Outlined.ZoomIn
+            "ZOOM-", "ZOOM -", "ZOOM OUT", "ZOOMOUT", "ZOOM DOWN", "ZM-" ->
+                Icons.Outlined.ZoomOut
+            "LIST", "CH LIST", "CHANNEL LIST" -> Icons.AutoMirrored.Outlined.List
+            "FAV", "FAVORITE", "FAVORITES" -> Icons.Outlined.Favorite
+            "SLEEP", "TIMER" -> Icons.Outlined.Bedtime
 
-                else -> null
-            }
+            else -> null
         }
     }
 
-    fun transmit(
-        irController: IRController?,
-        vibrator: Vibrator,
-    ) {
+    fun transmit(irController: IRController?, vibrator: Vibrator) {
         irController?.transmit(
             irPattern = irPattern,
-            vibrator = vibrator
+            vibrator = vibrator,
         )
     }
 }

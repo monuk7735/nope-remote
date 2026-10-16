@@ -1,6 +1,5 @@
 package com.monuk7735.nope.remote
 
-
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,7 +17,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-
 import com.monuk7735.nope.remote.composables.ListBrands
 import com.monuk7735.nope.remote.composables.ListCodes
 import com.monuk7735.nope.remote.composables.ListTypes
@@ -43,8 +41,8 @@ class AddRemoteActivity : ComponentActivity() {
         setContent {
             val themeSettings = rememberThemeSettings()
             NopeRemoteTheme(
-                    useDarkTheme = themeSettings.useDarkTheme,
-                    useDynamicColors = themeSettings.useDynamicColors
+                useDarkTheme = themeSettings.useDarkTheme,
+                useDynamicColors = themeSettings.useDynamicColors,
             ) { AddRemoteActivityRoot() }
         }
     }
@@ -61,105 +59,105 @@ class AddRemoteActivity : ComponentActivity() {
         val navController = rememberNavController()
 
         NavHost(
-                navController = navController,
-                startDestination = AddRemoteNavigation.ListTypes.route
+            navController = navController,
+            startDestination = AddRemoteNavigation.ListTypes.route,
         ) {
             composable(
-                    route = AddRemoteNavigation.ListTypes.route,
-                    enterTransition = {
-                        slideInHorizontally(initialOffsetX = { it })
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(targetOffsetX = { -it })
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(initialOffsetX = { -it })
-                    },
-                    popExitTransition = {
-                        slideOutHorizontally(targetOffsetX = { it })
-                    }
+                route = AddRemoteNavigation.ListTypes.route,
+                enterTransition = {
+                    slideInHorizontally(initialOffsetX = { it })
+                },
+                exitTransition = {
+                    slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popEnterTransition = {
+                    slideInHorizontally(initialOffsetX = { -it })
+                },
+                popExitTransition = {
+                    slideOutHorizontally(targetOffsetX = { it })
+                },
             ) {
                 val isRepoInstalled =
-                        produceState(initialValue = true) {
-                                    value = viewModel.isRepoInstalled()
-                                }
-                                .value
+                    produceState(initialValue = true) {
+                        value = viewModel.isRepoInstalled()
+                    }
+                        .value
 
                 val selectedRepoIndex = viewModel.selectedRepoIndex.observeAsState(0).value
 
                 ListTypes(
-                        allTypes = allTypes,
-                        isRepoInstalled = isRepoInstalled,
-                        availableRepos = viewModel.availableRepos,
-                        selectedRepoIndex = selectedRepoIndex,
-                        onRepoSelected = { viewModel.selectRepository(it) },
-                        onOneClicked = { type ->
-                            viewModel.getBrands(type)
-                            navController.navigate(AddRemoteNavigation.ListBrands.route)
-                        },
-                        onSearch = { viewModel.filterTypes(it) },
-                        onBack = { finish() },
-                        onGoToSettings = {
-                            startActivity(
-                                    Intent(
-                                            this@AddRemoteActivity,
-                                            SettingsActivity::class.java
-                                    )
-                            )
-                            finish()
-                        }
+                    allTypes = allTypes,
+                    isRepoInstalled = isRepoInstalled,
+                    availableRepos = viewModel.availableRepos,
+                    selectedRepoIndex = selectedRepoIndex,
+                    onRepoSelected = { viewModel.selectRepository(it) },
+                    onOneClicked = { type ->
+                        viewModel.getBrands(type)
+                        navController.navigate(AddRemoteNavigation.ListBrands.route)
+                    },
+                    onSearch = { viewModel.filterTypes(it) },
+                    onBack = { finish() },
+                    onGoToSettings = {
+                        startActivity(
+                            Intent(
+                                this@AddRemoteActivity,
+                                SettingsActivity::class.java,
+                            ),
+                        )
+                        finish()
+                    },
                 )
             }
             composable(
-                    route = AddRemoteNavigation.ListBrands.route,
-                    enterTransition = {
-                        slideInHorizontally(initialOffsetX = { it })
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(targetOffsetX = { -it })
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(initialOffsetX = { -it })
-                    },
-                    popExitTransition = {
-                        slideOutHorizontally(targetOffsetX = { it })
-                    }
+                route = AddRemoteNavigation.ListBrands.route,
+                enterTransition = {
+                    slideInHorizontally(initialOffsetX = { it })
+                },
+                exitTransition = {
+                    slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popEnterTransition = {
+                    slideInHorizontally(initialOffsetX = { -it })
+                },
+                popExitTransition = {
+                    slideOutHorizontally(targetOffsetX = { it })
+                },
             ) {
                 ListBrands(
-                        allBrands = allBrands,
-                        onOneClicked = { type, brand ->
-                            viewModel.getCodes(type, brand)
-                            navController.navigate(AddRemoteNavigation.ListCodes.route)
-                        },
-                        onSearch = { viewModel.filterBrands(it) },
-                        onBack = { navController.popBackStack() }
+                    allBrands = allBrands,
+                    onOneClicked = { type, brand ->
+                        viewModel.getCodes(type, brand)
+                        navController.navigate(AddRemoteNavigation.ListCodes.route)
+                    },
+                    onSearch = { viewModel.filterBrands(it) },
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(
-                    route = AddRemoteNavigation.ListCodes.route,
-                    enterTransition = {
-                        slideInHorizontally(initialOffsetX = { it })
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(targetOffsetX = { -it })
-                    },
-                    popEnterTransition = {
-                        slideInHorizontally(initialOffsetX = { -it })
-                    },
-                    popExitTransition = {
-                        androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
-                    }
+                route = AddRemoteNavigation.ListCodes.route,
+                enterTransition = {
+                    slideInHorizontally(initialOffsetX = { it })
+                },
+                exitTransition = {
+                    slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popEnterTransition = {
+                    slideInHorizontally(initialOffsetX = { -it })
+                },
+                popExitTransition = {
+                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                },
             ) {
                 ListCodes(
-                        allCodes = allCodes,
-                        loadingProgress = loadingProgress,
-                        error = error,
-                        brandName = selectedBrand,
-                        onSave = {
-                            viewModel.saveRemote(it)
-                            finish()
-                        },
-                        onBack = { navController.popBackStack() }
+                    allCodes = allCodes,
+                    loadingProgress = loadingProgress,
+                    error = error,
+                    brandName = selectedBrand,
+                    onSave = {
+                        viewModel.saveRemote(it)
+                        finish()
+                    },
+                    onBack = { navController.popBackStack() },
                 )
             }
         }

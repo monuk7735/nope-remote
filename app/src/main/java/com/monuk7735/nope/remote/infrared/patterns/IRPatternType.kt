@@ -6,5 +6,5 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 enum class IRPatternType : Parcelable {
     Cycles,
-    Intervals
+    Intervals,
 }

@@ -1,9 +1,17 @@
 package com.monuk7735.nope.remote
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.NorthEast
+import androidx.compose.material.icons.outlined.NorthWest
+import androidx.compose.material.icons.outlined.SouthEast
+import androidx.compose.material.icons.outlined.SouthWest
+import androidx.compose.material.icons.outlined.ZoomIn
+import androidx.compose.material.icons.outlined.ZoomOut
 import com.monuk7735.nope.remote.infrared.IrCsvParser
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
-import androidx.compose.material.icons.outlined.*
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class IrCsvParserTest {
@@ -77,8 +85,8 @@ class IrCsvParserTest {
             irPattern = com.monuk7735.nope.remote.infrared.patterns.IRPattern(
                 com.monuk7735.nope.remote.infrared.patterns.IRPatternType.Intervals,
                 38000,
-                intArrayOf(100, 100)
-            )
+                intArrayOf(100, 100),
+            ),
         )
         val zoomOutButton = RemoteButtonDBModel(
             offsetX = 0f,
@@ -87,8 +95,8 @@ class IrCsvParserTest {
             irPattern = com.monuk7735.nope.remote.infrared.patterns.IRPattern(
                 com.monuk7735.nope.remote.infrared.patterns.IRPatternType.Intervals,
                 38000,
-                intArrayOf(100, 100)
-            )
+                intArrayOf(100, 100),
+            ),
         )
         val zoomUpButton = RemoteButtonDBModel(
             offsetX = 0f,
@@ -97,8 +105,8 @@ class IrCsvParserTest {
             irPattern = com.monuk7735.nope.remote.infrared.patterns.IRPattern(
                 com.monuk7735.nope.remote.infrared.patterns.IRPatternType.Intervals,
                 38000,
-                intArrayOf(100, 100)
-            )
+                intArrayOf(100, 100),
+            ),
         )
         val zoomDownButton = RemoteButtonDBModel(
             offsetX = 0f,
@@ -107,29 +115,50 @@ class IrCsvParserTest {
             irPattern = com.monuk7735.nope.remote.infrared.patterns.IRPattern(
                 com.monuk7735.nope.remote.infrared.patterns.IRPatternType.Intervals,
                 38000,
-                intArrayOf(100, 100)
-            )
+                intArrayOf(100, 100),
+            ),
         )
 
         assertNotNull(zoomInButton.getIcon())
         assertNotNull(zoomOutButton.getIcon())
         assertNotNull(zoomUpButton.getIcon())
         assertNotNull(zoomDownButton.getIcon())
-        
+
         fun createBtn(name: String) = RemoteButtonDBModel(
-            offsetX = 0f, offsetY = 0f, name = name,
+            offsetX = 0f,
+            offsetY = 0f,
+            name = name,
             irPattern = com.monuk7735.nope.remote.infrared.patterns.IRPattern(
                 com.monuk7735.nope.remote.infrared.patterns.IRPatternType.Intervals,
-                38000, intArrayOf(100, 100)
-            )
+                38000,
+                intArrayOf(100, 100),
+            ),
         )
-        
-        assertEquals(androidx.compose.material.icons.Icons.Outlined.ZoomIn, createBtn("ZM+").getIcon())
-        assertEquals(androidx.compose.material.icons.Icons.Outlined.ZoomOut, createBtn("ZM-").getIcon())
-        
-        assertEquals(androidx.compose.material.icons.Icons.Outlined.NorthWest, createBtn("UP LEFT").getIcon())
-        assertEquals(androidx.compose.material.icons.Icons.Outlined.NorthEast, createBtn("UP RIGHT").getIcon())
-        assertEquals(androidx.compose.material.icons.Icons.Outlined.SouthWest, createBtn("DOWN LEFT").getIcon())
-        assertEquals(androidx.compose.material.icons.Icons.Outlined.SouthEast, createBtn("DOWN RIGHT").getIcon())
+
+        assertEquals(
+            androidx.compose.material.icons.Icons.Outlined.ZoomIn,
+            createBtn("ZM+").getIcon(),
+        )
+        assertEquals(
+            androidx.compose.material.icons.Icons.Outlined.ZoomOut,
+            createBtn("ZM-").getIcon(),
+        )
+
+        assertEquals(
+            androidx.compose.material.icons.Icons.Outlined.NorthWest,
+            createBtn("UP LEFT").getIcon(),
+        )
+        assertEquals(
+            androidx.compose.material.icons.Icons.Outlined.NorthEast,
+            createBtn("UP RIGHT").getIcon(),
+        )
+        assertEquals(
+            androidx.compose.material.icons.Icons.Outlined.SouthWest,
+            createBtn("DOWN LEFT").getIcon(),
+        )
+        assertEquals(
+            androidx.compose.material.icons.Icons.Outlined.SouthEast,
+            createBtn("DOWN RIGHT").getIcon(),
+        )
     }
 }

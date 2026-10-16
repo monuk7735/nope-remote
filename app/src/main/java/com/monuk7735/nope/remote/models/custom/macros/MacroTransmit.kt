@@ -7,7 +7,7 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class MacroTransmit(
     var name: String,
-    val sourceRemoteId:Int,
+    val sourceRemoteId: Int,
     val sourceButtonName: String,
-    val irPattern: IRPattern
+    val irPattern: IRPattern,
 ) : Parcelable
