@@ -1,0 +1,26 @@
+[tools]
+java = "temurin-17"
+
+[tasks.build]
+description = "Build debug APK"
+run = "./gradlew assembleDebug"
+
+[tasks.release]
+description = "Build release APK"
+run = "./gradlew assembleRelease"
+
+[tasks.test]
+description = "Run unit tests"
+run = "./gradlew testDebugUnitTest"
+
+[tasks.lint]
+description = "Check Kotlin code style and formatting"
+run = "./gradlew spotlessCheck"
+
+[tasks.format]
+description = "Auto-format Kotlin code and Gradle scripts"
+run = "./gradlew spotlessApply"
+
+[tasks.install-device]
+description = "Install debug APK on connected Android device"
+run = "./gradlew installDebug"
