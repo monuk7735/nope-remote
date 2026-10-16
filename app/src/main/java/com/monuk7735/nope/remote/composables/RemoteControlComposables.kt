@@ -1,6 +1,10 @@
 package com.monuk7735.nope.remote.composables
 
 import android.content.Context
+import android.hardware.ConsumerIrManager
+import android.os.Build
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -16,9 +20,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForwardIos
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -27,12 +36,16 @@ import androidx.compose.material.icons.outlined.GridOn
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SettingsRemote
+import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +53,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,12 +71,17 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.monuk7735.nope.remote.R
+import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.models.CustomRemoteLayout
+import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
+import kotlin.math.round
 
 @ExperimentalFoundationApi
 @ExperimentalMaterial3Api
@@ -70,6 +89,7 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 fun RemoteControl(
     remoteDataModel: RemoteDataDBModel?,
     onEditRemoteSettings: () -> Unit,
+    onEditLayout: () -> Unit = {},
     onBack: () -> Unit,
 ) {
     var layoutLimits by remember { mutableStateOf(Rect(Offset.Zero, 0f)) }
@@ -85,7 +105,7 @@ fun RemoteControl(
     val sharedPrefs = remember(context) {
         context.getSharedPreferences(
             context.getString(R.string.shared_pref_app_settings),
-            Context.MODE_PRIVATE,
+            android.content.Context.MODE_PRIVATE,
         )
     }
 
@@ -97,17 +117,19 @@ fun RemoteControl(
         sharedPrefs.getBoolean("pref_text_buttons_only", false)
     }
 
+    val isEmpty = (
+        remoteDataModel?.onScreenRemoteButtonDBS.isNullOrEmpty() &&
+            remoteDataModel?.offScreenRemoteButtonDBS.isNullOrEmpty()
+        )
+
     // Custom UI is shown if:
     // 1. Available for this type
     // 2. Global preference is ON (default true)
     // 3. Remote specific preference is ON (default true)
     // Note: We treat 'null' in DB as true (default)
     var showCustomUi by remember(isCustomUiAvailable, remoteDataModel, globalPreferCustomUi) {
-        mutableStateOf(
-            isCustomUiAvailable &&
-                globalPreferCustomUi &&
-                (remoteDataModel?.preferCustomUi != false),
-        )
+        val remotePrefers = remoteDataModel?.preferCustomUi != false
+        mutableStateOf(isCustomUiAvailable && globalPreferCustomUi && remotePrefers)
     }
 
     Scaffold(
@@ -116,16 +138,15 @@ fun RemoteControl(
                 title = "${remoteDataModel?.name}",
                 onBack = onBack,
                 actions = {
-                    if (isCustomUiAvailable) {
+                    if (isCustomUiAvailable && !isEmpty) {
+                        val altIcon = if (layoutType == CustomRemoteLayout.CAMERA) {
+                            Icons.Outlined.CameraAlt
+                        } else {
+                            Icons.Outlined.Lightbulb
+                        }
                         ActionButton(
                             name = "Switch Layout",
-                            icon = if (showCustomUi) {
-                                Icons.Outlined.GridOn
-                            } else if (layoutType == CustomRemoteLayout.CAMERA) {
-                                Icons.Outlined.CameraAlt
-                            } else {
-                                Icons.Outlined.Lightbulb
-                            },
+                            icon = if (showCustomUi) Icons.Outlined.GridOn else altIcon,
                             onClick = { showCustomUi = !showCustomUi },
                         )
                     }
@@ -147,7 +168,13 @@ fun RemoteControl(
                     }
                     .background(MaterialTheme.colorScheme.background),
             ) {
-                if (showCustomUi &&
+                if (isEmpty) {
+                    EmptyRemoteGuide(
+                        remoteDataModel = remoteDataModel,
+                        onEditLayout = onEditLayout,
+                    )
+                } else if (
+                    showCustomUi &&
                     layoutType == CustomRemoteLayout.CAMERA &&
                     shutterButton != null
                 ) {
@@ -171,6 +198,157 @@ fun RemoteControl(
     )
 }
 
+@Composable
+fun EmptyRemoteGuide(
+    remoteDataModel: RemoteDataDBModel?,
+    onEditLayout: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer.copy(
+                alpha = 0.7f,
+            ),
+            modifier = Modifier.size(76.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Outlined.SettingsRemote,
+                    contentDescription = null,
+                    modifier = Modifier.size(38.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "This Remote is Empty",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "Add your custom buttons and IR signals to start " +
+                "controlling devices with this remote.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Text(
+                    text = "How to add buttons:",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+
+                StepGuideRow(
+                    step = "1",
+                    title = "Open Layout Editor",
+                    description = "Tap 'Edit Layout & Add Buttons' below " +
+                        "(or Settings ⚙ > Customize Layout).",
+                )
+
+                StepGuideRow(
+                    step = "2",
+                    title = "Tap '+ Add Key'",
+                    description = "Tap the '+ Add Key' button to configure a new button.",
+                )
+
+                StepGuideRow(
+                    step = "3",
+                    title = "Select Protocol or Frequency",
+                    description = "Choose from supported protocols " +
+                        "(NEC, Sony, Samsung, etc.) or enter carrier frequency and raw pulses.",
+                )
+
+                StepGuideRow(
+                    step = "4",
+                    title = "Position and Save",
+                    description = "Drag the button to any slot on the grid, " +
+                        "test it, and tap the Save (💾) icon.",
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onEditLayout,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Icon(Icons.Outlined.Edit, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Edit Layout & Add Buttons",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
+fun StepGuideRow(step: String, title: String, description: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = step,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 @ExperimentalFoundationApi
 @ExperimentalMaterial3Api
 @ExperimentalComposeUiApi
@@ -185,16 +363,104 @@ fun RemoteControlEditLayout(
     var gridEnabled by remember { mutableStateOf(true) }
     var showGridSettings by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
+    var showAddKeyDialog by remember { mutableStateOf(false) }
     var gridHCount by remember { mutableIntStateOf(5) }
     var gridVCount by remember { mutableIntStateOf(10) }
 
     val hasChanges = localRemoteDataDBModel != remoteDataModel
+    val isCustomRemote = localRemoteDataDBModel?.isCustom == true
 
     BackHandler(enabled = hasChanges) {
         showDiscardDialog = true
     }
 
     val context = LocalContext.current
+    val density = LocalDensity.current
+
+    val irController = remember(context) {
+        val manager = context.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
+        if (manager != null) IRController(manager) else null
+    }
+
+    val vibrator = remember(context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(
+                Context.VIBRATOR_MANAGER_SERVICE,
+            ) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            context.getSystemService(Vibrator::class.java)!!
+        }
+    }
+
+    if (showAddKeyDialog) {
+        AddCustomKeyDialog(
+            onDismissRequest = { showAddKeyDialog = false },
+            onAddKey = { name, pattern ->
+                val currentModel = localRemoteDataDBModel ?: return@AddCustomKeyDialog
+                val currentOnScreen = currentModel.onScreenRemoteButtonDBS
+                val buttonSizePx = with(density) { 72.dp.toPx() }
+                val maxRows = (gridVCount - 1).coerceAtLeast(1)
+                val gridSizeXPx = if (layoutLimits.width > 0) {
+                    layoutLimits.width / gridHCount.toFloat()
+                } else {
+                    0f
+                }
+                val gridSizeYPx = if (layoutLimits.height > 0) {
+                    layoutLimits.height / gridVCount.toFloat()
+                } else {
+                    0f
+                }
+
+                val occupiedSlots = if (gridSizeXPx > 0 && gridSizeYPx > 0) {
+                    currentOnScreen.map { b ->
+                        Pair(
+                            round(b.offsetX / gridSizeXPx).toInt().coerceIn(0, gridHCount - 1),
+                            round(b.offsetY / gridSizeYPx).toInt().coerceIn(0, maxRows - 1),
+                        )
+                    }.toSet()
+                } else {
+                    emptySet()
+                }
+
+                var targetSlot: Pair<Int, Int>? = null
+                for (r in 0 until maxRows) {
+                    for (c in 0 until gridHCount) {
+                        if (!occupiedSlots.contains(Pair(c, r))) {
+                            targetSlot = Pair(c, r)
+                            break
+                        }
+                    }
+                    if (targetSlot != null) break
+                }
+
+                val (snappedX, snappedY) = if (
+                    targetSlot != null && gridSizeXPx > 0 && gridSizeYPx > 0
+                ) {
+                    val (c, r) = targetSlot
+                    Pair(
+                        gridSizeXPx * c + (gridSizeXPx - buttonSizePx) / 2,
+                        gridSizeYPx * r + (gridSizeYPx - buttonSizePx) / 2,
+                    )
+                } else {
+                    Pair(gridSizeXPx, gridSizeYPx)
+                }
+
+                val newButton = RemoteButtonDBModel(
+                    offsetX = snappedX,
+                    offsetY = snappedY,
+                    name = name,
+                    irPattern = pattern,
+                )
+
+                localRemoteDataDBModel = currentModel.copy(
+                    onScreenRemoteButtonDBS = currentOnScreen + newButton,
+                )
+            },
+            irController = irController,
+            vibrator = vibrator,
+        )
+    }
 
     if (showGridSettings) {
         Dialog(onDismissRequest = { showGridSettings = false }) {
@@ -303,6 +569,15 @@ fun RemoteControlEditLayout(
                     }
                 },
                 actions = {
+                    if (isCustomRemote) {
+                        IconButton(onClick = { showAddKeyDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Outlined.AddCircleOutline,
+                                contentDescription = "Add Key",
+                            )
+                        }
+                    }
+
                     IconButton(onClick = { showGridSettings = true }) {
                         Icon(
                             imageVector =
@@ -321,6 +596,18 @@ fun RemoteControlEditLayout(
                 },
             )
         },
+        floatingActionButton = {
+            if (isCustomRemote) {
+                ExtendedFloatingActionButton(
+                    onClick = { showAddKeyDialog = true },
+                    icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+                    text = { Text("Add Key") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center,
         content = { innerPadding ->
             Box(
                 modifier =
@@ -330,6 +617,50 @@ fun RemoteControlEditLayout(
                     layoutLimits = coordinates.boundsInWindow()
                 },
             ) {
+                if (localRemoteDataDBModel?.onScreenRemoteButtonDBS.isNullOrEmpty() &&
+                    localRemoteDataDBModel?.offScreenRemoteButtonDBS.isNullOrEmpty()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(
+                                alpha = 0.5f,
+                            ),
+                            modifier = Modifier.size(64.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Outlined.TouchApp,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No Buttons on Layout",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Tap '+ Add Key' below to add a protocol or " +
+                                "frequency IR button.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+
                 EditableRemote(
                     remoteDataDBModel = localRemoteDataDBModel,
                     onUpdate = { dbModel -> localRemoteDataDBModel = dbModel },
@@ -340,7 +671,7 @@ fun RemoteControlEditLayout(
                     textOnlyMode = remember(context) {
                         context.getSharedPreferences(
                             context.getString(R.string.shared_pref_app_settings),
-                            Context.MODE_PRIVATE,
+                            android.content.Context.MODE_PRIVATE,
                         ).getBoolean("pref_text_buttons_only", false)
                     },
                 )
@@ -433,7 +764,7 @@ fun RemoteControlSettings(
                         val sharedPrefs = remember(context) {
                             context.getSharedPreferences(
                                 context.getString(R.string.shared_pref_app_settings),
-                                Context.MODE_PRIVATE,
+                                android.content.Context.MODE_PRIVATE,
                             )
                         }
                         val globalPreferCustomUi = remember(sharedPrefs) {

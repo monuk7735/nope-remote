@@ -148,7 +148,7 @@ class MiRemoteDumpRepository(private val context: Context) : IRSourceRepository 
                                 val value = keysObj.getString(originalKeyName)
 
                                 try {
-                                    val timings = decrypt(value)
+                                    val timings = parseOrDecrypt(value)
                                     if (timings.isNotEmpty()) {
                                         val hex = IrCsvParser.encodeToProntoHex(frequency, timings)
                                         codeMap[keyName] = hex
@@ -184,10 +184,59 @@ class MiRemoteDumpRepository(private val context: Context) : IRSourceRepository 
         return list
     }
 
-    // Decryption Logic
+    // Decryption / Parsing Logic
     // Key: fd7e915003168929c1a9b0ec32a60788
     private val secretKeySpec =
         SecretKeySpec("fd7e915003168929c1a9b0ec32a60788".toByteArray(Charsets.UTF_8), "AES")
+
+    private fun parseOrDecrypt(rawVal: String): List<Int> {
+        if (rawVal.isBlank()) return emptyList()
+
+        // 1. Check for raw CSV microsecond format: "7&&4453,4453,539,1629,..." or "4453,4453,..."
+        if (rawVal.contains(",")) {
+            val csvPart = if (rawVal.contains("&")) rawVal.substringAfterLast("&") else rawVal
+            val timings = csvPart.split(",").mapNotNull { it.trim().toIntOrNull() }
+            if (timings.size >= 4) return timings
+        }
+
+        // 2. Check for plain Hex AC frame format (e.g., Midea AC key "064DB2FD0200FF")
+        if (rawVal.all { it in "0123456789ABCDEFabcdef" } &&
+            rawVal.length % 2 == 0 &&
+            rawVal.length >= 4
+        ) {
+            try {
+                val bytes = rawVal.chunked(2).map { it.toInt(16).toByte() }
+                val len = bytes[0].toInt() and 0xFF
+                if (len > 0 && len < bytes.size) {
+                    val payload = bytes.subList(1, 1 + len)
+                    val timings = mutableListOf<Int>()
+                    // Midea NEC AC protocol header
+                    timings.add(4453)
+                    timings.add(4453)
+                    for (b in payload) {
+                        for (bitIdx in 0 until 8) {
+                            val bit = (b.toInt() shr bitIdx) and 1
+                            if (bit == 1) {
+                                timings.add(540)
+                                timings.add(1620)
+                            } else {
+                                timings.add(540)
+                                timings.add(540)
+                            }
+                        }
+                    }
+                    timings.add(540)
+                    timings.add(5000)
+                    return timings
+                }
+            } catch (e: Exception) {
+                // fallback to standard decrypt
+            }
+        }
+
+        // 3. Fallback to standard AES+Base64+Gzip decrypt
+        return decrypt(rawVal)
+    }
 
     private fun decrypt(base64Str: String): List<Int> {
         try {

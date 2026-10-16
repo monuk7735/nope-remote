@@ -96,6 +96,11 @@ class RemoteControlActivity : ComponentActivity() {
                             RemoteControlNavigation.RemoteControlSettings.route,
                         )
                     },
+                    onEditLayout = {
+                        navController.navigate(
+                            RemoteControlNavigation.RemoteControlEditLayout.route,
+                        )
+                    },
                     onBack = { finish() },
                 )
             }
@@ -122,13 +127,6 @@ class RemoteControlActivity : ComponentActivity() {
                         navController.popBackStack()
                     },
                     onEditLayout = {
-                        setRemoteData(
-                            IntentCompat.getParcelableExtra(
-                                intent,
-                                "remote",
-                                RemoteDataDBModel::class.java,
-                            ),
-                        )
                         navController.navigate(
                             RemoteControlNavigation.RemoteControlEditLayout.route,
                         )
@@ -157,7 +155,7 @@ class RemoteControlActivity : ComponentActivity() {
                 },
             ) {
                 RemoteControlEditLayout(
-                    remoteDataModel = remoteData,
+                    remoteDataModel = liveRemote.value,
                     onSaveLayout = {
                         viewModel.updateRemote(it)
                         navController.popBackStack()

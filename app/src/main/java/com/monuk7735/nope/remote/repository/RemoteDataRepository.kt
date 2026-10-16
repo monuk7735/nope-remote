@@ -12,9 +12,8 @@ class RemoteDataRepository(private val remoteDao: RemoteDao) {
 
     fun getLiveRemote(id: Int): LiveData<RemoteDataDBModel> = remoteDao.getLiveRemote(id)
 
-    suspend fun addRemote(remoteDataDBModel: RemoteDataDBModel) {
+    suspend fun addRemote(remoteDataDBModel: RemoteDataDBModel): Long =
         remoteDao.addRemote(remoteDataDBModel)
-    }
 
     suspend fun updateRemote(remoteDataDBModel: RemoteDataDBModel) {
         remoteDao.updateRemote(remoteDataDBModel)

@@ -35,12 +35,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBackIos
 import androidx.compose.material.icons.automirrored.outlined.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -50,6 +52,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -92,6 +95,7 @@ fun ListTypes(
     onSearch: (String) -> Unit,
     onBack: () -> Unit,
     onGoToSettings: () -> Unit,
+    onCreateCustomRemote: () -> Unit,
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -137,6 +141,15 @@ fun ListTypes(
                 },
                 onBack = onBack,
                 actions = {
+                    TextButton(onClick = onCreateCustomRemote) {
+                        Icon(
+                            imageVector = Icons.Outlined.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("Custom")
+                    }
                     if (availableRepos.size > 1) {
                         IconButton(onClick = { showDialog = true }) {
                             Icon(
@@ -172,17 +185,30 @@ fun ListTypes(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text =
-                            "You need to download an IR database to use this feature without internet.",
+                            text = "You can download an IR database from Settings, " +
+                                "or create a custom remote directly without downloading any source.",
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyMedium,
-                            color =
-                            MaterialTheme.colorScheme
-                                .onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(modifier = Modifier.height(24.dp))
-                        Button(onClick = onGoToSettings) {
-                            Text("Go to Settings")
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(
+                                12.dp,
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            OutlinedButton(onClick = onGoToSettings) {
+                                Text("Go to Settings")
+                            }
+                            Button(onClick = onCreateCustomRemote) {
+                                Icon(
+                                    Icons.Outlined.Add,
+                                    contentDescription = null,
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text("Custom Remote")
+                            }
                         }
                     }
                 } else if (allTypes == null) {
@@ -193,10 +219,69 @@ fun ListTypes(
                 } else if (allTypes.isEmpty()) {
                     EmptyState(
                         text = "No types found",
-                        secondaryText = "Try a different search term",
+                        secondaryText = "Try a different search term or create a custom remote",
                         icon = Icons.Outlined.SearchOff,
                     )
                 } else {
+                    Card(
+                        onClick = onCreateCustomRemote,
+                        modifier = Modifier.fillMaxWidth().padding(
+                            horizontal = 16.dp,
+                            vertical = 6.dp,
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
+                                alpha = 0.45f,
+                            ),
+                        ),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(
+                                14.dp,
+                            ).fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(38.dp),
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Tune,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(
+                                            20.dp,
+                                        ),
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Custom Remote",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    text = "Create an empty remote with custom IR codes",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowForwardIos,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
                         modifier = Modifier.fillMaxSize(),
