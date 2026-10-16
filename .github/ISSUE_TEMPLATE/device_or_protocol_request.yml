@@ -1,0 +1,57 @@
+name: Device or Protocol Request
+description: Request support for a specific remote control, appliance, or IR protocol
+title: "[Device/Protocol]: "
+labels: ["device-support"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to request codes for a specific appliance model or a new infrared protocol.
+
+  - type: input
+    id: appliance-type
+    attributes:
+      label: Appliance Type
+      description: What type of device is this? (e.g., TV, AC, Set-Top Box, Projector, Soundbar)
+      placeholder: "TV"
+    validations:
+      required: true
+
+  - type: input
+    id: brand
+    attributes:
+      label: Brand
+      placeholder: "e.g., LG, Sony, Carrier, Denon"
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Device Model / Remote Model
+      placeholder: "e.g., Model: OLED55C1, Remote: AKB75095308"
+    validations:
+      required: true
+
+  - type: input
+    id: protocol
+    attributes:
+      label: IR Protocol (if known)
+      placeholder: "e.g., NEC, Sony SIRC, RC5, Pronto Hex"
+    validations:
+      required: false
+
+  - type: textarea
+    id: codes-reference
+    attributes:
+      label: Known Codes or Database References
+      description: If you have Pronto hex codes, Flipper .ir files, LIRC files, or a link to an IR database, paste them here.
+      render: shell
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have verified that this device does not already work under another similar model or repository in the app.
+          required: true

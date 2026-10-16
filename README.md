@@ -94,7 +94,12 @@ Download the latest APK from the [Releases](https://github.com/monuk7735/NopeRem
 
 ## Contributing
 
-Contributions are welcome! Please feel free to open issues or submit pull requests.
+Contributions are welcome! Please see our **[Contributing Guidelines](CONTRIBUTING.md)** to set up your environment with `mise`, run checks, and submit pull requests.
+
+## Security
+
+Please review our **[Security Policy](SECURITY.md)** for supported versions and instructions on how to report vulnerabilities responsibly.
+
 
 ## License
 
