@@ -5,6 +5,7 @@ pluginManagement {
         mavenCentral()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -14,4 +15,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Nope Remote"
 include(":app")
-// include(":infrared") // Commenting out as the directory doesn't seem to exist
