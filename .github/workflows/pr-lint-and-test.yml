@@ -1,0 +1,29 @@
+name: PR Verification (Lint & Tests)
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    environment: pr-review
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Tools via mise
+        uses: jdx/mise-action@v2
+
+      - name: Run Kotlin Lint (Spotless)
+        run: mise run lint
+
+      - name: Run Unit Tests
+        run: mise run test
