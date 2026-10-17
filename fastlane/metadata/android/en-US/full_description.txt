@@ -1,14 +1,15 @@
-Nope-Remote is an open-source Android application that turns your smartphone into a powerful, universal IR remote control.
+Nope-Remote is an open-source Android application that turns your smartphone into a powerful, universal remote control for both Infrared (IR) devices and Android TV / Google TV.
 
-Built with modern Android technologies, it offers a sleek Material You interface and advanced features like Custom Macros to automate your home entertainment system.
+Built with modern Android technologies, it offers a sleek Material You interface and advanced features like Custom Macros to automate your home entertainment system. Even if your phone lacks a built-in IR blaster, you can seamlessly discover and control Android TV devices over Wi-Fi.
 
 Key Features:
 
-- Universal Compatibility: Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
+- Android TV & Google TV Control: Seamlessly discover (mDNS) and control Android TVs over local Wi-Fi with secure pairing, directional pad, media playback, text input, and quick app launch shortcuts.
+- Universal IR Compatibility: Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
+- Hardware Volume Button Control: Optionally adjust TV volume directly using your phone's physical volume buttons.
 - Custom Macros: Create "Macros" to chain multiple commands together (e.g., Turn on TV, STB, and Soundbar with one tap).
-- Offline Database: Direct database downloads for seamless offline access without reliance on third-party CDNs.
-- Enhanced Repository Support: Expanded support for multiple repositories and improved setup process.
-- Performance: optimized internal architecture for smoother operation and better maintainability.
+- Offline IR Database: Direct database downloads for seamless offline access without reliance on third-party CDNs.
+- Enhanced Repository Support: Expanded support for community repositories and infrared databases.
 - Material You Design: Beautiful, modern UI that adapts to your wallpaper's colors.
 - Dark/Light Mode: Fully supports system-wide themes.
-- Haptic Feedback: Tactile confirmation for every button press.
+- Haptic Feedback: Tactile confirmation for button presses with customizable vibration preferences.
