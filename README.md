@@ -25,6 +25,8 @@
 ## Features
 
 - **Universal Compatibility** - Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
+- **Custom Remote Creation** - Build completely custom remotes from scratch tailored to your exact devices and layout preferences.
+- **Custom Button Support** - Add and configure custom keys and buttons on your remotes with custom labels, icons, frequencies, and IR patterns.
 - **Custom Macros** - Create "Macros" to chain multiple commands together. Turn on your TV, Set-Top Box, and Soundbar with a single tap!
 - **Offline Database** - Direct database downloads for seamless offline access without reliance on third-party CDNs.
 - **Enhanced Repository Support** - Expanded support for multiple repositories and improved setup process.
