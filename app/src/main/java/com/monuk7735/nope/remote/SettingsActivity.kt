@@ -26,8 +26,10 @@ import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Abc
 import androidx.compose.material.icons.outlined.Brightness4
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.Vibration
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -211,6 +213,31 @@ class SettingsActivity : ComponentActivity() {
 
                     item {
                         SettingsGroup(title = "Android TV") {
+                            val dpadMode by viewModel
+                                .androidTvDpadModeSettingsValue
+                                .observeAsState(0)
+
+                            val dpadOptions = listOf("Buttons (Arrows & OK)", "Touchpad (Gestures)")
+                            SingleChoicePreference(
+                                title = "D-Pad Control Mode",
+                                summary = dpadOptions.getOrElse(dpadMode) {
+                                    "Buttons (Arrows & OK)"
+                                },
+                                icon = if (dpadMode ==
+                                    1
+                                ) {
+                                    Icons.Outlined.TouchApp
+                                } else {
+                                    Icons.Outlined.Gamepad
+                                },
+                                options = dpadOptions,
+                                selectedOption = dpadMode,
+                                onOptionSelected = {
+                                    viewModel.androidTvDpadModeSettingsValue.value = it
+                                    viewModel.saveSettings(applicationContext)
+                                },
+                            )
+
                             val volumeKeyControl by viewModel
                                 .androidTvVolumeKeysSettingsValue
                                 .observeAsState(true)

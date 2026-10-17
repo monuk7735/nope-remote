@@ -6,8 +6,11 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.KeyEvent
 import android.widget.Toast
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +41,7 @@ import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -65,8 +69,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -78,7 +85,10 @@ import com.monuk7735.nope.remote.androidtv.pairing.AndroidTvPairingManager
 import com.monuk7735.nope.remote.androidtv.proto.remote.Remotemessage
 import com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient
 import com.monuk7735.nope.remote.androidtv.ssl.AndroidTvSslManager
+import kotlin.math.abs
+import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -186,6 +196,23 @@ private fun AndroidTvRemoteContent(
             context.getString(R.string.shared_pref_app_settings),
             Context.MODE_PRIVATE,
         )
+    }
+
+    var dpadMode by remember {
+        mutableStateOf(prefs.getInt("pref_android_tv_dpad_mode", 0))
+    }
+
+    DisposableEffect(prefs) {
+        val listener =
+            android.content.SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
+                if (key == "pref_android_tv_dpad_mode") {
+                    dpadMode = sp.getInt("pref_android_tv_dpad_mode", 0)
+                }
+            }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
     }
 
     val vibrator = remember {
@@ -469,7 +496,7 @@ private fun AndroidTvRemoteContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                // Top Row: Power & Keyboard
+                // Top Row: Power, Mode Toggle, & Keyboard
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -494,94 +521,101 @@ private fun AndroidTvRemoteContent(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // D-Pad Navigation Cluster
-                Box(
-                    modifier = Modifier
-                        .size(230.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    // Up
-                    IconButton(
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_UP) },
+                // D-Pad Navigation: Touchpad with Gestures or Traditional Buttons
+                if (dpadMode == 1) {
+                    AndroidTvTouchpad(
+                        onSendKey = { sendKey(it) },
+                    )
+                } else {
+                    // D-Pad Navigation Cluster (Buttons)
+                    Box(
                         modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 10.dp)
-                            .size(56.dp),
+                            .size(230.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.KeyboardArrowUp,
-                            contentDescription = "Up",
-                            modifier = Modifier.size(36.dp),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-
-                    // Down
-                    IconButton(
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_DOWN) },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 10.dp)
-                            .size(56.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.KeyboardArrowDown,
-                            contentDescription = "Down",
-                            modifier = Modifier.size(36.dp),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-
-                    // Left
-                    IconButton(
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_LEFT) },
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .padding(start = 10.dp)
-                            .size(56.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
-                            contentDescription = "Left",
-                            modifier = Modifier.size(36.dp),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-
-                    // Right
-                    IconButton(
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_RIGHT) },
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = 10.dp)
-                            .size(56.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                            contentDescription = "Right",
-                            modifier = Modifier.size(36.dp),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-
-                    // Center OK
-                    Surface(
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_CENTER) },
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(76.dp),
-                        tonalElevation = 4.dp,
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "OK",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimary,
+                        // Up
+                        IconButton(
+                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_UP) },
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 10.dp)
+                                .size(56.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.KeyboardArrowUp,
+                                contentDescription = "Up",
+                                modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
                             )
+                        }
+
+                        // Down
+                        IconButton(
+                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_DOWN) },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 10.dp)
+                                .size(56.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.KeyboardArrowDown,
+                                contentDescription = "Down",
+                                modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+
+                        // Left
+                        IconButton(
+                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_LEFT) },
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .padding(start = 10.dp)
+                                .size(56.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
+                                contentDescription = "Left",
+                                modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+
+                        // Right
+                        IconButton(
+                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_RIGHT) },
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 10.dp)
+                                .size(56.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                contentDescription = "Right",
+                                modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+
+                        // Center OK
+                        Surface(
+                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_CENTER) },
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(76.dp),
+                            tonalElevation = 4.dp,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "OK",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            }
                         }
                     }
                 }
@@ -1008,6 +1042,245 @@ private fun AndroidTvButton(
                 contentDescription = contentDescription,
                 tint = tint,
                 modifier = Modifier.size(26.dp),
+            )
+        }
+    }
+}
+
+private enum class TouchpadDirection {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+}
+
+@Composable
+private fun AndroidTvTouchpad(
+    onSendKey: (Remotemessage.RemoteKeyCode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val coroutineScope = rememberCoroutineScope()
+    var isTouched by remember { mutableStateOf(false) }
+    var touchPos by remember { mutableStateOf<Offset?>(null) }
+    var activeDirection by remember { mutableStateOf<TouchpadDirection?>(null) }
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val outlineColor = MaterialTheme.colorScheme.outlineVariant
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth(0.85f)
+            .height(230.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+            .border(
+                width = 1.5.dp,
+                color =
+                if (isTouched) {
+                    primaryColor.copy(alpha = 0.6f)
+                } else {
+                    outlineColor.copy(alpha = 0.8f)
+                },
+                shape = RoundedCornerShape(32.dp),
+            )
+            .pointerInput(Unit) {
+                val touchSlop = viewConfiguration.touchSlop
+                val swipeThreshold = 36.dp.toPx()
+                val continuousStep = 52.dp.toPx()
+
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val downTime = System.currentTimeMillis()
+                    val startPos = down.position
+                    var lastTriggerPos = down.position
+                    var totalMoved = 0f
+                    var isSwipeTriggered = false
+
+                    touchPos = down.position
+                    isTouched = true
+
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Main)
+                        val current = event.changes.firstOrNull { it.id == down.id } ?: break
+
+                        if (!current.pressed) {
+                            val duration = System.currentTimeMillis() - downTime
+                            if (!isSwipeTriggered && totalMoved < touchSlop && duration < 600) {
+                                onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_CENTER)
+                            }
+                            current.consume()
+                            break
+                        }
+
+                        val currentPos = current.position
+                        touchPos = currentPos
+
+                        val dxTotal = currentPos.x - startPos.x
+                        val dyTotal = currentPos.y - startPos.y
+                        val distTotal = sqrt(dxTotal * dxTotal + dyTotal * dyTotal)
+                        if (distTotal > totalMoved) totalMoved = distTotal
+
+                        val dxStep = currentPos.x - lastTriggerPos.x
+                        val dyStep = currentPos.y - lastTriggerPos.y
+
+                        val thresholdToUse =
+                            if (!isSwipeTriggered) swipeThreshold else continuousStep
+
+                        if (abs(dxStep) >= thresholdToUse || abs(dyStep) >= thresholdToUse) {
+                            if (abs(dxStep) > abs(dyStep)) {
+                                if (dxStep > 0) {
+                                    activeDirection = TouchpadDirection.RIGHT
+                                    onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_RIGHT)
+                                } else {
+                                    activeDirection = TouchpadDirection.LEFT
+                                    onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_LEFT)
+                                }
+                            } else {
+                                if (dyStep > 0) {
+                                    activeDirection = TouchpadDirection.DOWN
+                                    onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_DOWN)
+                                } else {
+                                    activeDirection = TouchpadDirection.UP
+                                    onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_UP)
+                                }
+                            }
+                            isSwipeTriggered = true
+                            lastTriggerPos = currentPos
+                            current.consume()
+
+                            coroutineScope.launch {
+                                delay(200)
+                                activeDirection = null
+                            }
+                        }
+                    }
+
+                    isTouched = false
+                    touchPos = null
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        // Visual touch indicator / trail
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            touchPos?.let { pos ->
+                drawCircle(
+                    color = primaryColor.copy(alpha = 0.15f),
+                    radius = 36.dp.toPx(),
+                    center = pos,
+                )
+                drawCircle(
+                    color = primaryColor.copy(alpha = 0.5f),
+                    radius = 8.dp.toPx(),
+                    center = pos,
+                )
+            }
+        }
+
+        // Top Chevron (Up)
+        Icon(
+            imageVector = Icons.Outlined.KeyboardArrowUp,
+            contentDescription = "Up",
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 10.dp)
+                .size(32.dp),
+            tint = if (activeDirection == TouchpadDirection.UP) {
+                primaryColor
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+            },
+        )
+
+        // Bottom Chevron (Down)
+        Icon(
+            imageVector = Icons.Outlined.KeyboardArrowDown,
+            contentDescription = "Down",
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 10.dp)
+                .size(32.dp),
+            tint = if (activeDirection == TouchpadDirection.DOWN) {
+                primaryColor
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+            },
+        )
+
+        // Left Chevron (Left)
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
+            contentDescription = "Left",
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 12.dp)
+                .size(32.dp),
+            tint = if (activeDirection == TouchpadDirection.LEFT) {
+                primaryColor
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+            },
+        )
+
+        // Right Chevron (Right)
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = "Right",
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 12.dp)
+                .size(32.dp),
+            tint = if (activeDirection == TouchpadDirection.RIGHT) {
+                primaryColor
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+            },
+        )
+
+        // Center Hint / Status
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isTouched) {
+                            primaryColor.copy(alpha = 0.2f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                        },
+                    )
+                    .border(
+                        1.dp,
+                        if (isTouched) {
+                            primaryColor
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        },
+                        CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.TouchApp,
+                    contentDescription = null,
+                    modifier = Modifier.size(26.dp),
+                    tint =
+                    if (isTouched) {
+                        primaryColor
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    },
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Swipe to move • Tap for OK",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             )
         }
     }
