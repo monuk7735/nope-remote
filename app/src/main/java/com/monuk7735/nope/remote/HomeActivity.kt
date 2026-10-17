@@ -71,6 +71,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -92,10 +93,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.monuk7735.nope.remote.androidtv.discovery.AndroidTvDiscoveryManager
 import com.monuk7735.nope.remote.androidtv.discovery.DiscoveredTvDevice
+import com.monuk7735.nope.remote.androidtv.ssl.AndroidTvSslManager
 import com.monuk7735.nope.remote.composables.AppBar
 import com.monuk7735.nope.remote.composables.EmptyState
 import com.monuk7735.nope.remote.composables.MacroSequenceCard
@@ -106,6 +111,7 @@ import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.viewmodels.HomeActivityViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @ExperimentalFoundationApi
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
@@ -160,6 +166,29 @@ class HomeActivity : ComponentActivity() {
             discoveryManager.startDiscovery()
             onDispose {
                 discoveryManager.stopDiscovery()
+            }
+        }
+
+        val lifecycleOwner = LocalLifecycleOwner.current
+        var openingTvHost by remember { mutableStateOf<String?>(null) }
+
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    openingTvHost = null
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            withContext(Dispatchers.IO) {
+                try {
+                    AndroidTvSslManager.getInstance(context)
+                } catch (_: Exception) {}
             }
         }
 
@@ -492,7 +521,9 @@ class HomeActivity : ComponentActivity() {
                                             discoveredTvs = discoveredTvs,
                                             isDiscovering = isDiscovering,
                                             onRescan = { discoveryManager.rescan() },
+                                            openingTvHost = openingTvHost,
                                             onTvClick = { tv ->
+                                                openingTvHost = tv.host
                                                 startActivity(
                                                     Intent(
                                                         context,
@@ -732,6 +763,7 @@ private fun DiscoveredTvSection(
     discoveredTvs: List<DiscoveredTvDevice>,
     isDiscovering: Boolean,
     onRescan: () -> Unit,
+    openingTvHost: String? = null,
     onTvClick: (DiscoveredTvDevice) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -783,6 +815,7 @@ private fun DiscoveredTvSection(
             items(discoveredTvs.size) { i ->
                 DiscoveredTvCard(
                     device = discoveredTvs[i],
+                    isOpening = discoveredTvs[i].host == openingTvHost,
                     onClick = { onTvClick(discoveredTvs[i]) },
                 )
             }
@@ -793,6 +826,7 @@ private fun DiscoveredTvSection(
 @Composable
 private fun DiscoveredTvCard(
     device: DiscoveredTvDevice,
+    isOpening: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -801,7 +835,7 @@ private fun DiscoveredTvCard(
             .width(200.dp)
             .height(130.dp)
             .clip(RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick),
+            .clickable(enabled = !isOpening, onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -833,17 +867,25 @@ private fun DiscoveredTvCard(
                         )
                     }
                 }
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                ) {
-                    Text(
-                        text = "Wi-Fi",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        fontWeight = FontWeight.Bold,
+                if (isOpening) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
                     )
+                } else {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                    ) {
+                        Text(
+                            text = "Wi-Fi",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             }
 

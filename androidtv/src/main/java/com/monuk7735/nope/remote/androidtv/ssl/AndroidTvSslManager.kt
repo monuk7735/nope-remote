@@ -36,7 +36,19 @@ class AndroidTvSslManager(private val context: Context) {
         private const val KEY_ALIAS = "atv_client_identity"
         private val KEYSTORE_PASSWORD = "noperemote_atv_keystore".toCharArray()
 
+        @Volatile
+        private var instance: AndroidTvSslManager? = null
+
+        fun getInstance(context: Context): AndroidTvSslManager = instance ?: synchronized(this) {
+            instance ?: AndroidTvSslManager(context.applicationContext).also {
+                instance = it
+            }
+        }
+
         fun clearAllPairingData(context: Context): Boolean {
+            synchronized(this) {
+                instance = null
+            }
             val keystoreFile = File(context.filesDir, KEYSTORE_NAME)
             try {
                 val sslContext = SSLContext.getInstance("TLS")

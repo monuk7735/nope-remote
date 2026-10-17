@@ -98,6 +98,87 @@ fun AndroidTvRemoteScreen(
     onRegisterVolumeHandler: (((KeyEvent) -> Boolean)?) -> Unit = {},
 ) {
     val context = LocalContext.current
+    var client by remember { mutableStateOf<AndroidTvClient?>(null) }
+    var pairingManager by remember { mutableStateOf<AndroidTvPairingManager?>(null) }
+
+    LaunchedEffect(host) {
+        val (c, p) = withContext(Dispatchers.IO) {
+            val ssl = AndroidTvSslManager.getInstance(context)
+            Pair(AndroidTvClient(ssl), AndroidTvPairingManager(ssl))
+        }
+        client = c
+        pairingManager = p
+    }
+
+    val currentClient = client
+    val currentPairingManager = pairingManager
+
+    if (currentClient == null || currentPairingManager == null) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = deviceName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                                contentDescription = "Back",
+                            )
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                    Text(
+                        text = "Loading remote...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    } else {
+        AndroidTvRemoteContent(
+            host = host,
+            deviceName = deviceName,
+            onBack = onBack,
+            client = currentClient,
+            pairingManager = currentPairingManager,
+            onRegisterVolumeHandler = onRegisterVolumeHandler,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AndroidTvRemoteContent(
+    host: String,
+    deviceName: String,
+    onBack: () -> Unit,
+    client: AndroidTvClient,
+    pairingManager: AndroidTvPairingManager,
+    onRegisterVolumeHandler: (((KeyEvent) -> Boolean)?) -> Unit,
+) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     val prefs = remember {
@@ -118,10 +199,6 @@ fun AndroidTvRemoteScreen(
             context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
     }
-
-    val sslManager = remember { AndroidTvSslManager(context) }
-    val client = remember { AndroidTvClient(sslManager) }
-    val pairingManager = remember { AndroidTvPairingManager(sslManager) }
 
     fun vibrate() {
         val shouldVibrate = prefs.getBoolean(
