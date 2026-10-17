@@ -361,273 +361,180 @@ class HomeActivity : ComponentActivity() {
             ) { pageIndex ->
                 when (pageIndex) {
                     0 -> {
-                        val showEmptyState = allRemotes.isEmpty() && discoveredTvs.isEmpty()
-
-                        if (showEmptyState) {
+                        LazyVerticalGrid(
+                            state = remotesGridState,
+                            columns = GridCells.Adaptive(160.dp),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 8.dp,
+                                bottom = 88.dp,
+                            ),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
                             if (!viewModel.hasIrBlaster) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(24.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Tv,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(64.dp),
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(
-                                        text = if (isDiscovering) {
-                                            "Searching for Android TVs..."
-                                        } else {
-                                            "No Android TVs Found"
-                                        },
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "Make sure your Android TV / Google TV is powered " +
-                                            "on and connected to the same Wi-Fi network.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        OutlinedButton(
-                                            onClick = {
-                                                Toast.makeText(
-                                                    context,
-                                                    "Scanning for Android TVs...",
-                                                    Toast.LENGTH_SHORT,
-                                                ).show()
-                                                discoveryManager.rescan()
-                                            },
-                                            enabled = !isDiscovering,
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme
+                                                .colorScheme.surfaceContainerLow,
+                                        ),
+                                        shape = RoundedCornerShape(24.dp),
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(16.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            if (isDiscovering) {
-                                                CircularProgressIndicator(
-                                                    modifier = Modifier.size(16.dp),
-                                                    strokeWidth = 2.dp,
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Scanning...")
-                                            } else {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Refresh,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp),
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text("Scan Again")
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = MaterialTheme
+                                                    .colorScheme.primaryContainer,
+                                                modifier = Modifier.size(40.dp),
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Outlined.Wifi,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme
+                                                            .colorScheme.onPrimaryContainer,
+                                                        modifier = Modifier.size(20.dp),
+                                                    )
+                                                }
                                             }
-                                        }
-                                        Button(
-                                            onClick = { showManualIpDialog = true },
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.Add,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(18.dp),
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Connect by IP")
+                                            Spacer(modifier = Modifier.width(16.dp))
+                                            Column {
+                                                Text(
+                                                    text = "Wi-Fi Remote Mode",
+                                                    style = MaterialTheme
+                                                        .typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme
+                                                        .colorScheme.onSurface,
+                                                )
+                                                Text(
+                                                    text = "No IR blaster detected. " +
+                                                        "Controlling Android TV over Wi-Fi.",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme
+                                                        .colorScheme.onSurfaceVariant,
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            } else {
-                                EmptyState(
-                                    text = "No Remotes Yet",
-                                    secondaryText =
-                                    "Add a remote to start controlling your devices",
-                                    icon = Icons.Outlined.SettingsInputAntenna,
+                            }
+
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                DiscoveredTvSection(
+                                    discoveredTvs = discoveredTvs,
+                                    isDiscovering = isDiscovering,
+                                    onRescan = { discoveryManager.rescan() },
+                                    openingTvHost = openingTvHost,
+                                    onTvClick = { tv ->
+                                        openingTvHost = tv.host
+                                        startActivity(
+                                            Intent(
+                                                context,
+                                                AndroidTvRemoteActivity::class.java,
+                                            ).apply {
+                                                putExtra("host", tv.host)
+                                                putExtra("name", tv.name)
+                                            },
+                                        )
+                                    },
                                 )
                             }
-                        } else {
-                            LazyVerticalGrid(
-                                state = remotesGridState,
-                                columns = GridCells.Adaptive(160.dp),
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(
-                                    start = 16.dp,
-                                    end = 16.dp,
-                                    top = 8.dp,
-                                    bottom = 88.dp,
-                                ),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                            ) {
-                                if (!viewModel.hasIrBlaster) {
-                                    item(span = { GridItemSpan(maxLineSpan) }) {
-                                        Card(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme
-                                                    .colorScheme.surfaceContainerLow,
+
+                            if (allRemotes.isNotEmpty()) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 8.dp, bottom = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(
+                                                id = R.drawable.ic_ir_remote,
                                             ),
-                                            shape = RoundedCornerShape(24.dp),
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(16.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                Surface(
-                                                    shape = CircleShape,
-                                                    color = MaterialTheme
-                                                        .colorScheme.primaryContainer,
-                                                    modifier = Modifier.size(40.dp),
-                                                ) {
-                                                    Box(contentAlignment = Alignment.Center) {
-                                                        Icon(
-                                                            imageVector = Icons.Outlined.Wifi,
-                                                            contentDescription = null,
-                                                            tint = MaterialTheme
-                                                                .colorScheme.onPrimaryContainer,
-                                                            modifier = Modifier.size(20.dp),
-                                                        )
-                                                    }
-                                                }
-                                                Spacer(modifier = Modifier.width(16.dp))
-                                                Column {
-                                                    Text(
-                                                        text = "Wi-Fi Remote Mode",
-                                                        style = MaterialTheme
-                                                            .typography.titleMedium,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme
-                                                            .colorScheme.onSurface,
-                                                    )
-                                                    Text(
-                                                        text = "No IR blaster detected. " +
-                                                            "Controlling Android TV over Wi-Fi.",
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme
-                                                            .colorScheme.onSurfaceVariant,
-                                                    )
-                                                }
-                                            }
-                                        }
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "IR Remotes",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                        )
                                     }
                                 }
 
-                                if (discoveredTvs.isNotEmpty()) {
-                                    item(span = { GridItemSpan(maxLineSpan) }) {
-                                        DiscoveredTvSection(
-                                            discoveredTvs = discoveredTvs,
-                                            isDiscovering = isDiscovering,
-                                            onRescan = { discoveryManager.rescan() },
-                                            openingTvHost = openingTvHost,
-                                            onTvClick = { tv ->
-                                                openingTvHost = tv.host
+                                items(allRemotes.size) { i ->
+                                    RemoteTile(
+                                        name = allRemotes[i].name,
+                                        deviceType =
+                                        "${allRemotes[i].brand} ${allRemotes[i].type}",
+                                        icon = allRemotes[i].getIcon(),
+                                        onClick = {
+                                            if (!viewModel.hasIrBlaster) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "This remote requires an IR blaster, " +
+                                                        "which was not found on this device.",
+                                                    Toast.LENGTH_LONG,
+                                                ).show()
+                                            } else {
                                                 startActivity(
                                                     Intent(
                                                         context,
-                                                        AndroidTvRemoteActivity::class.java,
+                                                        RemoteControlActivity::class.java,
                                                     ).apply {
-                                                        putExtra("host", tv.host)
-                                                        putExtra("name", tv.name)
+                                                        putExtra("remote", allRemotes[i])
                                                     },
                                                 )
-                                            },
-                                        )
-                                    }
+                                            }
+                                        },
+                                        onLongClick = {
+                                            selectedRemoteForDeletion = allRemotes[i]
+                                        },
+                                        modifier = Modifier.height(140.dp),
+                                    )
                                 }
-
-                                if (allRemotes.isNotEmpty()) {
-                                    if (discoveredTvs.isNotEmpty()) {
-                                        item(span = { GridItemSpan(maxLineSpan) }) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(top = 8.dp, bottom = 4.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(
-                                                        id = R.drawable.ic_ir_remote,
-                                                    ),
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(20.dp),
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = "IR Remotes",
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    fontWeight = FontWeight.Bold,
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    items(allRemotes.size) { i ->
-                                        RemoteTile(
-                                            name = allRemotes[i].name,
-                                            deviceType =
-                                            "${allRemotes[i].brand} ${allRemotes[i].type}",
-                                            icon = allRemotes[i].getIcon(),
-                                            onClick = {
-                                                if (!viewModel.hasIrBlaster) {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "This remote requires an IR blaster, " +
-                                                            "which was not found on this device.",
-                                                        Toast.LENGTH_LONG,
-                                                    ).show()
-                                                } else {
-                                                    startActivity(
-                                                        Intent(
-                                                            context,
-                                                            RemoteControlActivity::class.java,
-                                                        ).apply {
-                                                            putExtra("remote", allRemotes[i])
-                                                        },
-                                                    )
-                                                }
-                                            },
-                                            onLongClick = {
-                                                selectedRemoteForDeletion = allRemotes[i]
-                                            },
-                                            modifier = Modifier.height(140.dp),
-                                        )
-                                    }
-                                } else if (viewModel.hasIrBlaster && discoveredTvs.isNotEmpty()) {
-                                    item(span = { GridItemSpan(maxLineSpan) }) {
-                                        Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 8.dp),
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme
-                                                    .colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                            ),
-                                            shape = RoundedCornerShape(12.dp),
+                            } else if (viewModel.hasIrBlaster) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme
+                                                .colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(16.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            Row(
-                                                modifier = Modifier.padding(16.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                Icon(
-                                                    imageVector =
-                                                    Icons.Outlined.SettingsInputAntenna,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme
-                                                        .colorScheme.onSurfaceVariant,
-                                                )
-                                                Spacer(modifier = Modifier.width(12.dp))
-                                                Text(
-                                                    text = "No IR remotes added yet. " +
-                                                        "Tap '+' to add one.",
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = MaterialTheme
-                                                        .colorScheme.onSurfaceVariant,
-                                                )
-                                            }
+                                            Icon(
+                                                imageVector =
+                                                Icons.Outlined.SettingsInputAntenna,
+                                                contentDescription = null,
+                                                tint = MaterialTheme
+                                                    .colorScheme.onSurfaceVariant,
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = "No IR remotes added yet. " +
+                                                    "Tap '+' to add one.",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme
+                                                    .colorScheme.onSurfaceVariant,
+                                            )
                                         }
                                     }
                                 }
@@ -808,16 +715,68 @@ private fun DiscoveredTvSection(
             }
         }
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 8.dp),
-        ) {
-            items(discoveredTvs.size) { i ->
-                DiscoveredTvCard(
-                    device = discoveredTvs[i],
-                    isOpening = discoveredTvs[i].host == openingTvHost,
-                    onClick = { onTvClick(discoveredTvs[i]) },
-                )
+        if (discoveredTvs.isNotEmpty()) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 8.dp),
+            ) {
+                items(discoveredTvs.size) { i ->
+                    DiscoveredTvCard(
+                        device = discoveredTvs[i],
+                        isOpening = discoveredTvs[i].host == openingTvHost,
+                        onClick = { onTvClick(discoveredTvs[i]) },
+                    )
+                }
+            }
+        } else {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (isDiscovering) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Searching for Android TVs...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "No Android TVs Found",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Make sure your TV is powered on and connected to " +
+                                "the same Wi-Fi network.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
             }
         }
     }
