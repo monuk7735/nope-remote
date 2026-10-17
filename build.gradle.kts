@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application") version "8.13.2" apply false
+    id("com.android.library") version "8.13.2" apply false
     id("org.jetbrains.kotlin.android") version "2.3.0" apply false
     id("org.jetbrains.kotlin.plugin.compose") version "2.3.0" apply false
     id("com.google.dagger.hilt.android") version "2.57.2" apply false
@@ -9,12 +10,12 @@ plugins {
 
 spotless {
     kotlin {
-        target("app/src/**/*.kt")
+        target("app/src/**/*.kt", "androidtv/src/**/*.kt")
         targetExclude("**/build/**")
         ktlint("1.4.1")
     }
     kotlinGradle {
-        target("*.gradle.kts", "app/*.gradle.kts")
+        target("*.gradle.kts", "app/*.gradle.kts", "androidtv/*.gradle.kts")
         ktlint("1.4.1")
     }
 }

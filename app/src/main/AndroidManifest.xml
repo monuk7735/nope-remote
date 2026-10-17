@@ -6,6 +6,9 @@
 
     <uses-permission android:name="android.permission.TRANSMIT_IR" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -13,7 +16,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <uses-feature android:name="android.hardware.consumerir" />
+    <uses-feature
+        android:name="android.hardware.consumerir"
+        android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -40,6 +45,9 @@
         <activity
             android:name=".RemoteControlActivity"
             android:label="@string/title_activity_remote_control" />
+        <activity
+            android:name=".AndroidTvRemoteActivity"
+            android:label="Android TV Remote" />
         <activity
             android:name=".HomeActivity"
             android:theme="@style/Theme.App.Starting"
