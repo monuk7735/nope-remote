@@ -9,7 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,6 +28,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.Vibration
 import androidx.compose.material3.AlertDialog
@@ -40,7 +40,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -98,26 +97,11 @@ class SettingsActivity : ComponentActivity() {
         val dynamicColor by viewModel.dynamicColorSettingsValue.observeAsState(true)
 
         val commandOutput by viewModel.repoCommandOutput.observeAsState("")
-        val isDevMode by viewModel.devModeSettingsValue.observeAsState(false)
 
         var showLogs by remember { mutableStateOf(false) }
         var showClearPairingDialog by remember { mutableStateOf(false) }
         val context = LocalContext.current
         val uriHandler = LocalUriHandler.current
-
-        // Simple effect to show toast when dev mode becomes enabled
-        // In a real app we might use a dedicated event flow, but this works for simple state
-        var previousDevMode by remember { mutableStateOf(isDevMode) }
-        if (isDevMode && !previousDevMode) {
-            android.widget.Toast.makeText(
-                LocalContext.current,
-                "Developer Mode Enabled",
-                android.widget.Toast.LENGTH_SHORT,
-            ).show()
-            previousDevMode = true
-        } else if (!isDevMode) {
-            previousDevMode = false
-        }
 
         NopeRemoteTheme(
             useDarkTheme =
@@ -285,66 +269,67 @@ class SettingsActivity : ComponentActivity() {
                                     onUrlClick = { uriHandler.openUri(repo.displayUrl) },
                                 )
                             }
-
-                            if (isDevMode) {
-                                TextButton(
-                                    onClick = { showLogs = !showLogs },
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                ) {
-                                    Text(if (showLogs) "Hide Logs" else "Show Logs")
-                                }
-                            }
                         }
                     }
 
                     item {
                         SettingsGroup(title = "About") {
-                            // We'll wrap the InfoPreference in a Box or Row to add the click listener for the whole item
-                            Box(modifier = Modifier.clickable { viewModel.onVersionClicked() }) {
-                                InfoPreference(
-                                    title = "App Version",
-                                    value = BuildConfig.VERSION_NAME,
-                                    icon = Icons.Outlined.Info,
-                                )
-                            }
+                            InfoPreference(
+                                title = "App Version",
+                                value = BuildConfig.VERSION_NAME,
+                                icon = Icons.Outlined.Info,
+                            )
                         }
                     }
 
-                    if (isDevMode) {
-                        item {
-                            SettingsGroup(title = "Developer Options") {
-                                Row(
-                                    modifier = Modifier
-                                        .clickable { showClearPairingDialog = true }
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
+                    item {
+                        SettingsGroup(title = "Developer Options") {
+                            Row(
+                                modifier = Modifier
+                                    .clickable { showClearPairingDialog = true }
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp),
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Delete,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(24.dp),
+                                    Text(
+                                        text = "Clear TV Pairings",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.error,
                                     )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Column(
-                                        modifier = Modifier.weight(1f),
-                                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                                    ) {
-                                        Text(
-                                            text = "Clear TV Pairings",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
-                                        Text(
-                                            text = "Remove pairing keys and certificates " +
-                                                "for all Android TVs",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
+                                    Text(
+                                        text = "Remove pairing keys and certificates " +
+                                            "for all Android TVs",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
                                 }
+                            }
+
+                            SwitchPreference(
+                                title = "Operation Logs",
+                                summary = "Show console and repository download logs",
+                                icon = Icons.Outlined.Terminal,
+                                value = showLogs,
+                                onValueChange = { showLogs = it },
+                            )
+
+                            if (showLogs) {
+                                LogOutputView(
+                                    output = commandOutput,
+                                    onClear = { viewModel.clearCommandOutput() },
+                                )
                             }
                         }
                     }
@@ -392,15 +377,6 @@ class SettingsActivity : ComponentActivity() {
                         },
                         shape = RoundedCornerShape(24.dp),
                     )
-                }
-
-                if (showLogs) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.BottomCenter,
-                    ) {
-                        LogOutputView(output = commandOutput)
-                    }
                 }
             }
         }
