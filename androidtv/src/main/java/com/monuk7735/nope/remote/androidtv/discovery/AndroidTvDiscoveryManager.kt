@@ -40,6 +40,8 @@ class AndroidTvDiscoveryManager(private val context: Context) {
     private val resolveQueue = ArrayDeque<NsdServiceInfo>()
     private var isResolving = false
     private var timeoutJob: Job? = null
+    private var isRescanning = false
+    private var rescanJob: Job? = null
 
     companion object {
         private const val TAG = "TvDiscovery"
@@ -51,6 +53,10 @@ class AndroidTvDiscoveryManager(private val context: Context) {
     @Synchronized
     fun startDiscovery() {
         if (_isDiscovering.value) return
+        startDiscoveryInternal()
+    }
+
+    private fun startDiscoveryInternal() {
         _isDiscovering.value = true
 
         try {
@@ -81,12 +87,33 @@ class AndroidTvDiscoveryManager(private val context: Context) {
         }
     }
 
+    @Synchronized
     fun rescan() {
-        stopDiscovery()
+        rescanJob?.cancel()
+        timeoutJob?.cancel()
+        timeoutJob = null
+        isRescanning = true
+        _isDiscovering.value = true
         _discoveredDevices.value = emptyList()
-        scope.launch {
-            delay(400)
-            startDiscovery()
+
+        synchronized(activeListeners) {
+            for (listener in activeListeners) {
+                try {
+                    nsdManager?.stopServiceDiscovery(listener)
+                } catch (_: Exception) {}
+            }
+            activeListeners.clear()
+        }
+
+        synchronized(resolveQueue) {
+            resolveQueue.clear()
+            isResolving = false
+        }
+
+        rescanJob = scope.launch {
+            delay(300)
+            isRescanning = false
+            startDiscoveryInternal()
         }
     }
 
@@ -116,7 +143,7 @@ class AndroidTvDiscoveryManager(private val context: Context) {
                 Log.d(TAG, "Discovery stopped for $serviceType")
                 synchronized(activeListeners) {
                     activeListeners.remove(this)
-                    if (activeListeners.isEmpty()) {
+                    if (!isRescanning && activeListeners.isEmpty()) {
                         _isDiscovering.value = false
                     }
                 }
@@ -126,7 +153,7 @@ class AndroidTvDiscoveryManager(private val context: Context) {
                 Log.e(TAG, "Start discovery failed for $serviceType with error $errorCode")
                 synchronized(activeListeners) {
                     activeListeners.remove(this)
-                    if (activeListeners.isEmpty()) {
+                    if (!isRescanning && activeListeners.isEmpty()) {
                         _isDiscovering.value = false
                     }
                 }
@@ -139,7 +166,7 @@ class AndroidTvDiscoveryManager(private val context: Context) {
                 Log.e(TAG, "Stop discovery failed for $serviceType with error $errorCode")
                 synchronized(activeListeners) {
                     activeListeners.remove(this)
-                    if (activeListeners.isEmpty()) {
+                    if (!isRescanning && activeListeners.isEmpty()) {
                         _isDiscovering.value = false
                     }
                 }
@@ -151,7 +178,9 @@ class AndroidTvDiscoveryManager(private val context: Context) {
             activeListeners.add(listener)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start discovery for $serviceType", e)
-            _isDiscovering.value = false
+            if (!isRescanning && activeListeners.isEmpty()) {
+                _isDiscovering.value = false
+            }
         }
     }
 
@@ -230,6 +259,9 @@ class AndroidTvDiscoveryManager(private val context: Context) {
 
     @Synchronized
     fun stopDiscovery() {
+        rescanJob?.cancel()
+        rescanJob = null
+        isRescanning = false
         timeoutJob?.cancel()
         timeoutJob = null
         _isDiscovering.value = false

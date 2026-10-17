@@ -674,6 +674,16 @@ private fun DiscoveredTvSection(
     onTvClick: (DiscoveredTvDevice) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var isRescanTriggered by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isDiscovering) {
+        if (!isDiscovering) {
+            isRescanTriggered = false
+        }
+    }
+
+    val isSearching = isDiscovering || isRescanTriggered
+
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -695,7 +705,7 @@ private fun DiscoveredTvSection(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
-                if (isDiscovering) {
+                if (isSearching) {
                     Spacer(modifier = Modifier.width(8.dp))
                     CircularProgressIndicator(
                         modifier = Modifier.size(14.dp),
@@ -704,7 +714,11 @@ private fun DiscoveredTvSection(
                 }
             }
             IconButton(
-                onClick = onRescan,
+                onClick = {
+                    isRescanTriggered = true
+                    onRescan()
+                },
+                enabled = !isSearching,
                 modifier = Modifier.size(32.dp),
             ) {
                 Icon(
@@ -744,7 +758,7 @@ private fun DiscoveredTvSection(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    if (isDiscovering) {
+                    if (isSearching) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center,
