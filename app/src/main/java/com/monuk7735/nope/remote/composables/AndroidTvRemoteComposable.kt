@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.view.KeyEvent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -72,6 +73,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.monuk7735.nope.remote.R
 import com.monuk7735.nope.remote.androidtv.pairing.AndroidTvPairingManager
 import com.monuk7735.nope.remote.androidtv.proto.remote.Remotemessage
 import com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient
@@ -89,9 +91,21 @@ enum class PairingStatus {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AndroidTvRemoteScreen(host: String, deviceName: String, onBack: () -> Unit) {
+fun AndroidTvRemoteScreen(
+    host: String,
+    deviceName: String,
+    onBack: () -> Unit,
+    onRegisterVolumeHandler: (((KeyEvent) -> Boolean)?) -> Unit = {},
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    val prefs = remember {
+        context.getSharedPreferences(
+            context.getString(R.string.shared_pref_app_settings),
+            Context.MODE_PRIVATE,
+        )
+    }
 
     val vibrator = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -109,7 +123,61 @@ fun AndroidTvRemoteScreen(host: String, deviceName: String, onBack: () -> Unit) 
     val client = remember { AndroidTvClient(sslManager) }
     val pairingManager = remember { AndroidTvPairingManager(sslManager) }
 
+    fun vibrate() {
+        val shouldVibrate = prefs.getBoolean(
+            context.getString(R.string.pref_settings_vibration),
+            true,
+        )
+        if (!shouldVibrate) return
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(
+                    android.os.VibrationEffect.createOneShot(
+                        35,
+                        android.os.VibrationEffect.DEFAULT_AMPLITUDE,
+                    ),
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(35)
+            }
+        } catch (_: Exception) {}
+    }
+
+    fun sendKey(key: Remotemessage.RemoteKeyCode) {
+        vibrate()
+        client.sendKey(key)
+    }
+
     val connectionState by client.connectionState.collectAsState()
+
+    DisposableEffect(connectionState) {
+        onRegisterVolumeHandler { event ->
+            val volumeKeysEnabled = prefs.getBoolean("pref_android_tv_volume_keys", true)
+            if (!volumeKeysEnabled ||
+                connectionState !is AndroidTvClient.ConnectionState.Connected
+            ) {
+                return@onRegisterVolumeHandler false
+            }
+
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (event.keyCode) {
+                    KeyEvent.KEYCODE_VOLUME_UP -> {
+                        sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_UP)
+                    }
+                    KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                        sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_DOWN)
+                    }
+                }
+            }
+            true
+        }
+        onDispose {
+            onRegisterVolumeHandler(null)
+        }
+    }
+
     var isPaired by remember { mutableStateOf(false) }
     var pairingStatus by remember { mutableStateOf(PairingStatus.IDLE) }
     var pairingErrorMessage by remember { mutableStateOf<String?>(null) }
@@ -203,27 +271,6 @@ fun AndroidTvRemoteScreen(host: String, deviceName: String, onBack: () -> Unit) 
             }
             else -> {}
         }
-    }
-
-    fun vibrate() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(
-                    android.os.VibrationEffect.createOneShot(
-                        35,
-                        android.os.VibrationEffect.DEFAULT_AMPLITUDE,
-                    ),
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(35)
-            }
-        } catch (_: Exception) {}
-    }
-
-    fun sendKey(key: Remotemessage.RemoteKeyCode) {
-        vibrate()
-        client.sendKey(key)
     }
 
     Scaffold(

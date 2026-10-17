@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Abc
 import androidx.compose.material.icons.outlined.Brightness4
 import androidx.compose.material.icons.outlined.Delete
@@ -146,6 +147,25 @@ class SettingsActivity : ComponentActivity() {
                                 value = vibrate,
                                 onValueChange = {
                                     viewModel.vibrateSettingsValue.value = it
+                                    viewModel.saveSettings(applicationContext)
+                                },
+                            )
+                        }
+                    }
+
+                    item {
+                        SettingsGroup(title = "Android TV") {
+                            val volumeKeyControl by viewModel
+                                .androidTvVolumeKeysSettingsValue
+                                .observeAsState(true)
+
+                            SwitchPreference(
+                                title = "Volume Key Control",
+                                summary = "Use hardware volume keys to control TV volume",
+                                icon = Icons.AutoMirrored.Outlined.VolumeUp,
+                                value = volumeKeyControl,
+                                onValueChange = {
+                                    viewModel.androidTvVolumeKeysSettingsValue.value = it
                                     viewModel.saveSettings(applicationContext)
                                 },
                             )

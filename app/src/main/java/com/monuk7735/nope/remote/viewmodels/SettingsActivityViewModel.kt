@@ -27,6 +27,7 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
     var devModeSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var preferCustomUiGlobal: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var textButtonsOnlySettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
+    var androidTvVolumeKeysSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
 
     init {
         vibrateSettingsValue.value =
@@ -49,6 +50,8 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
             settingsPreferences.getBoolean("pref_prefer_custom_ui_global", true)
         textButtonsOnlySettingsValue.value =
             settingsPreferences.getBoolean("pref_text_buttons_only", false)
+        androidTvVolumeKeysSettingsValue.value =
+            settingsPreferences.getBoolean("pref_android_tv_volume_keys", true)
     }
 
     private var versionTapCount = 0
@@ -158,6 +161,10 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
             .putBoolean(
                 "pref_text_buttons_only",
                 textButtonsOnlySettingsValue.value ?: false,
+            )
+            .putBoolean(
+                "pref_android_tv_volume_keys",
+                androidTvVolumeKeysSettingsValue.value ?: true,
             )
             .apply()
     }
