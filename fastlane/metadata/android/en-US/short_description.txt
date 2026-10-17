@@ -1,1 +1,1 @@
-IR remote control with customizable automation macros.
+Universal IR remote control with custom remotes, buttons, and automation macros.

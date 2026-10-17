@@ -13,7 +13,7 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 interface RemoteDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun addRemote(remoteDB: RemoteDataDBModel)
+    suspend fun addRemote(remoteDB: RemoteDataDBModel): Long
 
     @Query("SELECT * FROM remotes")
     fun getAllRemotes(): LiveData<List<RemoteDataDBModel>>

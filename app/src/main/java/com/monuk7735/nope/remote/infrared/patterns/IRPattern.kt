@@ -10,6 +10,12 @@ class IRPattern(val irPatternType: IRPatternType, val frequency: Int, val data: 
 
     @IgnoredOnParcel
     var intervals = IntArray(data.size)
+        get() {
+            if ((field.isEmpty() || field.all { it == 0 }) && data.isNotEmpty()) {
+                field = if (irPatternType == IRPatternType.Cycles) convertToIntervals() else data
+            }
+            return field
+        }
 
     @IgnoredOnParcel
     var cycles = IntArray(data.size)

@@ -14,9 +14,11 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.monuk7735.nope.remote.composables.CreateCustomRemoteScreen
 import com.monuk7735.nope.remote.composables.ListBrands
 import com.monuk7735.nope.remote.composables.ListCodes
 import com.monuk7735.nope.remote.composables.ListTypes
@@ -24,6 +26,7 @@ import com.monuk7735.nope.remote.navigation.AddRemoteNavigation
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.viewmodels.AddRemoteActivityViewModel
+import kotlinx.coroutines.launch
 
 @ExperimentalFoundationApi
 @ExperimentalMaterial3Api
@@ -106,6 +109,42 @@ class AddRemoteActivity : ComponentActivity() {
                         )
                         finish()
                     },
+                    onCreateCustomRemote = {
+                        navController.navigate(AddRemoteNavigation.CreateCustomRemote.route)
+                    },
+                )
+            }
+            composable(
+                route = AddRemoteNavigation.CreateCustomRemote.route,
+                enterTransition = {
+                    slideInHorizontally(initialOffsetX = { it })
+                },
+                exitTransition = {
+                    slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popEnterTransition = {
+                    slideInHorizontally(initialOffsetX = { -it })
+                },
+                popExitTransition = {
+                    slideOutHorizontally(targetOffsetX = { it })
+                },
+            ) {
+                CreateCustomRemoteScreen(
+                    onCreateRemote = { newRemote ->
+                        lifecycleScope.launch {
+                            val savedRemote = viewModel.saveCustomRemote(newRemote)
+                            startActivity(
+                                Intent(
+                                    this@AddRemoteActivity,
+                                    RemoteControlActivity::class.java,
+                                ).apply {
+                                    putExtra("remote", savedRemote)
+                                },
+                            )
+                            finish()
+                        }
+                    },
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(

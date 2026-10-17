@@ -7,4 +7,5 @@ sealed class AddRemoteNavigation(val route: String) {
     object ListBrands : AddRemoteNavigation("list_brands")
 
     object ListCodes : AddRemoteNavigation("list_codes")
+    object CreateCustomRemote : AddRemoteNavigation("create_custom_remote")
 }

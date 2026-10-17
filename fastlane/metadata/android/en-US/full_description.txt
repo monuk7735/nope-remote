@@ -1,14 +1,16 @@
 Nope-Remote is an open-source Android application that turns your smartphone into a powerful, universal IR remote control.
 
-Built with modern Android technologies, it offers a sleek Material You interface and advanced features like Custom Macros to automate your home entertainment system.
+Built with modern Android technologies, it offers a sleek Material You interface and advanced features like Custom Remote Creation and Custom Macros to automate your home entertainment system.
 
 Key Features:
 
 - Universal Compatibility: Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
+- Custom Remote Creation: Build fully customized remotes from scratch tailored specifically to your home setup.
+- Custom Buttons: Add, customize, and configure buttons on any remote with custom icons, labels, IR codes, and protocols.
 - Custom Macros: Create "Macros" to chain multiple commands together (e.g., Turn on TV, STB, and Soundbar with one tap).
 - Offline Database: Direct database downloads for seamless offline access without reliance on third-party CDNs.
-- Enhanced Repository Support: Expanded support for multiple repositories and improved setup process.
-- Performance: optimized internal architecture for smoother operation and better maintainability.
+- Enhanced Repository Support: Expanded support for multiple community repositories and improved setup process.
+- Performance: Optimized internal architecture for smoother operation and better maintainability.
 - Material You Design: Beautiful, modern UI that adapts to your wallpaper's colors.
 - Dark/Light Mode: Fully supports system-wide themes.
 - Haptic Feedback: Tactile confirmation for every button press.

@@ -131,5 +131,10 @@ class AddRemoteActivityViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch { remoteDataRepository.addRemote(remoteDataDBModel) }
     }
 
+    suspend fun saveCustomRemote(remoteDataDBModel: RemoteDataDBModel): RemoteDataDBModel {
+        val id = remoteDataRepository.addRemote(remoteDataDBModel)
+        return remoteDataDBModel.copy(id = id.toInt())
+    }
+
     fun isRepoInstalled(): Boolean = repositories.any { it.isRepoInstalled() }
 }

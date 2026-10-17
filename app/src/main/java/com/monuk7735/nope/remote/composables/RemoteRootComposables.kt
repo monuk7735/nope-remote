@@ -240,6 +240,19 @@ fun EditableRemote(
                 )
             }
         },
+        onDelete = if (remoteDataDBModel?.isCustom == true) {
+            { buttonToDelete ->
+                offScreenRemotes.remove(buttonToDelete)
+                onUpdate(
+                    remoteDataDBModel.copy(
+                        onScreenRemoteButtonDBS = onScreenRemotes,
+                        offScreenRemoteButtonDBS = offScreenRemotes,
+                    ),
+                )
+            }
+        } else {
+            null
+        },
     )
     RemoteButtonDigits(
         digitButtons = remoteDataDBModel?.getAllDigits(),
