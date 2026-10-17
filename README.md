@@ -3,8 +3,8 @@
 <div>
 <h3 style="font-size: 2.2rem; letter-spacing: 1px;">Nope Remote</h3>
 <p style="font-size: 1.15rem; font-weight: 500;">
-    <strong>Universal IR Remote for Android</strong><br>
-    Nope Remote is an open-source Android application that turns your smartphone into a powerful, universal IR remote control. Built with modern Android technologies, it offers a sleek Material You interface and advanced features like Custom Macros to automate your home entertainment system.
+    <strong>Universal Remote for Android (IR & Wi-Fi)</strong><br>
+    Nope Remote is an open-source Android application that turns your smartphone into a powerful universal remote control for Infrared (IR) devices and Android TV / Google TV. Built with modern Android technologies, it offers a sleek Material You interface, automated network discovery, and advanced features like Custom Macros to automate your home entertainment system.
   </p>
 
 <div align="center">
@@ -24,19 +24,21 @@
 
 ## Features
 
-- **Universal Compatibility** - Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
+- **Android TV & Google TV Wi-Fi Remote** - Discover and control Android TV / Google TV devices over Wi-Fi with secure PIN pairing, navigation D-pad, media controls, app launching shortcuts, and text input.
+- **Universal IR Compatibility** - Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
 - **Custom Remote Creation** - Build completely custom remotes from scratch tailored to your exact devices and layout preferences.
 - **Custom Button Support** - Add and configure custom keys and buttons on your remotes with custom labels, icons, frequencies, and IR patterns.
+- **Hardware Volume Keys Integration** - Conveniently control TV volume using your smartphone's physical volume buttons.
 - **Custom Macros** - Create "Macros" to chain multiple commands together. Turn on your TV, Set-Top Box, and Soundbar with a single tap!
 - **Offline Database** - Direct database downloads for seamless offline access without reliance on third-party CDNs.
-- **Enhanced Repository Support** - Expanded support for multiple repositories and improved setup process.
+- **Enhanced Repository Support** - Expanded support for multiple community IR repositories and improved setup process.
 - **Expanded Protocol Support** - Added JVC, Denon, Mitsubishi, RC6, Nokia32, Samsung20/36, Pioneer, and Aiwa IR protocols for broader device compatibility.
 - **Unsupported Protocol Errors** - Clear, friendly in-page error shown when a device's protocol is not yet supported instead of silently failing.
 - **Performance** - Optimized internal architecture for smoother operation and better maintainability.
 - **Material You Design** - A beautiful, modern UI that adapts to your wallpaper's colors (on supported devices).
 - **Dark/Light Mode** - Fully supports system-wide dark and light themes.
 - **Database Support** - Stores your remotes and macros locally using Room Database.
-- **Haptic Feedback** - Get tactile confirmation for every button press.
+- **Haptic Feedback** - Get tactile confirmation for button presses with customizable vibration settings.
 - **Toggle Icons** - Tap "Show/Hide Icons" in the remote preview to switch between icon and text label views.
 
 
@@ -57,14 +59,15 @@ Nope Remote supports downloading and importing codes from the following communit
 - **Architecture** - MVVM (Model-View-ViewModel)
 - **Dependency Injection** - [Dagger Hilt](https://dagger.dev/hilt/)
 - **Local Database** - [Room](https://developer.android.com/training/data-storage/room)
-- **Networking** - [Retrofit](https://square.github.io/retrofit/)
+- **Networking** - [Retrofit](https://square.github.io/retrofit/) & NSD (Network Service Discovery)
 - **Asynchronous Processing** - Coroutines & Flow
 
 ## Getting Started
 
 ### Prerequisites
 
-- Use an Android device with a built-in **IR Blaster**.
+- **For Android TV**: Connected to the same Wi-Fi network as your Android TV / Google TV (no IR blaster required).
+- **For Infrared**: An Android device with a built-in **IR Blaster**.
 - Android SDK 36 installed.
 - Minimum Android version: 6.0 (API Level 23).
 

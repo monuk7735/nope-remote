@@ -24,7 +24,9 @@ import kotlinx.coroutines.launch
 class AddEditMacroViewModel(application: Application) : AndroidViewModel(application) {
 
     val irController =
-        IRController(application.getSystemService(Context.CONSUMER_IR_SERVICE) as ConsumerIrManager)
+        (application.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager)?.let {
+            IRController(it)
+        }
 
     private val remoteDataRepository: RemoteDataRepository = RemoteDataRepository(
         remoteDao = RemoteDatabase.getDatabase(application).remoteDao(),

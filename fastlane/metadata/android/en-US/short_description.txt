@@ -1,1 +1,1 @@
-Universal IR remote control with custom remotes, buttons, and automation macros.
+Universal IR & Android TV remote control with custom remotes, buttons & macros.
