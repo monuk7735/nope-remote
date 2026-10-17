@@ -492,7 +492,6 @@ class HomeActivity : ComponentActivity() {
                                             discoveredTvs = discoveredTvs,
                                             isDiscovering = isDiscovering,
                                             onRescan = { discoveryManager.rescan() },
-                                            onConnectByIp = { showManualIpDialog = true },
                                             onTvClick = { tv ->
                                                 startActivity(
                                                     Intent(
@@ -733,7 +732,6 @@ private fun DiscoveredTvSection(
     discoveredTvs: List<DiscoveredTvDevice>,
     isDiscovering: Boolean,
     onRescan: () -> Unit,
-    onConnectByIp: () -> Unit,
     onTvClick: (DiscoveredTvDevice) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -766,28 +764,15 @@ private fun DiscoveredTvSection(
                     )
                 }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = onRescan,
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Refresh,
-                        contentDescription = "Rescan",
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                IconButton(
-                    onClick = onConnectByIp,
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Add,
-                        contentDescription = "Connect by IP",
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
+            IconButton(
+                onClick = onRescan,
+                modifier = Modifier.size(32.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Refresh,
+                    contentDescription = "Rescan",
+                    modifier = Modifier.size(18.dp),
+                )
             }
         }
 
