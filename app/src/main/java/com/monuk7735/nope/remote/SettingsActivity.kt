@@ -2,6 +2,7 @@ package com.monuk7735.nope.remote
 
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -64,6 +66,7 @@ import com.monuk7735.nope.remote.composables.RepositoryPreference
 import com.monuk7735.nope.remote.composables.SettingsGroup
 import com.monuk7735.nope.remote.composables.SingleChoicePreference
 import com.monuk7735.nope.remote.composables.SwitchPreference
+import com.monuk7735.nope.remote.service.RepoState
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.viewmodels.SettingsActivityViewModel
@@ -95,6 +98,8 @@ class SettingsActivity : ComponentActivity() {
         val vibrate by viewModel.vibrateSettingsValue.observeAsState(true)
         val darkMode by viewModel.darkModeSettingsValue.observeAsState(0)
         val dynamicColor by viewModel.dynamicColorSettingsValue.observeAsState(true)
+        val preferCustomUi by viewModel.preferCustomUiGlobal.observeAsState(true)
+        val textButtonsOnly by viewModel.textButtonsOnlySettingsValue.observeAsState(false)
 
         val commandOutput by viewModel.repoCommandOutput.observeAsState("")
 
@@ -141,26 +146,26 @@ class SettingsActivity : ComponentActivity() {
 
                     item {
                         SettingsGroup(title = "Appearance") {
-                            val darkModeOptions = listOf("System Default", "Light", "Dark")
+                            val themeModeOptions = listOf("Follow System", "Light", "Dark")
                             SingleChoicePreference(
-                                title = "Dark Mode",
+                                title = "Theme Mode",
                                 summary =
-                                darkModeOptions.getOrElse(darkMode) {
-                                    "System Default"
+                                themeModeOptions.getOrElse(darkMode) {
+                                    "Follow System"
                                 },
                                 icon = Icons.Outlined.Brightness4,
-                                options = darkModeOptions,
+                                options = themeModeOptions,
                                 selectedOption = darkMode,
                                 onOptionSelected = {
                                     viewModel.darkModeSettingsValue.value = it
                                     viewModel.saveSettings(applicationContext)
                                 },
                             )
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-                            ) {
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 SwitchPreference(
                                     title = "Dynamic Color",
-                                    summary = "Use wallpaper colors",
+                                    summary = "Use Material 3 theme colors based on wallpaper",
                                     icon = Icons.Outlined.Palette,
                                     value = dynamicColor,
                                     onValueChange = {
@@ -169,11 +174,12 @@ class SettingsActivity : ComponentActivity() {
                                     },
                                 )
                             }
+
                             SwitchPreference(
-                                title = "Prefer Custom UI (Beta)",
-                                summary = "Use specialized layouts for Remotes if available",
-                                icon = Icons.Outlined.Palette,
-                                value = viewModel.preferCustomUiGlobal.observeAsState(true).value,
+                                title = "Specialized Remote Layouts",
+                                summary = "Use custom realistic layouts for supported devices",
+                                icon = Icons.Outlined.Widgets,
+                                value = preferCustomUi,
                                 onValueChange = {
                                     viewModel.preferCustomUiGlobal.value = it
                                     viewModel.saveSettings(applicationContext)
@@ -181,12 +187,10 @@ class SettingsActivity : ComponentActivity() {
                             )
 
                             SwitchPreference(
-                                title = "Text Only Buttons",
-                                summary = "Hide icons and show text labels on buttons",
+                                title = "Text-Only Remote Buttons",
+                                summary = "Show text labels instead of icons on buttons",
                                 icon = Icons.Outlined.Abc,
-                                value = viewModel.textButtonsOnlySettingsValue.observeAsState(
-                                    false,
-                                ).value,
+                                value = textButtonsOnly,
                                 onValueChange = {
                                     viewModel.textButtonsOnlySettingsValue.value = it
                                     viewModel.saveSettings(applicationContext)
@@ -248,7 +252,7 @@ class SettingsActivity : ComponentActivity() {
                             viewModel.availableRepositories.forEach { repo ->
                                 val repoState =
                                     repoStates[repo.directoryName]
-                                        ?: com.monuk7735.nope.remote.service.RepoState()
+                                        ?: RepoState()
                                 val isInstalled = viewModel.isRepoInstalled(repo.directoryName)
 
                                 RepositoryPreference(
@@ -283,7 +287,7 @@ class SettingsActivity : ComponentActivity() {
                     }
 
                     item {
-                        SettingsGroup(title = "Developer Options") {
+                        SettingsGroup(title = "Advanced Options") {
                             Row(
                                 modifier = Modifier
                                     .clickable { showClearPairingDialog = true }
@@ -356,10 +360,10 @@ class SettingsActivity : ComponentActivity() {
                                     } else {
                                         "No pairing information found"
                                     }
-                                    android.widget.Toast.makeText(
+                                    Toast.makeText(
                                         context,
                                         msg,
-                                        android.widget.Toast.LENGTH_SHORT,
+                                        Toast.LENGTH_SHORT,
                                     ).show()
                                 },
                                 colors = ButtonDefaults.buttonColors(

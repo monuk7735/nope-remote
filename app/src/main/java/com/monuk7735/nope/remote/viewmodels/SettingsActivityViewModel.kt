@@ -9,8 +9,10 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.monuk7735.nope.remote.R
+import com.monuk7735.nope.remote.service.DownloadState
 import com.monuk7735.nope.remote.service.RepoDownloadManager
 import com.monuk7735.nope.remote.service.RepoDownloadService
+import com.monuk7735.nope.remote.service.RepoState
 import java.io.File
 
 class SettingsActivityViewModel(application: Application) : AndroidViewModel(application) {
@@ -89,9 +91,7 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
 
         RepoDownloadManager.updateState(
             directory,
-            com.monuk7735.nope.remote.service.RepoState(
-                com.monuk7735.nope.remote.service.DownloadState.IDLE,
-            ),
+            RepoState(DownloadState.IDLE),
         )
         RepoDownloadManager.log("Deleted repository: $directory")
     }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
 import com.monuk7735.nope.remote.R
 import com.monuk7735.nope.remote.utils.SystemBarHelper
@@ -26,7 +27,7 @@ data class ThemeSettings(val useDarkTheme: Boolean, val useDynamicColors: Boolea
 @Composable
 fun rememberThemeSettings(): ThemeSettings {
     val context = LocalContext.current
-    val sharedPrefName = androidx.compose.ui.res.stringResource(R.string.shared_pref_app_settings)
+    val sharedPrefName = stringResource(R.string.shared_pref_app_settings)
     val sharedPrefs = remember {
         context.getSharedPreferences(
             sharedPrefName,
@@ -34,10 +35,8 @@ fun rememberThemeSettings(): ThemeSettings {
         )
     }
 
-    val darkModeKey = androidx.compose.ui.res.stringResource(R.string.pref_settings_dark_mode)
-    val dynamicColorKey = androidx.compose.ui.res.stringResource(
-        R.string.pref_settings_dynamic_color,
-    )
+    val darkModeKey = stringResource(R.string.pref_settings_dark_mode)
+    val dynamicColorKey = stringResource(R.string.pref_settings_dynamic_color)
     val systemInDarkTheme = isSystemInDarkTheme()
 
     val (settings, setSettings) = remember {

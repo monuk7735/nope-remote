@@ -1,7 +1,9 @@
 package com.monuk7735.nope.remote.composables
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Build
+import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.KeyEvent
@@ -204,7 +206,7 @@ private fun AndroidTvRemoteContent(
 
     DisposableEffect(prefs) {
         val listener =
-            android.content.SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
+            SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
                 if (key == "pref_android_tv_dpad_mode") {
                     dpadMode = sp.getInt("pref_android_tv_dpad_mode", 0)
                 }
@@ -237,9 +239,9 @@ private fun AndroidTvRemoteContent(
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 vibrator.vibrate(
-                    android.os.VibrationEffect.createOneShot(
+                    VibrationEffect.createOneShot(
                         35,
-                        android.os.VibrationEffect.DEFAULT_AMPLITUDE,
+                        VibrationEffect.DEFAULT_AMPLITUDE,
                     ),
                 )
             } else {

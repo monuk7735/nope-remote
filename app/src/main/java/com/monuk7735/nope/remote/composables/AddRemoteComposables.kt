@@ -68,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -726,20 +727,19 @@ fun DeviceTypeComposable(name: String, icon: ImageVector, onClick: () -> Unit) {
                 Modifier.align(Alignment.TopEnd)
                     .size(60.dp)
                     .background(
-                        androidx.compose.ui.graphics.Brush
-                            .radialGradient(
-                                colors =
-                                listOf(
-                                    MaterialTheme
-                                        .colorScheme
-                                        .primary
-                                        .copy(
-                                            alpha =
-                                            0.05f,
-                                        ),
-                                    Color.Transparent,
-                                ),
+                        Brush.radialGradient(
+                            colors =
+                            listOf(
+                                MaterialTheme
+                                    .colorScheme
+                                    .primary
+                                    .copy(
+                                        alpha =
+                                        0.05f,
+                                    ),
+                                Color.Transparent,
                             ),
+                        ),
                     ),
             )
 

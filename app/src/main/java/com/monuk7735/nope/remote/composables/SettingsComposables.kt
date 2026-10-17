@@ -69,7 +69,9 @@ fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
                 containerColor =
                 MaterialTheme.colorScheme.surfaceContainerLow,
             ),
-        ) { Column(modifier = Modifier.padding(vertical = 8.dp)) { content() } }
+        ) {
+            content()
+        }
     }
 }
 
