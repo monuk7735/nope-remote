@@ -1,0 +1,5 @@
+- Added Wi-Fi remote control for Android TV and Google TV devices.
+- Added touchpad gesture navigation and phone volume button control for TV remotes.
+- Added support for creating custom remotes from scratch with your own buttons and layouts.
+- Refined Settings UI with cleaner appearance options and an Advanced section.
+- General performance improvements and bug fixes.
