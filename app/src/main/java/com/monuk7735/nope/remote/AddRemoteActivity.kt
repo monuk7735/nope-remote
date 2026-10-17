@@ -184,7 +184,7 @@ class AddRemoteActivity : ComponentActivity() {
                     slideInHorizontally(initialOffsetX = { -it })
                 },
                 popExitTransition = {
-                    androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it })
+                    slideOutHorizontally(targetOffsetX = { it })
                 },
             ) {
                 ListCodes(

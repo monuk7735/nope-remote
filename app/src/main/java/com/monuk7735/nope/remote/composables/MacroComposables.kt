@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -95,7 +96,7 @@ fun MacroStepItem(
                         .width(2.dp)
                         .height(84.dp)
                         .background(
-                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                            Brush.verticalGradient(
                                 colors = listOf(
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
@@ -422,7 +423,7 @@ fun AddMacroUnitDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (macroTransmit != null) {
-                        androidx.compose.material3.TextButton(
+                        TextButton(
                             onClick = onDelete,
                             colors = ButtonDefaults.textButtonColors(
                                 contentColor = MaterialTheme.colorScheme.error,
@@ -433,13 +434,13 @@ fun AddMacroUnitDialog(
                         Spacer(modifier = Modifier.weight(1f))
                     }
 
-                    androidx.compose.material3.TextButton(
+                    TextButton(
                         onClick = onDismiss,
                     ) {
                         Text(text = "Cancel")
                     }
 
-                    androidx.compose.material3.TextButton(
+                    TextButton(
                         onClick = {
                             val tempSelectedRemote = selectedRemoteDB
                             val tempSelectedButton = selectedButton

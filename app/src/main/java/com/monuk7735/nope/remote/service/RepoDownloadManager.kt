@@ -1,5 +1,6 @@
 package com.monuk7735.nope.remote.service
 
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import java.util.concurrent.ConcurrentHashMap
 
@@ -92,7 +93,7 @@ object RepoDownloadManager {
     fun getState(repoId: String): RepoState = repoStates.value?.get(repoId) ?: RepoState()
 
     fun log(message: String) {
-        android.util.Log.d("RepoDownloadManager", message)
+        Log.d("RepoDownloadManager", message)
         val current = commandOutput.value ?: ""
         commandOutput.postValue("$current\n$message")
     }

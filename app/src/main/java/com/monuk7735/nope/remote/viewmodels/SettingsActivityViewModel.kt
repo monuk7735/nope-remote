@@ -9,8 +9,10 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.monuk7735.nope.remote.R
+import com.monuk7735.nope.remote.service.DownloadState
 import com.monuk7735.nope.remote.service.RepoDownloadManager
 import com.monuk7735.nope.remote.service.RepoDownloadService
+import com.monuk7735.nope.remote.service.RepoState
 import java.io.File
 
 class SettingsActivityViewModel(application: Application) : AndroidViewModel(application) {
@@ -24,7 +26,6 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
     var vibrateSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var darkModeSettingsValue: MutableLiveData<Int> = MutableLiveData<Int>()
     var dynamicColorSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
-    var devModeSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var preferCustomUiGlobal: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var textButtonsOnlySettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var androidTvVolumeKeysSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
@@ -46,7 +47,6 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
                 application.getString(R.string.pref_settings_dynamic_color),
                 true,
             )
-        devModeSettingsValue.value = settingsPreferences.getBoolean("pref_dev_mode_enabled", false)
         preferCustomUiGlobal.value =
             settingsPreferences.getBoolean("pref_prefer_custom_ui_global", true)
         textButtonsOnlySettingsValue.value =
@@ -57,19 +57,8 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
             settingsPreferences.getInt("pref_android_tv_dpad_mode", 0)
     }
 
-    private var versionTapCount = 0
-
-    fun onVersionClicked() {
-        if (devModeSettingsValue.value == true) return
-
-        versionTapCount++
-        if (versionTapCount >= 7) {
-            devModeSettingsValue.value = true
-            settingsPreferences.edit().putBoolean("pref_dev_mode_enabled", true).apply()
-            versionTapCount = 0
-            // Ideally show a toast here, but ViewModel shouldn't show UI directly.
-            // We'll rely on the UI reacting to the state change.
-        }
+    fun clearCommandOutput() {
+        RepoDownloadManager.clearLog()
     }
 
     val repoStates = RepoDownloadManager.repoStates
@@ -102,9 +91,7 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
 
         RepoDownloadManager.updateState(
             directory,
-            com.monuk7735.nope.remote.service.RepoState(
-                com.monuk7735.nope.remote.service.DownloadState.IDLE,
-            ),
+            RepoState(DownloadState.IDLE),
         )
         RepoDownloadManager.log("Deleted repository: $directory")
     }

@@ -105,7 +105,7 @@ fun RemoteControl(
     val sharedPrefs = remember(context) {
         context.getSharedPreferences(
             context.getString(R.string.shared_pref_app_settings),
-            android.content.Context.MODE_PRIVATE,
+            Context.MODE_PRIVATE,
         )
     }
 
@@ -671,7 +671,7 @@ fun RemoteControlEditLayout(
                     textOnlyMode = remember(context) {
                         context.getSharedPreferences(
                             context.getString(R.string.shared_pref_app_settings),
-                            android.content.Context.MODE_PRIVATE,
+                            Context.MODE_PRIVATE,
                         ).getBoolean("pref_text_buttons_only", false)
                     },
                 )
@@ -764,7 +764,7 @@ fun RemoteControlSettings(
                         val sharedPrefs = remember(context) {
                             context.getSharedPreferences(
                                 context.getString(R.string.shared_pref_app_settings),
-                                android.content.Context.MODE_PRIVATE,
+                                Context.MODE_PRIVATE,
                             )
                         }
                         val globalPreferCustomUi = remember(sharedPrefs) {

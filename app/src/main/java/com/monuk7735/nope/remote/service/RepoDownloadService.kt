@@ -3,14 +3,20 @@ package com.monuk7735.nope.remote.service
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.net.wifi.WifiManager
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.ServiceCompat
 import com.monuk7735.nope.remote.utils.NotificationHelper
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.Collections
+import java.util.concurrent.TimeUnit
 import java.util.zip.ZipInputStream
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 
@@ -48,19 +54,19 @@ class RepoDownloadService : Service() {
     }
 
     private val client by lazy {
-        okhttp3.OkHttpClient.Builder()
-            .protocols(java.util.Collections.singletonList(okhttp3.Protocol.HTTP_1_1))
-            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+        OkHttpClient.Builder()
+            .protocols(Collections.singletonList(Protocol.HTTP_1_1))
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
             .build()
     }
 
     private val powerManager by lazy {
-        getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        getSystemService(Context.POWER_SERVICE) as PowerManager
     }
     private val wifiManager by lazy {
-        applicationContext.getSystemService(Context.WIFI_SERVICE) as android.net.wifi.WifiManager
+        applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     }
 
     private fun startDownload(url: String, name: String, directory: String) {
@@ -87,11 +93,11 @@ class RepoDownloadService : Service() {
         val thread = Thread {
             // Acquire locks
             val wakeLock = powerManager.newWakeLock(
-                android.os.PowerManager.PARTIAL_WAKE_LOCK,
+                PowerManager.PARTIAL_WAKE_LOCK,
                 "NopeRemote:DownloadWakeLock",
             )
             val wifiLock = wifiManager.createWifiLock(
-                android.net.wifi.WifiManager.WIFI_MODE_FULL_HIGH_PERF,
+                WifiManager.WIFI_MODE_FULL_HIGH_PERF,
                 "NopeRemote:DownloadWifiLock",
             )
 

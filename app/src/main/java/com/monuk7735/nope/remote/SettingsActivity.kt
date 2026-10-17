@@ -2,6 +2,7 @@ package com.monuk7735.nope.remote
 
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -9,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,8 +29,10 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,7 +42,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -65,6 +66,7 @@ import com.monuk7735.nope.remote.composables.RepositoryPreference
 import com.monuk7735.nope.remote.composables.SettingsGroup
 import com.monuk7735.nope.remote.composables.SingleChoicePreference
 import com.monuk7735.nope.remote.composables.SwitchPreference
+import com.monuk7735.nope.remote.service.RepoState
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.viewmodels.SettingsActivityViewModel
@@ -96,28 +98,15 @@ class SettingsActivity : ComponentActivity() {
         val vibrate by viewModel.vibrateSettingsValue.observeAsState(true)
         val darkMode by viewModel.darkModeSettingsValue.observeAsState(0)
         val dynamicColor by viewModel.dynamicColorSettingsValue.observeAsState(true)
+        val preferCustomUi by viewModel.preferCustomUiGlobal.observeAsState(true)
+        val textButtonsOnly by viewModel.textButtonsOnlySettingsValue.observeAsState(false)
 
         val commandOutput by viewModel.repoCommandOutput.observeAsState("")
-        val isDevMode by viewModel.devModeSettingsValue.observeAsState(false)
 
         var showLogs by remember { mutableStateOf(false) }
         var showClearPairingDialog by remember { mutableStateOf(false) }
         val context = LocalContext.current
         val uriHandler = LocalUriHandler.current
-
-        // Simple effect to show toast when dev mode becomes enabled
-        // In a real app we might use a dedicated event flow, but this works for simple state
-        var previousDevMode by remember { mutableStateOf(isDevMode) }
-        if (isDevMode && !previousDevMode) {
-            android.widget.Toast.makeText(
-                LocalContext.current,
-                "Developer Mode Enabled",
-                android.widget.Toast.LENGTH_SHORT,
-            ).show()
-            previousDevMode = true
-        } else if (!isDevMode) {
-            previousDevMode = false
-        }
 
         NopeRemoteTheme(
             useDarkTheme =
@@ -157,26 +146,26 @@ class SettingsActivity : ComponentActivity() {
 
                     item {
                         SettingsGroup(title = "Appearance") {
-                            val darkModeOptions = listOf("System Default", "Light", "Dark")
+                            val themeModeOptions = listOf("Follow System", "Light", "Dark")
                             SingleChoicePreference(
-                                title = "Dark Mode",
+                                title = "Theme Mode",
                                 summary =
-                                darkModeOptions.getOrElse(darkMode) {
-                                    "System Default"
+                                themeModeOptions.getOrElse(darkMode) {
+                                    "Follow System"
                                 },
                                 icon = Icons.Outlined.Brightness4,
-                                options = darkModeOptions,
+                                options = themeModeOptions,
                                 selectedOption = darkMode,
                                 onOptionSelected = {
                                     viewModel.darkModeSettingsValue.value = it
                                     viewModel.saveSettings(applicationContext)
                                 },
                             )
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-                            ) {
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 SwitchPreference(
                                     title = "Dynamic Color",
-                                    summary = "Use wallpaper colors",
+                                    summary = "Use Material 3 theme colors based on wallpaper",
                                     icon = Icons.Outlined.Palette,
                                     value = dynamicColor,
                                     onValueChange = {
@@ -185,11 +174,12 @@ class SettingsActivity : ComponentActivity() {
                                     },
                                 )
                             }
+
                             SwitchPreference(
-                                title = "Prefer Custom UI (Beta)",
-                                summary = "Use specialized layouts for Remotes if available",
-                                icon = Icons.Outlined.Palette,
-                                value = viewModel.preferCustomUiGlobal.observeAsState(true).value,
+                                title = "Specialized Remote Layouts",
+                                summary = "Use custom realistic layouts for supported devices",
+                                icon = Icons.Outlined.Widgets,
+                                value = preferCustomUi,
                                 onValueChange = {
                                     viewModel.preferCustomUiGlobal.value = it
                                     viewModel.saveSettings(applicationContext)
@@ -197,12 +187,10 @@ class SettingsActivity : ComponentActivity() {
                             )
 
                             SwitchPreference(
-                                title = "Text Only Buttons",
-                                summary = "Hide icons and show text labels on buttons",
+                                title = "Text-Only Remote Buttons",
+                                summary = "Show text labels instead of icons on buttons",
                                 icon = Icons.Outlined.Abc,
-                                value = viewModel.textButtonsOnlySettingsValue.observeAsState(
-                                    false,
-                                ).value,
+                                value = textButtonsOnly,
                                 onValueChange = {
                                     viewModel.textButtonsOnlySettingsValue.value = it
                                     viewModel.saveSettings(applicationContext)
@@ -264,7 +252,7 @@ class SettingsActivity : ComponentActivity() {
                             viewModel.availableRepositories.forEach { repo ->
                                 val repoState =
                                     repoStates[repo.directoryName]
-                                        ?: com.monuk7735.nope.remote.service.RepoState()
+                                        ?: RepoState()
                                 val isInstalled = viewModel.isRepoInstalled(repo.directoryName)
 
                                 RepositoryPreference(
@@ -285,66 +273,67 @@ class SettingsActivity : ComponentActivity() {
                                     onUrlClick = { uriHandler.openUri(repo.displayUrl) },
                                 )
                             }
-
-                            if (isDevMode) {
-                                TextButton(
-                                    onClick = { showLogs = !showLogs },
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                ) {
-                                    Text(if (showLogs) "Hide Logs" else "Show Logs")
-                                }
-                            }
                         }
                     }
 
                     item {
                         SettingsGroup(title = "About") {
-                            // We'll wrap the InfoPreference in a Box or Row to add the click listener for the whole item
-                            Box(modifier = Modifier.clickable { viewModel.onVersionClicked() }) {
-                                InfoPreference(
-                                    title = "App Version",
-                                    value = BuildConfig.VERSION_NAME,
-                                    icon = Icons.Outlined.Info,
-                                )
-                            }
+                            InfoPreference(
+                                title = "App Version",
+                                value = BuildConfig.VERSION_NAME,
+                                icon = Icons.Outlined.Info,
+                            )
                         }
                     }
 
-                    if (isDevMode) {
-                        item {
-                            SettingsGroup(title = "Developer Options") {
-                                Row(
-                                    modifier = Modifier
-                                        .clickable { showClearPairingDialog = true }
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
+                    item {
+                        SettingsGroup(title = "Advanced Options") {
+                            Row(
+                                modifier = Modifier
+                                    .clickable { showClearPairingDialog = true }
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp),
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Delete,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(24.dp),
+                                    Text(
+                                        text = "Clear TV Pairings",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.error,
                                     )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Column(
-                                        modifier = Modifier.weight(1f),
-                                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                                    ) {
-                                        Text(
-                                            text = "Clear TV Pairings",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
-                                        Text(
-                                            text = "Remove pairing keys and certificates " +
-                                                "for all Android TVs",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
+                                    Text(
+                                        text = "Remove pairing keys and certificates " +
+                                            "for all Android TVs",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
                                 }
+                            }
+
+                            SwitchPreference(
+                                title = "Operation Logs",
+                                summary = "Show console and repository download logs",
+                                icon = Icons.Outlined.Terminal,
+                                value = showLogs,
+                                onValueChange = { showLogs = it },
+                            )
+
+                            if (showLogs) {
+                                LogOutputView(
+                                    output = commandOutput,
+                                    onClear = { viewModel.clearCommandOutput() },
+                                )
                             }
                         }
                     }
@@ -371,10 +360,10 @@ class SettingsActivity : ComponentActivity() {
                                     } else {
                                         "No pairing information found"
                                     }
-                                    android.widget.Toast.makeText(
+                                    Toast.makeText(
                                         context,
                                         msg,
-                                        android.widget.Toast.LENGTH_SHORT,
+                                        Toast.LENGTH_SHORT,
                                     ).show()
                                 },
                                 colors = ButtonDefaults.buttonColors(
@@ -392,15 +381,6 @@ class SettingsActivity : ComponentActivity() {
                         },
                         shape = RoundedCornerShape(24.dp),
                     )
-                }
-
-                if (showLogs) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.BottomCenter,
-                    ) {
-                        LogOutputView(output = commandOutput)
-                    }
                 }
             }
         }
