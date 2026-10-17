@@ -154,25 +154,6 @@ class SettingsActivity : ComponentActivity() {
                     }
 
                     item {
-                        SettingsGroup(title = "Android TV") {
-                            val volumeKeyControl by viewModel
-                                .androidTvVolumeKeysSettingsValue
-                                .observeAsState(true)
-
-                            SwitchPreference(
-                                title = "Volume Key Control",
-                                summary = "Use hardware volume keys to control TV volume",
-                                icon = Icons.AutoMirrored.Outlined.VolumeUp,
-                                value = volumeKeyControl,
-                                onValueChange = {
-                                    viewModel.androidTvVolumeKeysSettingsValue.value = it
-                                    viewModel.saveSettings(applicationContext)
-                                },
-                            )
-                        }
-                    }
-
-                    item {
                         SettingsGroup(title = "Appearance") {
                             val darkModeOptions = listOf("System Default", "Light", "Dark")
                             SingleChoicePreference(
@@ -229,8 +210,27 @@ class SettingsActivity : ComponentActivity() {
                     }
 
                     item {
+                        SettingsGroup(title = "Android TV") {
+                            val volumeKeyControl by viewModel
+                                .androidTvVolumeKeysSettingsValue
+                                .observeAsState(true)
+
+                            SwitchPreference(
+                                title = "Volume Key Control",
+                                summary = "Use hardware volume keys to control TV volume",
+                                icon = Icons.AutoMirrored.Outlined.VolumeUp,
+                                value = volumeKeyControl,
+                                onValueChange = {
+                                    viewModel.androidTvVolumeKeysSettingsValue.value = it
+                                    viewModel.saveSettings(applicationContext)
+                                },
+                            )
+                        }
+                    }
+
+                    item {
                         SettingsGroup(
-                            title = "Repositories",
+                            title = "Infrared Repositories",
                         ) {
                             val repoStates by viewModel.repoStates.observeAsState(emptyMap())
 
