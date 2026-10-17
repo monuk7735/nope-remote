@@ -149,7 +149,8 @@ fun AndroidTvRemoteScreen(host: String, deviceName: String, onBack: () -> Unit) 
             } catch (e: Exception) {
                 isPairingLoading = false
                 pairingStatus = PairingStatus.FAILED
-                pairingErrorMessage = e.message ?: "Failed to connect for pairing"
+                val (_, desc) = AndroidTvClient.formatConnectionError(e, host)
+                pairingErrorMessage = desc
                 showPairingDialog = false
             }
         }
@@ -574,17 +575,28 @@ fun AndroidTvRemoteScreen(host: String, deviceName: String, onBack: () -> Unit) 
                                 textAlign = TextAlign.Center,
                             )
                             Spacer(modifier = Modifier.height(24.dp))
-                            Button(
-                                onClick = { startPairing() },
-                                shape = RoundedCornerShape(24.dp),
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Refresh,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Pair TV")
+                                OutlinedButton(
+                                    onClick = onBack,
+                                    shape = RoundedCornerShape(24.dp),
+                                ) {
+                                    Text("Go Back")
+                                }
+                                Button(
+                                    onClick = { startPairing() },
+                                    shape = RoundedCornerShape(24.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Refresh,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Pair TV")
+                                }
                             }
                         }
                         PairingStatus.FAILED -> {
@@ -603,33 +615,46 @@ fun AndroidTvRemoteScreen(host: String, deviceName: String, onBack: () -> Unit) 
                                 }
                             }
                             Spacer(modifier = Modifier.height(24.dp))
+                            val isNotFound = pairingErrorMessage
+                                ?.contains("find or reach", ignoreCase = true) == true
                             Text(
-                                text = "Pairing Failed",
+                                text = if (isNotFound) "Device Not Found" else "Pairing Failed",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text =
-                                pairingErrorMessage
+                                text = pairingErrorMessage
                                     ?: "Could not pair with the TV. Please try again.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
                             )
                             Spacer(modifier = Modifier.height(24.dp))
-                            Button(
-                                onClick = { startPairing() },
-                                shape = RoundedCornerShape(24.dp),
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Refresh,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Try Again")
+                                OutlinedButton(
+                                    onClick = onBack,
+                                    shape = RoundedCornerShape(24.dp),
+                                ) {
+                                    Text("Go Back")
+                                }
+                                Button(
+                                    onClick = { startPairing() },
+                                    shape = RoundedCornerShape(24.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Refresh,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Try Again")
+                                }
                             }
                         }
                         PairingStatus.IDLE -> {
@@ -651,10 +676,11 @@ fun AndroidTvRemoteScreen(host: String, deviceName: String, onBack: () -> Unit) 
                                 }
                                 Spacer(modifier = Modifier.height(24.dp))
                                 Text(
-                                    text = "Connection Failed",
+                                    text = state.title,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.error,
+                                    textAlign = TextAlign.Center,
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
@@ -664,17 +690,28 @@ fun AndroidTvRemoteScreen(host: String, deviceName: String, onBack: () -> Unit) 
                                     textAlign = TextAlign.Center,
                                 )
                                 Spacer(modifier = Modifier.height(24.dp))
-                                Button(
-                                    onClick = { client.connect(host) },
-                                    shape = RoundedCornerShape(24.dp),
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Refresh,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Retry")
+                                    OutlinedButton(
+                                        onClick = onBack,
+                                        shape = RoundedCornerShape(24.dp),
+                                    ) {
+                                        Text("Go Back")
+                                    }
+                                    Button(
+                                        onClick = { client.connect(host) },
+                                        shape = RoundedCornerShape(24.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Refresh,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Retry")
+                                    }
                                 }
                             } else {
                                 CircularProgressIndicator(

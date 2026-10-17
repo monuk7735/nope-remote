@@ -19,6 +19,52 @@ class AndroidTvClient(private val sslManager: AndroidTvSslManager) {
 
     companion object {
         private const val TAG = "AndroidTvClient"
+
+        fun formatConnectionError(e: Throwable, host: String): Pair<String, String> {
+            val msg = e.message ?: ""
+            val isMalformed = e is IllegalArgumentException ||
+                (
+                    msg.contains("port", ignoreCase = true) &&
+                        msg.contains("out of range", ignoreCase = true)
+                    )
+
+            val isNotFound = e is java.net.NoRouteToHostException ||
+                e is java.net.UnknownHostException ||
+                e is java.net.SocketTimeoutException ||
+                msg.contains("EHOSTUNREACH", ignoreCase = true) ||
+                msg.contains("No route to host", ignoreCase = true) ||
+                msg.contains("ENETUNREACH", ignoreCase = true) ||
+                msg.contains("timed out", ignoreCase = true) ||
+                msg.contains("ETIMEDOUT", ignoreCase = true) ||
+                msg.contains("UnknownHost", ignoreCase = true)
+
+            val isRefused = e is java.net.ConnectException ||
+                msg.contains("ECONNREFUSED", ignoreCase = true) ||
+                msg.contains("Connection refused", ignoreCase = true)
+
+            val title = when {
+                isMalformed -> "Invalid Address"
+                isNotFound -> "Device Not Found"
+                isRefused -> "Connection Refused"
+                else -> "Connection Failed"
+            }
+
+            val description = when {
+                isMalformed ->
+                    "The IP address \"$host\" is invalid. Please check the address and try again."
+                isNotFound ->
+                    "Could not find or reach the device at $host.\n\n" +
+                        "Make sure the TV is turned on, connected to the same Wi-Fi network, " +
+                        "and the IP address is correct."
+                isRefused ->
+                    "The device at $host refused the connection.\n\n" +
+                        "Make sure the TV is turned on and Android TV remote service is active."
+                else ->
+                    "Could not connect to $host. Please check your network connection and try again."
+            }
+
+            return Pair(title, description)
+        }
     }
 
     sealed class ConnectionState {
@@ -26,7 +72,8 @@ class AndroidTvClient(private val sslManager: AndroidTvSslManager) {
         object Connecting : ConnectionState()
         object Connected : ConnectionState()
         object NeedsPairing : ConnectionState()
-        data class Error(val message: String) : ConnectionState()
+        data class Error(val message: String, val title: String = "Connection Failed") :
+            ConnectionState()
     }
 
     data class VolumeState(val level: Int = 0, val max: Int = 100, val isMuted: Boolean = false)
@@ -86,8 +133,10 @@ class AndroidTvClient(private val sslManager: AndroidTvSslManager) {
                             if (_connectionState.value !is ConnectionState.Connected) {
                                 _connectionState.value = ConnectionState.NeedsPairing
                             } else {
-                                _connectionState.value =
-                                    ConnectionState.Error("Connection lost: ${e.message}")
+                                _connectionState.value = ConnectionState.Error(
+                                    message = "Connection to $host was lost. Please reconnect.",
+                                    title = "Connection Lost",
+                                )
                             }
                         }
                         break
@@ -117,8 +166,11 @@ class AndroidTvClient(private val sslManager: AndroidTvSslManager) {
                 if (isPairingIssue) {
                     _connectionState.value = ConnectionState.NeedsPairing
                 } else {
-                    _connectionState.value =
-                        ConnectionState.Error("Failed to connect: ${e.message}")
+                    val (title, description) = formatConnectionError(e, host)
+                    _connectionState.value = ConnectionState.Error(
+                        message = description,
+                        title = title,
+                    )
                 }
             } finally {
                 disconnectInternal()
