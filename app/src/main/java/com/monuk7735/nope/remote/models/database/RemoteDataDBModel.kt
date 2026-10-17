@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.monuk7735.nope.remote.models.CustomRemoteLayout
-import java.util.*
+import java.util.Date
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -31,6 +31,7 @@ data class RemoteDataDBModel(
     val offScreenRemoteButtonDBS: List<RemoteButtonDBModel>,
     val preferCustomUi: Boolean = true,
     val model: String? = null,
+    val isCustom: Boolean = false,
 ) : Parcelable {
     fun getIcon(): ImageVector {
         val t = type.uppercase()

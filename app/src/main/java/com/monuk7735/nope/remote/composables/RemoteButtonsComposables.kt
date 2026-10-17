@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -24,12 +25,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -284,6 +287,7 @@ fun RemoteButtonExtra(
     offsetY: Dp,
     size: Dp,
     onClick: (remoteButtonDBModel: RemoteButtonDBModel) -> Unit,
+    onDelete: ((remoteButtonDBModel: RemoteButtonDBModel) -> Unit)? = null,
 ) {
     var dialogVisible by remember { mutableStateOf(false) }
 
@@ -327,7 +331,7 @@ fun RemoteButtonExtra(
                     color = MaterialTheme.colorScheme.primary,
                 )
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(100.dp),
+                    columns = GridCells.Adaptive(120.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier =
@@ -341,6 +345,9 @@ fun RemoteButtonExtra(
                                 remoteButtonModel = buttons[index],
                                 onClick = {
                                     onClick(buttons[index])
+                                },
+                                onDelete = onDelete?.let { del ->
+                                    { del(buttons[index]) }
                                 },
                             )
                         }
@@ -356,6 +363,7 @@ fun RemoteButtonOverflow(
     modifier: Modifier = Modifier,
     remoteButtonModel: RemoteButtonDBModel,
     onClick: () -> Unit,
+    onDelete: (() -> Unit)? = null,
 ) {
     Card(
         onClick = onClick,
@@ -366,15 +374,33 @@ fun RemoteButtonOverflow(
         ),
         modifier = modifier.fillMaxWidth(),
     ) {
-        Box(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = Modifier.padding(
+                horizontal = 10.dp,
+                vertical = 10.dp,
+            ).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = formatButtonLabel(remoteButtonModel.name),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f),
             )
+            if (onDelete != null) {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(24.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
         }
     }
 }
