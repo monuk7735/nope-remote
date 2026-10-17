@@ -123,7 +123,7 @@ class AndroidTvPairingManager(private val sslManager: AndroidTvSslManager) {
                 .setPairingRequest(
                     Pairingmessage.PairingRequest.newBuilder()
                         .setServiceName("atvremote")
-                        .setClientName("NopeRemote"),
+                        .setClientName("Nope Remote"),
                 )
                 .build()
             VarintFraming.sendFramedMessage(pairingRequest.toByteArray(), outputStream)

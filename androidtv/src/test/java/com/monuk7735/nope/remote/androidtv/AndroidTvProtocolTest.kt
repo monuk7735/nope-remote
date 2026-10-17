@@ -93,7 +93,7 @@ class AndroidTvProtocolTest {
             .setPairingRequest(
                 Pairingmessage.PairingRequest.newBuilder()
                     .setServiceName("atvremote")
-                    .setClientName("NopeRemote"),
+                    .setClientName("Nope Remote"),
             )
             .build()
 
@@ -104,7 +104,7 @@ class AndroidTvProtocolTest {
         assertEquals(Pairingmessage.PairingMessage.Status.STATUS_OK, parsed.status)
         assertTrue(parsed.hasPairingRequest())
         assertEquals("atvremote", parsed.pairingRequest.serviceName)
-        assertEquals("NopeRemote", parsed.pairingRequest.clientName)
+        assertEquals("Nope Remote", parsed.pairingRequest.clientName)
     }
 
     @Test

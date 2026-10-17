@@ -186,7 +186,7 @@ class AndroidTvClient(private val sslManager: AndroidTvSslManager) {
                         .setCode1(622) // PING | KEY | IME | POWER | VOLUME | APP_LINK
                         .setDeviceInfo(
                             Remotemessage.RemoteDeviceInfo.newBuilder()
-                                .setModel("NopeRemote")
+                                .setModel("Nope Remote")
                                 .setVendor("Nope")
                                 .setUnknown1(1)
                                 .setUnknown2("1")

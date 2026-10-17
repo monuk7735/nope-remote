@@ -134,7 +134,7 @@ class AndroidTvSslManager(private val context: Context) {
         val now = System.currentTimeMillis()
         val notBefore = Date(now - 24 * 60 * 60 * 1000L)
         val notAfter = Date(now + 25L * 365 * 24 * 60 * 60 * 1000L)
-        val subject = X500Name("CN=NopeRemote")
+        val subject = X500Name("CN=Nope Remote")
         val serialNumber = BigInteger.valueOf(Math.abs(now))
 
         val certBuilder = JcaX509v3CertificateBuilder(
