@@ -9,13 +9,15 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.monuk7735.nope.remote.models.database.MacroDataDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
+import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
 
 @Database(
     entities = [
         RemoteDataDBModel::class,
         MacroDataDBModel::class,
+        SavedTvDeviceDBModel::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -24,6 +26,8 @@ abstract class RemoteDatabase : RoomDatabase() {
     abstract fun remoteDao(): RemoteDao
 
     abstract fun macroDao(): MacroDao
+
+    abstract fun wifiRemoteDao(): WifiRemoteDao
 
     companion object {
 
@@ -50,6 +54,25 @@ abstract class RemoteDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `wifi_remotes` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `host` TEXT NOT NULL,
+                        `port` INTEGER NOT NULL DEFAULT 6466,
+                        `added` INTEGER NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_wifi_remotes_host` ON `wifi_remotes` (`host`)",
+                )
+            }
+        }
+
         fun getDatabase(context: Context): RemoteDatabase {
             val tempInstance = instance
             if (tempInstance != null) {
@@ -62,7 +85,7 @@ abstract class RemoteDatabase : RoomDatabase() {
                     RemoteDatabase::class.java,
                     "remotes",
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .fallbackToDestructiveMigration(false)
                     .build()
 
