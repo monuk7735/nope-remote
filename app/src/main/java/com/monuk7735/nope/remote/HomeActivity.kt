@@ -16,7 +16,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -106,6 +107,7 @@ import com.monuk7735.nope.remote.composables.EmptyState
 import com.monuk7735.nope.remote.composables.MacroSequenceCard
 import com.monuk7735.nope.remote.composables.RemoteTile
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
+import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.viewmodels.HomeActivityViewModel
@@ -157,6 +159,7 @@ class HomeActivity : ComponentActivity() {
         val context = LocalContext.current
         val allRemotes by viewModel.allRemotesInfo.observeAsState(emptyList())
         val allMacros by viewModel.allMacros.observeAsState(emptyList())
+        val allWifiRemotes by viewModel.allWifiRemotes.observeAsState(emptyList())
 
         val discoveryManager = remember { AndroidTvDiscoveryManager(context) }
         val discoveredTvs by discoveryManager.discoveredDevices.collectAsState()
@@ -176,6 +179,9 @@ class HomeActivity : ComponentActivity() {
             val observer = LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
                     openingTvHost = null
+                    if (!discoveryManager.isDiscovering.value) {
+                        discoveryManager.rescan()
+                    }
                 }
             }
             lifecycleOwner.lifecycle.addObserver(observer)
@@ -194,6 +200,9 @@ class HomeActivity : ComponentActivity() {
 
         var showManualIpDialog by remember { mutableStateOf(false) }
         var selectedRemoteForDeletion by remember { mutableStateOf<RemoteDataDBModel?>(null) }
+        var selectedWifiRemoteForDeletion by remember {
+            mutableStateOf<SavedTvDeviceDBModel?>(null)
+        }
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -428,22 +437,28 @@ class HomeActivity : ComponentActivity() {
                             }
 
                             item(span = { GridItemSpan(maxLineSpan) }) {
-                                DiscoveredTvSection(
+                                AndroidTvSection(
+                                    savedTvs = allWifiRemotes,
                                     discoveredTvs = discoveredTvs,
                                     isDiscovering = isDiscovering,
                                     onRescan = { discoveryManager.rescan() },
+                                    onAddManual = { showManualIpDialog = true },
                                     openingTvHost = openingTvHost,
-                                    onTvClick = { tv ->
-                                        openingTvHost = tv.host
+                                    onTvClick = { host, name ->
+                                        openingTvHost = host
+                                        viewModel.saveWifiRemote(name, host)
                                         startActivity(
                                             Intent(
                                                 context,
                                                 AndroidTvRemoteActivity::class.java,
                                             ).apply {
-                                                putExtra("host", tv.host)
-                                                putExtra("name", tv.name)
+                                                putExtra("host", host)
+                                                putExtra("name", name)
                                             },
                                         )
+                                    },
+                                    onDeleteSavedTv = { tv ->
+                                        selectedWifiRemoteForDeletion = tv
                                     },
                                 )
                             }
@@ -601,6 +616,7 @@ class HomeActivity : ComponentActivity() {
                     onDismiss = { showManualIpDialog = false },
                     onConnect = { host, name ->
                         showManualIpDialog = false
+                        viewModel.saveWifiRemote(name, host)
                         startActivity(
                             Intent(context, AndroidTvRemoteActivity::class.java).apply {
                                 putExtra("host", host)
@@ -661,17 +677,71 @@ class HomeActivity : ComponentActivity() {
                     }
                 }
             }
+
+            if (selectedWifiRemoteForDeletion != null) {
+                ModalBottomSheet(
+                    onDismissRequest = { selectedWifiRemoteForDeletion = null },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    sheetState = rememberModalBottomSheetState(),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                            .padding(bottom = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = "Remove Saved TV?",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Are you sure you want to remove " +
+                                "\"${selectedWifiRemoteForDeletion?.name}\" " +
+                                "(${selectedWifiRemoteForDeletion?.host}) from saved TVs?",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = {
+                                selectedWifiRemoteForDeletion?.let { tv ->
+                                    viewModel.deleteWifiRemote(tv)
+                                }
+                                selectedWifiRemoteForDeletion = null
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Remove") }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = { selectedWifiRemoteForDeletion = null },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Cancel") }
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun DiscoveredTvSection(
+private fun AndroidTvSection(
+    savedTvs: List<SavedTvDeviceDBModel>,
     discoveredTvs: List<DiscoveredTvDevice>,
     isDiscovering: Boolean,
     onRescan: () -> Unit,
+    onAddManual: () -> Unit,
     openingTvHost: String? = null,
-    onTvClick: (DiscoveredTvDevice) -> Unit,
+    onTvClick: (host: String, name: String) -> Unit,
+    onDeleteSavedTv: (SavedTvDeviceDBModel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isRescanTriggered by remember { mutableStateOf(false) }
@@ -683,6 +753,10 @@ private fun DiscoveredTvSection(
     }
 
     val isSearching = isDiscovering || isRescanTriggered
+    val unSavedDiscoveredTvs = remember(savedTvs, discoveredTvs) {
+        discoveredTvs.filter { d -> savedTvs.none { s -> s.host == d.host } }
+    }
+    val hasTvs = savedTvs.isNotEmpty() || unSavedDiscoveredTvs.isNotEmpty()
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -713,32 +787,61 @@ private fun DiscoveredTvSection(
                     )
                 }
             }
-            IconButton(
-                onClick = {
-                    isRescanTriggered = true
-                    onRescan()
-                },
-                enabled = !isSearching,
-                modifier = Modifier.size(32.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Refresh,
-                    contentDescription = "Rescan",
-                    modifier = Modifier.size(18.dp),
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onAddManual,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Add,
+                        contentDescription = "Add TV by IP",
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        isRescanTriggered = true
+                        onRescan()
+                    },
+                    enabled = !isSearching,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Refresh,
+                        contentDescription = "Rescan",
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
 
-        if (discoveredTvs.isNotEmpty()) {
+        if (hasTvs) {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(vertical = 8.dp),
             ) {
-                items(discoveredTvs.size) { i ->
-                    DiscoveredTvCard(
-                        device = discoveredTvs[i],
-                        isOpening = discoveredTvs[i].host == openingTvHost,
-                        onClick = { onTvClick(discoveredTvs[i]) },
+                items(savedTvs.size) { i ->
+                    val tv = savedTvs[i]
+                    val isOnline = discoveredTvs.any { it.host == tv.host }
+                    TvCard(
+                        name = tv.name,
+                        host = tv.host,
+                        isSaved = true,
+                        isOnline = isOnline,
+                        isOpening = tv.host == openingTvHost,
+                        onClick = { onTvClick(tv.host, tv.name) },
+                        onLongClick = { onDeleteSavedTv(tv) },
+                    )
+                }
+                items(unSavedDiscoveredTvs.size) { i ->
+                    val tv = unSavedDiscoveredTvs[i]
+                    TvCard(
+                        name = tv.name,
+                        host = tv.host,
+                        isSaved = false,
+                        isOnline = true,
+                        isOpening = tv.host == openingTvHost,
+                        onClick = { onTvClick(tv.host, tv.name) },
                     )
                 }
             }
@@ -784,11 +887,24 @@ private fun DiscoveredTvSection(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Make sure your TV is powered on and connected to " +
-                                "the same Wi-Fi network.",
+                                "the same Wi-Fi network, or connect manually by IP.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                         )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = onAddManual,
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Connect TV by IP")
+                        }
                     }
                 }
             }
@@ -796,11 +912,16 @@ private fun DiscoveredTvSection(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DiscoveredTvCard(
-    device: DiscoveredTvDevice,
+private fun TvCard(
+    name: String,
+    host: String,
+    isSaved: Boolean,
+    isOnline: Boolean,
     isOpening: Boolean,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -808,7 +929,11 @@ private fun DiscoveredTvCard(
             .width(200.dp)
             .height(130.dp)
             .clip(RoundedCornerShape(24.dp))
-            .clickable(enabled = !isOpening, onClick = onClick),
+            .combinedClickable(
+                enabled = !isOpening,
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -849,12 +974,20 @@ private fun DiscoveredTvCard(
                 } else {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        color = if (isSaved) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        },
                     ) {
                         Text(
-                            text = "Wi-Fi",
+                            text = if (isSaved) "Saved" else "Wi-Fi",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            color = if (isSaved) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            },
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             fontWeight = FontWeight.Bold,
                         )
@@ -864,7 +997,7 @@ private fun DiscoveredTvCard(
 
             Column {
                 Text(
-                    text = device.name,
+                    text = name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -872,12 +1005,25 @@ private fun DiscoveredTvCard(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = device.host,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isSaved && isOnline) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(
+                                    color = Color(0xFF4CAF50),
+                                    shape = CircleShape,
+                                ),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text(
+                        text = host,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -906,9 +1052,9 @@ private fun ManualIpConnectDialog(
                 OutlinedTextField(
                     value = ipInput,
                     onValueChange = { input ->
-                        ipInput = input.filter { it.isDigit() || it == '.' }
+                        ipInput = input.filter { it.isLetterOrDigit() || it == '.' || it == '-' }
                     },
-                    label = { Text("TV IP Address") },
+                    label = { Text("TV IP Address or Hostname") },
                     placeholder = { Text("e.g. 192.168.1.100") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),

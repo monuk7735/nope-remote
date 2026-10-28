@@ -1,9 +1,15 @@
 package com.monuk7735.nope.remote.androidtv.discovery
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.LinkProperties
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import java.util.Collections
 import kotlinx.coroutines.CoroutineScope
@@ -26,8 +32,15 @@ class AndroidTvDiscoveryManager(private val context: Context) {
     private val wifiManager = context.applicationContext.getSystemService(
         Context.WIFI_SERVICE,
     ) as? WifiManager
+    private val connectivityManager =
+        context.applicationContext.getSystemService(
+            Context.CONNECTIVITY_SERVICE,
+        ) as? ConnectivityManager
 
     private var multicastLock: WifiManager.MulticastLock? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var networkChangeDebounceJob: Job? = null
+    private var lastNetwork: Network? = null
 
     private val _discoveredDevices = MutableStateFlow<List<DiscoveredTvDevice>>(emptyList())
     val discoveredDevices: StateFlow<List<DiscoveredTvDevice>> = _discoveredDevices.asStateFlow()
@@ -52,8 +65,64 @@ class AndroidTvDiscoveryManager(private val context: Context) {
 
     @Synchronized
     fun startDiscovery() {
+        registerNetworkCallback()
         if (_isDiscovering.value) return
         startDiscoveryInternal()
+    }
+
+    private fun registerNetworkCallback() {
+        if (networkCallback != null) return
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                if (lastNetwork == null) {
+                    lastNetwork = network
+                    return
+                }
+                if (lastNetwork != network) {
+                    lastNetwork = network
+                    scheduleNetworkRescan()
+                }
+            }
+
+            override fun onLost(network: Network) {
+                if (lastNetwork == network) {
+                    lastNetwork = null
+                    scheduleNetworkRescan()
+                }
+            }
+
+            override fun onLinkPropertiesChanged(
+                network: Network,
+                linkProperties: LinkProperties,
+            ) {
+                if (lastNetwork == network) {
+                    scheduleNetworkRescan()
+                }
+            }
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                connectivityManager?.registerDefaultNetworkCallback(callback)
+            } else {
+                val request = NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build()
+                connectivityManager?.registerNetworkCallback(request, callback)
+            }
+            networkCallback = callback
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to register network callback", e)
+        }
+    }
+
+    private fun scheduleNetworkRescan() {
+        networkChangeDebounceJob?.cancel()
+        networkChangeDebounceJob = scope.launch {
+            delay(600)
+            Log.d(TAG, "Network change detected, refreshing discovery")
+            rescan()
+        }
     }
 
     private fun startDiscoveryInternal() {
@@ -82,7 +151,7 @@ class AndroidTvDiscoveryManager(private val context: Context) {
         timeoutJob = scope.launch {
             delay(SCAN_TIMEOUT_MS)
             if (_isDiscovering.value) {
-                stopDiscovery()
+                stopDiscoveryServices()
             }
         }
     }
@@ -258,7 +327,7 @@ class AndroidTvDiscoveryManager(private val context: Context) {
         rawName.replace("\\032", " ").replace("\\", "").trim()
 
     @Synchronized
-    fun stopDiscovery() {
+    private fun stopDiscoveryServices() {
         rescanJob?.cancel()
         rescanJob = null
         isRescanning = false
@@ -286,5 +355,19 @@ class AndroidTvDiscoveryManager(private val context: Context) {
             }
         } catch (_: Exception) {}
         multicastLock = null
+    }
+
+    @Synchronized
+    fun stopDiscovery() {
+        stopDiscoveryServices()
+        networkChangeDebounceJob?.cancel()
+        networkChangeDebounceJob = null
+        networkCallback?.let { callback ->
+            try {
+                connectivityManager?.unregisterNetworkCallback(callback)
+            } catch (_: Exception) {}
+            networkCallback = null
+        }
+        lastNetwork = null
     }
 }
