@@ -24,7 +24,9 @@
 
 ## Features
 
-- **Android TV & Google TV Wi-Fi Remote** - Discover and control Android TV / Google TV devices over Wi-Fi with secure PIN pairing, navigation D-pad, media controls, app launching shortcuts, and text input.
+- **Android TV & Google TV Wi-Fi Remote** - Discover and control Android TV / Google TV devices over Wi-Fi with secure PIN pairing, navigation D-pad, media controls, app shortcuts, and text input.
+- **Saved Wi-Fi Remotes & VLAN Support** - Keep paired and manually added Android TVs saved on your home screen for instant access. Easily connect by IP address or hostname to control TVs across separate VLANs or subnets without relying on mDNS.
+- **Network Change Auto-Refresh** - Wi-Fi device discovery automatically refreshes upon network changes (connecting to Wi-Fi, switching networks, or roaming) and when returning to the app.
 - **Universal IR Compatibility** - Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
 - **Custom Remote Creation** - Build completely custom remotes from scratch tailored to your exact devices and layout preferences.
 - **Custom Button Support** - Add and configure custom keys and buttons on your remotes with custom labels, icons, frequencies, and IR patterns.
@@ -66,7 +68,7 @@ Nope Remote supports downloading and importing codes from the following communit
 
 ### Prerequisites
 
-- **For Android TV**: Connected to the same Wi-Fi network as your Android TV / Google TV (no IR blaster required).
+- **For Android TV**: Connected to the local network as your Android TV / Google TV (supports automated mDNS discovery on the same Wi-Fi or manual IP connection across VLANs/subnets; no IR blaster required).
 - **For Infrared**: An Android device with a built-in **IR Blaster**.
 - Android SDK 36 installed.
 - Minimum Android version: 6.0 (API Level 23).
