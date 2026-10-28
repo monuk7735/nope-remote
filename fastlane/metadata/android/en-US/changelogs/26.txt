@@ -1,5 +1,5 @@
-- Added saved Wi-Fi remotes: paired and connected Android TVs are now saved and accessible directly from the home screen.
-- Added support for manually adding Android TVs by IP address or hostname, ideal for TVs on separate VLANs or subnets.
-- Added live network state detection: discovery automatically refreshes when connecting to Wi-Fi, switching networks, or roaming.
-- Added long-press action to manage and remove saved Wi-Fi remotes.
-- Performance improvements and UI responsiveness enhancements.
+- Saved TVs: Your paired Android & Google TVs are now saved on your home screen for quick 1-tap control.
+- Manual Connect: Add TVs directly by IP address if they are on a different home network or guest Wi-Fi.
+- Smart Network Refresh: Automatically searches for your TVs whenever you connect to Wi-Fi or switch networks.
+- Easy Management: Long-press any saved TV to remove it anytime.
+- Smoother experience and bug fixes.
