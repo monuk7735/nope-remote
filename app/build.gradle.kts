@@ -16,8 +16,8 @@ android {
         applicationId = "com.monuk7735.nope.remote"
         minSdk = 23
         targetSdk = 35
-        versionCode = 25
-        versionName = "2.5"
+        versionCode = 26
+        versionName = "2.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

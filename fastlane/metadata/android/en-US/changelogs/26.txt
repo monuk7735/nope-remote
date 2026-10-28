@@ -1,0 +1,5 @@
+- Saved TVs: Your paired Android & Google TVs are now saved on your home screen for quick 1-tap control.
+- Manual Connect: Add TVs directly by IP address if they are on a different home network or guest Wi-Fi.
+- Smart Network Refresh: Automatically searches for your TVs whenever you connect to Wi-Fi or switch networks.
+- Easy Management: Long-press any saved TV to remove it anytime.
+- Smoother experience and bug fixes.

@@ -4,7 +4,7 @@ Built with modern Android technologies, it offers a sleek Material You interface
 
 Key Features:
 
-- Android TV & Google TV Control: Seamlessly discover (mDNS) and control Android TVs over local Wi-Fi with secure pairing, directional pad, media playback, text input, and quick app launch shortcuts.
+- Android TV & Google TV Control: Seamlessly discover (mDNS) or manually connect (by IP/hostname across VLANs) and control Android TVs with saved remotes, secure pairing, directional pad, media playback, text input, and quick app launch shortcuts.
 - Universal IR Compatibility: Control TVs, Set-Top Boxes, ACs, and more using your phone's built-in IR blaster.
 - Custom Remote Creation: Build fully customized remotes from scratch tailored specifically to your home setup.
 - Custom Buttons: Add, customize, and configure buttons on any remote with custom icons, labels, IR codes, and protocols.
