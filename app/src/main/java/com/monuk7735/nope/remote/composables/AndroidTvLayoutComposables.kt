@@ -426,11 +426,6 @@ fun AndroidTvUniversalRemote(
             }
 
             val isPower = button.keyCodeName.contains("POWER")
-            val containerColor = if (isPower) {
-                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
-            } else {
-                null
-            }
             val contentColor = if (isPower) {
                 MaterialTheme.colorScheme.error
             } else {
@@ -443,7 +438,6 @@ fun AndroidTvUniversalRemote(
                 textIcon = button.getTextIcon(),
                 offsetX = posX,
                 offsetY = posY,
-                containerColor = containerColor,
                 contentColor = contentColor,
                 onClick = {
                     if (button.isKeyboardAction()) {

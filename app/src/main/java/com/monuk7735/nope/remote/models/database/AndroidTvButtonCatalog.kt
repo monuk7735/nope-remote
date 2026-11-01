@@ -76,13 +76,7 @@ object AndroidTvButtonCatalog {
         AndroidTvButtonDBModel(
             name = "Power",
             keyCodeName = "KEYCODE_POWER",
-            gridCol = 0,
-            gridRow = 0,
-        ),
-        AndroidTvButtonDBModel(
-            name = "Keyboard",
-            keyCodeName = "ACTION_KEYBOARD",
-            gridCol = 4,
+            gridCol = 2,
             gridRow = 0,
         ),
         AndroidTvButtonDBModel(
@@ -136,19 +130,13 @@ object AndroidTvButtonCatalog {
         AndroidTvButtonDBModel(
             name = "Volume Up",
             keyCodeName = "KEYCODE_VOLUME_UP",
-            gridCol = 1,
-            gridRow = 8,
-        ),
-        AndroidTvButtonDBModel(
-            name = "Mute",
-            keyCodeName = "KEYCODE_VOLUME_MUTE",
             gridCol = 2,
-            gridRow = 8,
+            gridRow = 7,
         ),
         AndroidTvButtonDBModel(
             name = "Volume Down",
             keyCodeName = "KEYCODE_VOLUME_DOWN",
-            gridCol = 3,
+            gridCol = 2,
             gridRow = 8,
         ),
     )

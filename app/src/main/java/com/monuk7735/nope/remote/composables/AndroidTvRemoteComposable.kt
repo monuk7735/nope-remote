@@ -35,13 +35,11 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.VolumeDown
-import androidx.compose.material.icons.automirrored.outlined.VolumeOff
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.GridOn
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Menu
@@ -753,26 +751,17 @@ private fun AndroidTvRemoteContent(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        // Top Row: Power, Mode Toggle, & Keyboard
-                        Row(
+                        // Top Row: Power in top center
+                        Box(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            contentAlignment = Alignment.Center,
                         ) {
                             AndroidTvButton(
                                 icon = Icons.Outlined.PowerSettingsNew,
                                 contentDescription = "Power",
                                 tint = MaterialTheme.colorScheme.error,
-                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(
-                                    alpha = 0.4f,
-                                ),
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                 onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_POWER) },
-                            )
-
-                            AndroidTvButton(
-                                icon = Icons.Outlined.Keyboard,
-                                contentDescription = "Text Input",
-                                tint = MaterialTheme.colorScheme.primary,
-                                onClick = { showKeyboardDialog = true },
                             )
                         }
 
@@ -810,24 +799,16 @@ private fun AndroidTvRemoteContent(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Volume Controls
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        // Volume Controls: Vol + and Vol - in vertical layout in center
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             AndroidTvButton(
                                 icon = Icons.AutoMirrored.Outlined.VolumeUp,
                                 contentDescription = "Volume Up",
                                 onClick = {
                                     sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_UP)
-                                },
-                            )
-
-                            AndroidTvButton(
-                                icon = Icons.AutoMirrored.Outlined.VolumeOff,
-                                contentDescription = "Mute",
-                                onClick = {
-                                    sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_MUTE)
                                 },
                             )
 

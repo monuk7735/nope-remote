@@ -87,6 +87,19 @@ class AndroidTvLayoutEditorTest {
         // Check no two buttons occupy the same cell
         val slots = defaultButtons.map { it.gridCol to it.gridRow }
         assertEquals("No overlapping buttons in default layout", slots.size, slots.toSet().size)
+
+        // Verify specific user layout: power top center, vol +/- vertical center
+        val power = defaultButtons.first { it.keyCodeName == "KEYCODE_POWER" }
+        assertEquals(2, power.gridCol)
+        assertEquals(0, power.gridRow)
+
+        val volUp = defaultButtons.first { it.keyCodeName == "KEYCODE_VOLUME_UP" }
+        assertEquals(2, volUp.gridCol)
+        assertEquals(7, volUp.gridRow)
+
+        val volDown = defaultButtons.first { it.keyCodeName == "KEYCODE_VOLUME_DOWN" }
+        assertEquals(2, volDown.gridCol)
+        assertEquals(8, volDown.gridRow)
     }
 
     @Test
