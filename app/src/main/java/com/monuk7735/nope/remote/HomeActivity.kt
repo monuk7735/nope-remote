@@ -47,6 +47,7 @@ import androidx.compose.material.icons.outlined.AutoFixHigh
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SettingsInputAntenna
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.AlertDialog
@@ -106,10 +107,12 @@ import com.monuk7735.nope.remote.composables.AppBar
 import com.monuk7735.nope.remote.composables.EmptyState
 import com.monuk7735.nope.remote.composables.MacroSequenceCard
 import com.monuk7735.nope.remote.composables.RemoteTile
+import com.monuk7735.nope.remote.composables.ReorderHomeSectionsDialog
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
+import com.monuk7735.nope.remote.utils.HomeSection
 import com.monuk7735.nope.remote.viewmodels.HomeActivityViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -160,13 +163,19 @@ class HomeActivity : ComponentActivity() {
         val allRemotes by viewModel.allRemotesInfo.observeAsState(emptyList())
         val allMacros by viewModel.allMacros.observeAsState(emptyList())
         val allWifiRemotes by viewModel.allWifiRemotes.observeAsState(emptyList())
+        val homeSections by viewModel.homeSections.collectAsState()
+
+        val isWifiEnabled = homeSections.find { it.section == HomeSection.WIFI }?.isEnabled == true
+        val isIrEnabled = homeSections.find { it.section == HomeSection.IR }?.isEnabled == true
 
         val discoveryManager = remember { AndroidTvDiscoveryManager(context) }
         val discoveredTvs by discoveryManager.discoveredDevices.collectAsState()
         val isDiscovering by discoveryManager.isDiscovering.collectAsState()
 
-        DisposableEffect(Unit) {
-            discoveryManager.startDiscovery()
+        DisposableEffect(isWifiEnabled) {
+            if (isWifiEnabled) {
+                discoveryManager.startDiscovery()
+            }
             onDispose {
                 discoveryManager.stopDiscovery()
             }
@@ -179,7 +188,8 @@ class HomeActivity : ComponentActivity() {
             val observer = LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
                     openingTvHost = null
-                    if (!discoveryManager.isDiscovering.value) {
+                    viewModel.refreshSections()
+                    if (isWifiEnabled && !discoveryManager.isDiscovering.value) {
                         discoveryManager.rescan()
                     }
                 }
@@ -199,6 +209,7 @@ class HomeActivity : ComponentActivity() {
         }
 
         var showManualIpDialog by remember { mutableStateOf(false) }
+        var showReorderSectionsDialog by remember { mutableStateOf(false) }
         var selectedRemoteForDeletion by remember { mutableStateOf<RemoteDataDBModel?>(null) }
         var selectedWifiRemoteForDeletion by remember {
             mutableStateOf<SavedTvDeviceDBModel?>(null)
@@ -208,6 +219,21 @@ class HomeActivity : ComponentActivity() {
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 AppBar(title = stringResource(id = R.string.app_name)) {
+                    Surface(
+                        onClick = {
+                            showReorderSectionsDialog = true
+                        },
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                    ) {
+                        Box(modifier = Modifier.padding(8.dp)) {
+                            Icon(
+                                imageVector = Icons.Outlined.Tune,
+                                contentDescription = "Customize Sections",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
                     Surface(
                         onClick = {
                             startActivity(Intent(context, SettingsActivity::class.java))
@@ -296,7 +322,7 @@ class HomeActivity : ComponentActivity() {
                 Surface(
                     onClick = {
                         if (pagerState.currentPage == 0) {
-                            if (viewModel.hasIrBlaster) {
+                            if (isIrEnabled && viewModel.hasIrBlaster) {
                                 startActivity(Intent(context, AddRemoteActivity::class.java))
                             } else {
                                 showManualIpDialog = true
@@ -334,7 +360,7 @@ class HomeActivity : ComponentActivity() {
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = if (pagerState.currentPage == 0) {
-                                        if (viewModel.hasIrBlaster) {
+                                        if (isIrEnabled && viewModel.hasIrBlaster) {
                                             "Add Remote"
                                         } else {
                                             "Connect TV"
@@ -383,173 +409,117 @@ class HomeActivity : ComponentActivity() {
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            if (!viewModel.hasIrBlaster) {
+                            if (!viewModel.hasIrBlaster && isWifiEnabled) {
                                 item(span = { GridItemSpan(maxLineSpan) }) {
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme
-                                                .colorScheme.surfaceContainerLow,
-                                        ),
-                                        shape = RoundedCornerShape(24.dp),
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(16.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Surface(
-                                                shape = CircleShape,
-                                                color = MaterialTheme
-                                                    .colorScheme.primaryContainer,
-                                                modifier = Modifier.size(40.dp),
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
+                                    WifiRemoteModeBanner()
+                                }
+                            }
+
+                            val enabledSections = homeSections.filter { it.isEnabled }
+                            for (sectionItem in enabledSections) {
+                                when (sectionItem.section) {
+                                    HomeSection.WIFI -> {
+                                        item(span = {
+                                            GridItemSpan(maxLineSpan)
+                                        }, key = "section_wifi") {
+                                            AndroidTvSection(
+                                                savedTvs = allWifiRemotes,
+                                                discoveredTvs = discoveredTvs,
+                                                isDiscovering = isDiscovering,
+                                                onRescan = { discoveryManager.rescan() },
+                                                onAddManual = { showManualIpDialog = true },
+                                                openingTvHost = openingTvHost,
+                                                onTvClick = { host, name ->
+                                                    openingTvHost = host
+                                                    viewModel.saveWifiRemote(name, host)
+                                                    startActivity(
+                                                        Intent(
+                                                            context,
+                                                            AndroidTvRemoteActivity::class.java,
+                                                        ).apply {
+                                                            putExtra("host", host)
+                                                            putExtra("name", name)
+                                                        },
+                                                    )
+                                                },
+                                                onDeleteSavedTv = { tv ->
+                                                    selectedWifiRemoteForDeletion = tv
+                                                },
+                                            )
+                                        }
+                                    }
+
+                                    HomeSection.IR -> {
+                                        if (allRemotes.isNotEmpty()) {
+                                            item(span = {
+                                                GridItemSpan(maxLineSpan)
+                                            }, key = "header_ir") {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(top = 8.dp, bottom = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                ) {
                                                     Icon(
-                                                        imageVector = Icons.Outlined.Wifi,
+                                                        painter = painterResource(
+                                                            id = R.drawable.ic_ir_remote,
+                                                        ),
                                                         contentDescription = null,
-                                                        tint = MaterialTheme
-                                                            .colorScheme.onPrimaryContainer,
+                                                        tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(20.dp),
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = "IR Remotes",
+                                                        style =
+                                                        MaterialTheme.typography
+                                                            .titleMedium,
+                                                        fontWeight = FontWeight.Bold,
                                                     )
                                                 }
                                             }
-                                            Spacer(modifier = Modifier.width(16.dp))
-                                            Column {
-                                                Text(
-                                                    text = "Wi-Fi Remote Mode",
-                                                    style = MaterialTheme
-                                                        .typography.titleMedium,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme
-                                                        .colorScheme.onSurface,
-                                                )
-                                                Text(
-                                                    text = "No IR blaster detected. " +
-                                                        "Controlling Android TV over Wi-Fi.",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme
-                                                        .colorScheme.onSurfaceVariant,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
 
-                            item(span = { GridItemSpan(maxLineSpan) }) {
-                                AndroidTvSection(
-                                    savedTvs = allWifiRemotes,
-                                    discoveredTvs = discoveredTvs,
-                                    isDiscovering = isDiscovering,
-                                    onRescan = { discoveryManager.rescan() },
-                                    onAddManual = { showManualIpDialog = true },
-                                    openingTvHost = openingTvHost,
-                                    onTvClick = { host, name ->
-                                        openingTvHost = host
-                                        viewModel.saveWifiRemote(name, host)
-                                        startActivity(
-                                            Intent(
-                                                context,
-                                                AndroidTvRemoteActivity::class.java,
-                                            ).apply {
-                                                putExtra("host", host)
-                                                putExtra("name", name)
-                                            },
-                                        )
-                                    },
-                                    onDeleteSavedTv = { tv ->
-                                        selectedWifiRemoteForDeletion = tv
-                                    },
-                                )
-                            }
-
-                            if (allRemotes.isNotEmpty()) {
-                                item(span = { GridItemSpan(maxLineSpan) }) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = 8.dp, bottom = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(
-                                                id = R.drawable.ic_ir_remote,
-                                            ),
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp),
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "IR Remotes",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                        )
-                                    }
-                                }
-
-                                items(allRemotes.size) { i ->
-                                    RemoteTile(
-                                        name = allRemotes[i].name,
-                                        deviceType =
-                                        "${allRemotes[i].brand} ${allRemotes[i].type}",
-                                        icon = allRemotes[i].getIcon(),
-                                        onClick = {
-                                            if (!viewModel.hasIrBlaster) {
-                                                Toast.makeText(
-                                                    context,
-                                                    "This remote requires an IR blaster, " +
-                                                        "which was not found on this device.",
-                                                    Toast.LENGTH_LONG,
-                                                ).show()
-                                            } else {
-                                                startActivity(
-                                                    Intent(
-                                                        context,
-                                                        RemoteControlActivity::class.java,
-                                                    ).apply {
-                                                        putExtra("remote", allRemotes[i])
+                                            items(
+                                                allRemotes.size,
+                                                key = { "remote_${allRemotes[it].id}" },
+                                            ) { i ->
+                                                val remote = allRemotes[i]
+                                                RemoteTile(
+                                                    name = remote.name,
+                                                    deviceType =
+                                                    "${remote.brand} ${remote.type}",
+                                                    icon = remote.getIcon(),
+                                                    onClick = {
+                                                        if (!viewModel.hasIrBlaster) {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "This remote requires an IR " +
+                                                                    "blaster, which was not " +
+                                                                    "found on this device.",
+                                                                Toast.LENGTH_LONG,
+                                                            ).show()
+                                                        } else {
+                                                            val intent = Intent(
+                                                                context,
+                                                                RemoteControlActivity::class.java,
+                                                            ).apply {
+                                                                putExtra("remote", remote)
+                                                            }
+                                                            startActivity(intent)
+                                                        }
                                                     },
+                                                    onLongClick = {
+                                                        selectedRemoteForDeletion = remote
+                                                    },
+                                                    modifier = Modifier.height(140.dp),
                                                 )
                                             }
-                                        },
-                                        onLongClick = {
-                                            selectedRemoteForDeletion = allRemotes[i]
-                                        },
-                                        modifier = Modifier.height(140.dp),
-                                    )
-                                }
-                            } else if (viewModel.hasIrBlaster) {
-                                item(span = { GridItemSpan(maxLineSpan) }) {
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 8.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme
-                                                .colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(16.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Icon(
-                                                imageVector =
-                                                Icons.Outlined.SettingsInputAntenna,
-                                                contentDescription = null,
-                                                tint = MaterialTheme
-                                                    .colorScheme.onSurfaceVariant,
-                                            )
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Text(
-                                                text = "No IR remotes added yet. " +
-                                                    "Tap '+' to add one.",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme
-                                                    .colorScheme.onSurfaceVariant,
-                                            )
+                                        } else if (viewModel.hasIrBlaster) {
+                                            item(span = {
+                                                GridItemSpan(maxLineSpan)
+                                            }, key = "empty_ir") {
+                                                EmptyIrRemotesCard()
+                                            }
                                         }
                                     }
                                 }
@@ -728,6 +698,87 @@ class HomeActivity : ComponentActivity() {
                     }
                 }
             }
+
+            if (showReorderSectionsDialog) {
+                ReorderHomeSectionsDialog(
+                    initialSections = homeSections,
+                    onSave = { viewModel.updateSections(it) },
+                    onDismiss = { showReorderSectionsDialog = false },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WifiRemoteModeBanner(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        shape = RoundedCornerShape(24.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.Wifi,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = "Wi-Fi Remote Mode",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "No IR blaster detected. Controlling Android TV over Wi-Fi.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyIrRemotesCard(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        ),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.SettingsInputAntenna,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "No IR remotes added yet. Tap '+' to add one.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.monuk7735.nope.remote.composables.utils
 
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -34,16 +35,16 @@ class ReorderableState(val listState: LazyListState, val onMove: (Int, Int) -> U
     fun onDrag(offset: Float) {
         dragOffset += offset
 
+        val draggedItem = draggingItemIndex?.let { idx ->
+            listState.layoutInfo.visibleItemsInfo.find { i -> i.index == idx }
+        }
+        val draggedCenter = (draggedItem?.offset ?: 0) + (draggedItem?.size ?: 0) / 2 + dragOffset
+
         val hoveredIndex = listState.layoutInfo.visibleItemsInfo
             .firstOrNull { item ->
                 val itemStart = item.offset
                 val itemEnd = item.offset + item.size
-                val draggedItem = draggingItemIndex?.let { idx ->
-                    listState.layoutInfo.visibleItemsInfo.find { i -> i.index == idx }
-                }
-                val currentOffset = (draggedItem?.offset ?: 0) + dragOffset
-
-                currentOffset.toInt() in itemStart..itemEnd
+                draggedCenter.toInt() in itemStart..itemEnd
             }?.index
 
         if (hoveredIndex != null &&
@@ -84,6 +85,25 @@ fun Modifier.detectReorder(reorderableState: ReorderableState, index: Int): Modi
                 reorderableState.onDragStart(index)
             },
             onDrag = { _, dragAmount ->
+                reorderableState.onDrag(dragAmount.y)
+            },
+            onDragEnd = {
+                reorderableState.onDragStop()
+            },
+            onDragCancel = {
+                reorderableState.onDragStop()
+            },
+        )
+    }
+
+fun Modifier.detectImmediateReorder(reorderableState: ReorderableState, index: Int): Modifier =
+    this.pointerInput(Unit) {
+        detectDragGestures(
+            onDragStart = {
+                reorderableState.onDragStart(index)
+            },
+            onDrag = { change, dragAmount ->
+                change.consume()
                 reorderableState.onDrag(dragAmount.y)
             },
             onDragEnd = {
