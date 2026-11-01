@@ -47,11 +47,12 @@ import androidx.compose.material.icons.outlined.ZoomOut
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.infrared.patterns.IRPattern
+import java.util.UUID
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class RemoteButtonDBModel(
-    val id: String = java.util.UUID.randomUUID().toString(),
+    val id: String = UUID.randomUUID().toString(),
     var offsetX: Float,
     var offsetY: Float,
     val name: String,

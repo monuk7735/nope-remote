@@ -36,11 +36,12 @@ import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.monuk7735.nope.remote.androidtv.proto.remote.Remotemessage
+import java.util.UUID
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class AndroidTvButtonDBModel(
-    val id: String = java.util.UUID.randomUUID().toString(),
+    val id: String = UUID.randomUUID().toString(),
     val name: String,
     val keyCodeName: String,
     val iconName: String? = null,

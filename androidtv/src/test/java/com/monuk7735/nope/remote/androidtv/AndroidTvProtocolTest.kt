@@ -2,6 +2,7 @@ package com.monuk7735.nope.remote.androidtv
 
 import com.monuk7735.nope.remote.androidtv.proto.pairing.Pairingmessage
 import com.monuk7735.nope.remote.androidtv.proto.remote.Remotemessage
+import com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient
 import com.monuk7735.nope.remote.androidtv.protocol.VarintFraming
 import com.monuk7735.nope.remote.androidtv.ssl.AndroidTvSslManager
 import java.io.ByteArrayInputStream
@@ -157,15 +158,15 @@ class AndroidTvProtocolTest {
 
     @Test
     fun testSupportedFeaturesIncludesPing() {
-        assertEquals(1, com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.FEATURE_PING)
+        assertEquals(1, AndroidTvClient.FEATURE_PING)
         assertEquals(
-            com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.FEATURE_PING,
-            com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.SUPPORTED_FEATURES and
-                com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.FEATURE_PING,
+            AndroidTvClient.FEATURE_PING,
+            AndroidTvClient.SUPPORTED_FEATURES and
+                AndroidTvClient.FEATURE_PING,
         )
         assertEquals(
             623,
-            com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.SUPPORTED_FEATURES,
+            AndroidTvClient.SUPPORTED_FEATURES,
         )
     }
 
