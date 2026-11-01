@@ -169,8 +169,16 @@ class RepoDownloadService : Service() {
                 RepoState(DownloadState.DOWNLOADING, 0f, "Connecting...", true),
             )
 
-            val fileName = originalUrl.substringAfterLast("/")
-            val downloadUrl = repoInfo.url // Use the trusted URL from Enum
+            val downloadUrl = if (repoInfo == RepoDownloadManager.RepositoryInfo.IREXT) {
+                RepoDownloadManager.log("[$name] Resolving latest database URL...")
+                val resolved = RepoUrlResolver.resolveLatestIrextDbUrl(client, repoInfo.url)
+                RepoDownloadManager.log("[$name] Target database URL: $resolved")
+                resolved
+            } else {
+                repoInfo.url
+            }
+
+            val fileName = downloadUrl.substringAfterLast("/")
             val targetFile = File(targetDir, fileName)
 
             downloadFile(downloadUrl, targetFile, name, directory)
