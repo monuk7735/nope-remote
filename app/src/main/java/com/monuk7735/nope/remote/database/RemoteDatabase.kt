@@ -17,7 +17,7 @@ import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
         MacroDataDBModel::class,
         SavedTvDeviceDBModel::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -81,6 +81,11 @@ abstract class RemoteDatabase : RoomDatabase() {
                 db.execSQL(
                     "ALTER TABLE remotes ADD COLUMN gridVCount INTEGER NOT NULL DEFAULT 10",
                 )
+            }
+        }
+
+        internal val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "ALTER TABLE wifi_remotes ADD COLUMN onScreenButtons TEXT DEFAULT NULL",
                 )
@@ -114,6 +119,7 @@ abstract class RemoteDatabase : RoomDatabase() {
                         MIGRATION_4_5,
                         MIGRATION_5_6,
                         MIGRATION_6_7,
+                        MIGRATION_7_8,
                     )
                     .fallbackToDestructiveMigration(false)
                     .build()
