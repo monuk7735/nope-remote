@@ -20,6 +20,9 @@ interface WifiRemoteDao {
     fun getAllWifiRemotes(): LiveData<List<SavedTvDeviceDBModel>>
 
     @Query("SELECT * FROM wifi_remotes ORDER BY added DESC")
+    suspend fun getAllWifiRemotesList(): List<SavedTvDeviceDBModel>
+
+    @Query("SELECT * FROM wifi_remotes ORDER BY added DESC")
     fun getAllWifiRemotesFlow(): Flow<List<SavedTvDeviceDBModel>>
 
     @Query("SELECT * FROM wifi_remotes WHERE host = :host LIMIT 1")

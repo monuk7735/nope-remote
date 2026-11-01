@@ -18,6 +18,9 @@ interface MacroDao {
     @Query("SELECT * FROM macros")
     fun getAllMacros(): LiveData<List<MacroDataDBModel>>
 
+    @Query("SELECT * FROM macros")
+    suspend fun getAllMacrosList(): List<MacroDataDBModel>
+
     @Query("SELECT * FROM macros WHERE id=:id")
     fun getMacroById(id: Int): LiveData<MacroDataDBModel>
 

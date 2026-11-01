@@ -25,6 +25,8 @@ class FakeWifiRemoteDao : WifiRemoteDao {
 
     override fun getAllWifiRemotes(): LiveData<List<SavedTvDeviceDBModel>> = liveData
 
+    override suspend fun getAllWifiRemotesList(): List<SavedTvDeviceDBModel> = remotes.toList()
+
     override fun getAllWifiRemotesFlow(): Flow<List<SavedTvDeviceDBModel>> = flowOf(remotes)
 
     override suspend fun getWifiRemoteByHost(host: String): SavedTvDeviceDBModel? =

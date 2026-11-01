@@ -10,6 +10,14 @@ class WifiRemoteRepository(private val wifiRemoteDao: WifiRemoteDao) {
     val allWifiRemotes: LiveData<List<SavedTvDeviceDBModel>> =
         wifiRemoteDao.getAllWifiRemotes()
 
+    suspend fun getAllWifiRemotesList(): List<SavedTvDeviceDBModel> =
+        wifiRemoteDao.getAllWifiRemotesList()
+
+    suspend fun getWifiRemoteByHost(host: String): SavedTvDeviceDBModel? =
+        wifiRemoteDao.getWifiRemoteByHost(host)
+
+    suspend fun insertOrUpdate(tv: SavedTvDeviceDBModel): Long = wifiRemoteDao.insertOrUpdate(tv)
+
     fun getWifiRemoteByHostFlow(host: String): Flow<SavedTvDeviceDBModel?> =
         wifiRemoteDao.getWifiRemoteByHostFlow(host)
 

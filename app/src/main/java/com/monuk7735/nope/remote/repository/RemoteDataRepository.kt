@@ -10,6 +10,8 @@ class RemoteDataRepository(private val remoteDao: RemoteDao) {
 
     val allRemotesShortInfo: LiveData<List<RemoteDataDBModel>> = remoteDao.getAllRemotesShortInfo()
 
+    suspend fun getAllRemotesList(): List<RemoteDataDBModel> = remoteDao.getAllRemotesList()
+
     fun getLiveRemote(id: Int): LiveData<RemoteDataDBModel> = remoteDao.getLiveRemote(id)
 
     suspend fun getRemote(id: Int): RemoteDataDBModel? = remoteDao.getRemote(id)

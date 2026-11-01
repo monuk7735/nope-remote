@@ -4,8 +4,10 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -24,11 +26,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Abc
+import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.Brightness4
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.Vibration
@@ -43,6 +47,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -59,7 +64,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModelProvider
 import com.monuk7735.nope.remote.androidtv.ssl.AndroidTvSslManager
+import com.monuk7735.nope.remote.composables.ActionPreference
 import com.monuk7735.nope.remote.composables.AppBar
+import com.monuk7735.nope.remote.composables.ExportBackupDialog
+import com.monuk7735.nope.remote.composables.ImportBackupDialog
 import com.monuk7735.nope.remote.composables.InfoPreference
 import com.monuk7735.nope.remote.composables.LogOutputView
 import com.monuk7735.nope.remote.composables.RepositoryPreference
@@ -107,6 +115,39 @@ class SettingsActivity : ComponentActivity() {
         var showClearPairingDialog by remember { mutableStateOf(false) }
         val context = LocalContext.current
         val uriHandler = LocalUriHandler.current
+
+        val irRemotes by viewModel.irRemotes.observeAsState(emptyList())
+        val wifiRemotes by viewModel.wifiRemotes.observeAsState(emptyList())
+        val macros by viewModel.macros.observeAsState(emptyList())
+
+        val createDocumentLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri ->
+            if (uri != null) {
+                viewModel.exportPendingBackupToUri(context, uri)
+            }
+        }
+
+        val openDocumentLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            if (uri != null) {
+                viewModel.loadBackupFromUri(context, uri)
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            viewModel.backupEvents.collect { event ->
+                when (event) {
+                    is SettingsActivityViewModel.BackupEvent.Message -> {
+                        Toast.makeText(context, event.text, Toast.LENGTH_LONG).show()
+                    }
+                    is SettingsActivityViewModel.BackupEvent.Error -> {
+                        Toast.makeText(context, event.text, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
 
         NopeRemoteTheme(
             useDarkTheme =
@@ -238,6 +279,27 @@ class SettingsActivity : ComponentActivity() {
                                 onValueChange = {
                                     viewModel.androidTvVolumeKeysSettingsValue.value = it
                                     viewModel.saveSettings(applicationContext)
+                                },
+                            )
+                        }
+                    }
+
+                    item {
+                        SettingsGroup(title = "Backup & Restore") {
+                            ActionPreference(
+                                title = "Backup Data",
+                                summary = "Export remotes, layouts, and macros to a JSON file",
+                                icon = Icons.Outlined.Backup,
+                                onClick = { viewModel.showExportDialog = true },
+                            )
+                            ActionPreference(
+                                title = "Restore Data",
+                                summary = "Import remotes, layouts, and macros from a backup file",
+                                icon = Icons.Outlined.Restore,
+                                onClick = {
+                                    openDocumentLauncher.launch(
+                                        arrayOf("application/json", "text/plain", "*/*"),
+                                    )
                                 },
                             )
                         }
@@ -380,6 +442,31 @@ class SettingsActivity : ComponentActivity() {
                             }
                         },
                         shape = RoundedCornerShape(24.dp),
+                    )
+                }
+
+                if (viewModel.showExportDialog) {
+                    ExportBackupDialog(
+                        irCount = irRemotes.size,
+                        wifiCount = wifiRemotes.size,
+                        macroCount = macros.size,
+                        onDismiss = { viewModel.showExportDialog = false },
+                        onConfirm = { options ->
+                            viewModel.showExportDialog = false
+                            viewModel.onExportOptionsConfirmed(options)
+                            createDocumentLauncher.launch(viewModel.generateBackupFileName())
+                        },
+                    )
+                }
+
+                val pendingImport = viewModel.pendingImportBackup
+                if (pendingImport != null) {
+                    ImportBackupDialog(
+                        backup = pendingImport,
+                        onDismiss = { viewModel.cancelImport() },
+                        onConfirm = { options ->
+                            viewModel.restorePendingBackup(options)
+                        },
                     )
                 }
             }

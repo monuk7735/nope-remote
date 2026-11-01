@@ -5,15 +5,38 @@ import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Build
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import com.monuk7735.nope.remote.BuildConfig
 import com.monuk7735.nope.remote.R
+import com.monuk7735.nope.remote.backup.BackupRestoreManager
+import com.monuk7735.nope.remote.backup.ExportOptions
+import com.monuk7735.nope.remote.backup.ImportOptions
+import com.monuk7735.nope.remote.backup.NopeBackup
+import com.monuk7735.nope.remote.backup.NopeBackupSerializer
+import com.monuk7735.nope.remote.database.RemoteDatabase
+import com.monuk7735.nope.remote.models.database.MacroDataDBModel
+import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
+import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
 import com.monuk7735.nope.remote.service.DownloadState
 import com.monuk7735.nope.remote.service.RepoDownloadManager
 import com.monuk7735.nope.remote.service.RepoDownloadService
 import com.monuk7735.nope.remote.service.RepoState
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 
 class SettingsActivityViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -22,6 +45,30 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
             application.getString(R.string.shared_pref_app_settings),
             MODE_PRIVATE,
         )
+
+    private val database = RemoteDatabase.getDatabase(application)
+    private val backupRestoreManager = BackupRestoreManager(
+        remoteDao = database.remoteDao(),
+        wifiRemoteDao = database.wifiRemoteDao(),
+        macroDao = database.macroDao(),
+    )
+
+    val irRemotes: LiveData<List<RemoteDataDBModel>> = database.remoteDao().getAllRemotes()
+    val wifiRemotes: LiveData<List<SavedTvDeviceDBModel>> =
+        database.wifiRemoteDao().getAllWifiRemotes()
+    val macros: LiveData<List<MacroDataDBModel>> = database.macroDao().getAllMacros()
+
+    var showExportDialog by mutableStateOf(false)
+    var pendingExportOptions: ExportOptions? = null
+    var pendingImportBackup: NopeBackup? by mutableStateOf(null)
+
+    sealed class BackupEvent {
+        data class Message(val text: String) : BackupEvent()
+        data class Error(val text: String) : BackupEvent()
+    }
+
+    private val backupEventChannel = Channel<BackupEvent>(Channel.BUFFERED)
+    val backupEvents = backupEventChannel.receiveAsFlow()
 
     var vibrateSettingsValue: MutableLiveData<Boolean> = MutableLiveData<Boolean>()
     var darkModeSettingsValue: MutableLiveData<Int> = MutableLiveData<Int>()
@@ -161,5 +208,69 @@ class SettingsActivityViewModel(application: Application) : AndroidViewModel(app
                 androidTvDpadModeSettingsValue.value ?: 0,
             )
             .apply()
+    }
+
+    fun generateBackupFileName(): String {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        return "noperemote_backup_$timestamp.json"
+    }
+
+    fun onExportOptionsConfirmed(options: ExportOptions) {
+        pendingExportOptions = options
+    }
+
+    fun exportPendingBackupToUri(context: Context, uri: Uri) {
+        val options = pendingExportOptions ?: ExportOptions()
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val backup = backupRestoreManager.createBackup(options, BuildConfig.VERSION_NAME)
+                val jsonString = NopeBackupSerializer.serialize(backup)
+                BackupRestoreManager.writeBackupToUri(context, uri, jsonString)
+                backupEventChannel.send(BackupEvent.Message("Backup exported successfully"))
+            } catch (e: Exception) {
+                backupEventChannel.send(
+                    BackupEvent.Error("Failed to export backup: ${e.message ?: "Unknown error"}"),
+                )
+            } finally {
+                pendingExportOptions = null
+            }
+        }
+    }
+
+    fun loadBackupFromUri(context: Context, uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val jsonString = BackupRestoreManager.readBackupFromUri(context, uri)
+                val backup = NopeBackupSerializer.deserialize(jsonString)
+                pendingImportBackup = backup
+            } catch (e: Exception) {
+                backupEventChannel.send(
+                    BackupEvent.Error("Invalid backup file: ${e.message ?: "Could not parse"}"),
+                )
+            }
+        }
+    }
+
+    fun restorePendingBackup(options: ImportOptions) {
+        val backup = pendingImportBackup ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = backupRestoreManager.restoreBackup(backup, options)
+                val message = "Restored: ${result.irRestoredCount} IR remotes, " +
+                    "${result.wifiRestoredCount} Android TV remotes, " +
+                    "${result.macrosRestoredCount} macros"
+                backupEventChannel.send(BackupEvent.Message(message))
+            } catch (e: Exception) {
+                backupEventChannel.send(
+                    BackupEvent.Error("Failed to restore backup: ${e.message ?: "Unknown error"}"),
+                )
+            } finally {
+                pendingImportBackup = null
+            }
+        }
+    }
+
+    fun cancelImport() {
+        pendingImportBackup = null
     }
 }
