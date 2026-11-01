@@ -31,7 +31,7 @@ import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.GridOff
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.GridOn
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Save
@@ -46,7 +46,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -81,7 +80,6 @@ import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.models.CustomRemoteLayout
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
-import kotlin.math.round
 
 @ExperimentalFoundationApi
 @ExperimentalMaterial3Api
@@ -360,14 +358,17 @@ fun RemoteControlEditLayout(
 ) {
     var localRemoteDataDBModel by remember { mutableStateOf(remoteDataModel?.copy()) }
     var layoutLimits by remember { mutableStateOf(Rect(Offset.Zero, 0f)) }
-    var gridEnabled by remember { mutableStateOf(true) }
     var showGridSettings by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
     var showAddKeyDialog by remember { mutableStateOf(false) }
-    var gridHCount by remember { mutableIntStateOf(5) }
-    var gridVCount by remember { mutableIntStateOf(10) }
+    var showValidationErrorDialog by remember { mutableStateOf(false) }
+    var validationErrorMessage by remember { mutableStateOf("") }
+    var gridHCount by remember { mutableIntStateOf(remoteDataModel?.gridHCount ?: 5) }
+    var gridVCount by remember { mutableIntStateOf(remoteDataModel?.gridVCount ?: 10) }
 
-    val hasChanges = localRemoteDataDBModel != remoteDataModel
+    val hasChanges = localRemoteDataDBModel != remoteDataModel ||
+        gridHCount != (remoteDataModel?.gridHCount ?: 5) ||
+        gridVCount != (remoteDataModel?.gridVCount ?: 10)
     val isCustomRemote = localRemoteDataDBModel?.isCustom == true
 
     BackHandler(enabled = hasChanges) {
@@ -400,7 +401,6 @@ fun RemoteControlEditLayout(
                 val currentModel = localRemoteDataDBModel ?: return@AddCustomKeyDialog
                 val currentOnScreen = currentModel.onScreenRemoteButtonDBS
                 val buttonSizePx = with(density) { 72.dp.toPx() }
-                val maxRows = (gridVCount - 1).coerceAtLeast(1)
                 val gridSizeXPx = if (layoutLimits.width > 0) {
                     layoutLimits.width / gridHCount.toFloat()
                 } else {
@@ -412,19 +412,25 @@ fun RemoteControlEditLayout(
                     0f
                 }
 
-                val occupiedSlots = if (gridSizeXPx > 0 && gridSizeYPx > 0) {
-                    currentOnScreen.map { b ->
-                        Pair(
-                            round(b.offsetX / gridSizeXPx).toInt().coerceIn(0, gridHCount - 1),
-                            round(b.offsetY / gridSizeYPx).toInt().coerceIn(0, maxRows - 1),
-                        )
-                    }.toSet()
-                } else {
-                    emptySet()
-                }
+                val occupiedSlots = currentOnScreen.mapNotNull { b ->
+                    if (b.gridCol != null &&
+                        b.gridRow != null &&
+                        b.gridCol!! in 0 until gridHCount &&
+                        b.gridRow!! in 0 until gridVCount
+                    ) {
+                        b.gridCol!! to b.gridRow!!
+                    } else if (gridSizeXPx > 0 && gridSizeYPx > 0) {
+                        val cx = b.offsetX + buttonSizePx / 2f
+                        val cy = b.offsetY + buttonSizePx / 2f
+                        (cx / gridSizeXPx).toInt().coerceIn(0, gridHCount - 1) to
+                            (cy / gridSizeYPx).toInt().coerceIn(0, gridVCount - 1)
+                    } else {
+                        null
+                    }
+                }.toSet()
 
                 var targetSlot: Pair<Int, Int>? = null
-                for (r in 0 until maxRows) {
+                for (r in 0 until gridVCount) {
                     for (c in 0 until gridHCount) {
                         if (!occupiedSlots.contains(Pair(c, r))) {
                             targetSlot = Pair(c, r)
@@ -434,19 +440,30 @@ fun RemoteControlEditLayout(
                     if (targetSlot != null) break
                 }
 
-                val (snappedX, snappedY) = if (
-                    targetSlot != null && gridSizeXPx > 0 && gridSizeYPx > 0
-                ) {
-                    val (c, r) = targetSlot
-                    Pair(
-                        gridSizeXPx * c + (gridSizeXPx - buttonSizePx) / 2,
-                        gridSizeYPx * r + (gridSizeYPx - buttonSizePx) / 2,
-                    )
+                if (targetSlot == null) {
+                    Toast.makeText(
+                        context,
+                        "Grid is full! Increase grid size in Grid Settings to add more keys.",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    return@AddCustomKeyDialog
+                }
+
+                val (c, r) = targetSlot
+                val snappedX = if (gridSizeXPx > 0) {
+                    gridSizeXPx * c + (gridSizeXPx - buttonSizePx) / 2
                 } else {
-                    Pair(gridSizeXPx, gridSizeYPx)
+                    0f
+                }
+                val snappedY = if (gridSizeYPx > 0) {
+                    gridSizeYPx * r + (gridSizeYPx - buttonSizePx) / 2
+                } else {
+                    0f
                 }
 
                 val newButton = RemoteButtonDBModel(
+                    gridCol = c,
+                    gridRow = r,
                     offsetX = snappedX,
                     offsetY = snappedY,
                     name = name,
@@ -482,43 +499,30 @@ fun RemoteControlEditLayout(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("Enable Grid", style = MaterialTheme.typography.bodyLarge)
-                        Switch(checked = gridEnabled, onCheckedChange = { gridEnabled = it })
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Horizontal Cells: $gridHCount",
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Slider(
+                            value = gridHCount.toFloat(),
+                            onValueChange = { gridHCount = it.toInt() },
+                            valueRange = 2f..12f,
+                            steps = 9,
+                        )
                     }
 
-                    if (gridEnabled) {
-                        HorizontalDivider()
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                "Horizontal Cells: $gridHCount",
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                            Slider(
-                                value = gridHCount.toFloat(),
-                                onValueChange = { gridHCount = it.toInt() },
-                                valueRange = 2f..12f,
-                                steps = 9,
-                            )
-                        }
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                "Vertical Cells: $gridVCount",
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                            Slider(
-                                value = gridVCount.toFloat(),
-                                onValueChange = { gridVCount = it.toInt() },
-                                valueRange = 2f..20f,
-                                steps = 17,
-                            )
-                        }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Vertical Cells: $gridVCount",
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Slider(
+                            value = gridVCount.toFloat(),
+                            onValueChange = { gridVCount = it.toInt() },
+                            valueRange = 2f..20f,
+                            steps = 17,
+                        )
                     }
 
                     TextButton(
@@ -557,6 +561,27 @@ fun RemoteControlEditLayout(
         )
     }
 
+    if (showValidationErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showValidationErrorDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.ErrorOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            },
+            title = { Text("Cannot Save Layout") },
+            text = { Text(validationErrorMessage) },
+            confirmButton = {
+                TextButton(onClick = { showValidationErrorDialog = false }) {
+                    Text("OK")
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+        )
+    }
+
     Scaffold(
         topBar = {
             AppBar(
@@ -580,18 +605,70 @@ fun RemoteControlEditLayout(
 
                     IconButton(onClick = { showGridSettings = true }) {
                         Icon(
-                            imageVector =
-                            if (gridEnabled) {
-                                Icons.Outlined.GridOn
-                            } else {
-                                Icons.Outlined.GridOff
-                            },
+                            imageVector = Icons.Outlined.GridOn,
                             contentDescription = "Grid Settings",
                         )
                     }
 
                     IconButton(
-                        onClick = { localRemoteDataDBModel?.let { onSaveLayout(it) } },
+                        onClick = {
+                            val onScreen =
+                                localRemoteDataDBModel?.onScreenRemoteButtonDBS ?: emptyList()
+
+                            val outOfBoundsButtons = onScreen.filter {
+                                it.gridCol == null ||
+                                    it.gridCol !in 0 until gridHCount ||
+                                    it.gridRow == null ||
+                                    it.gridRow !in 0 until gridVCount
+                            }
+
+                            val collidingSlots = onScreen.filter {
+                                it.gridCol != null &&
+                                    it.gridRow != null &&
+                                    it.gridCol in 0 until gridHCount &&
+                                    it.gridRow in 0 until gridVCount
+                            }.groupBy { it.gridCol to it.gridRow }.filter { it.value.size > 1 }
+
+                            if (outOfBoundsButtons.isNotEmpty() || collidingSlots.isNotEmpty()) {
+                                val message = buildString {
+                                    if (outOfBoundsButtons.isNotEmpty()) {
+                                        val names =
+                                            outOfBoundsButtons.take(3).joinToString { it.name }
+                                        val extra = if (outOfBoundsButtons.size > 3) {
+                                            " and ${outOfBoundsButtons.size - 3} more"
+                                        } else {
+                                            ""
+                                        }
+                                        val btnCount = outOfBoundsButtons.size
+                                        append(
+                                            "$btnCount button(s) ($names$extra) " +
+                                                "are outside the current " +
+                                                "${gridHCount}x$gridVCount grid. ",
+                                        )
+                                    }
+                                    if (collidingSlots.isNotEmpty()) {
+                                        append(
+                                            "Some buttons are overlapping in the same grid cell. ",
+                                        )
+                                    }
+                                    append(
+                                        "Please place all buttons into " +
+                                            "valid, empty grid cells or remove them before saving.",
+                                    )
+                                }
+                                validationErrorMessage = message
+                                showValidationErrorDialog = true
+                            } else {
+                                localRemoteDataDBModel?.let { model ->
+                                    onSaveLayout(
+                                        model.copy(
+                                            gridHCount = gridHCount,
+                                            gridVCount = gridVCount,
+                                        ),
+                                    )
+                                }
+                            }
+                        },
                     ) { Icon(Icons.Outlined.Save, contentDescription = "Save") }
                 },
             )
@@ -665,7 +742,6 @@ fun RemoteControlEditLayout(
                     remoteDataDBModel = localRemoteDataDBModel,
                     onUpdate = { dbModel -> localRemoteDataDBModel = dbModel },
                     layoutLimits = layoutLimits,
-                    gridEnabled = gridEnabled,
                     hCount = gridHCount,
                     vCount = gridVCount,
                     textOnlyMode = remember(context) {

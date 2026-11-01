@@ -17,7 +17,7 @@ import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
         MacroDataDBModel::class,
         SavedTvDeviceDBModel::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -73,6 +73,17 @@ abstract class RemoteDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE remotes ADD COLUMN gridHCount INTEGER NOT NULL DEFAULT 5",
+                )
+                db.execSQL(
+                    "ALTER TABLE remotes ADD COLUMN gridVCount INTEGER NOT NULL DEFAULT 10",
+                )
+            }
+        }
+
         fun getDatabase(context: Context): RemoteDatabase {
             val tempInstance = instance
             if (tempInstance != null) {
@@ -85,7 +96,13 @@ abstract class RemoteDatabase : RoomDatabase() {
                     RemoteDatabase::class.java,
                     "remotes",
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(
+                        MIGRATION_2_3,
+                        MIGRATION_3_4,
+                        MIGRATION_4_5,
+                        MIGRATION_5_6,
+                        MIGRATION_6_7,
+                    )
                     .fallbackToDestructiveMigration(false)
                     .build()
 

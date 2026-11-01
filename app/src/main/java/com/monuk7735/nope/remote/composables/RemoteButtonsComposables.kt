@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material3.Card
@@ -71,37 +72,58 @@ fun RemoteButtonSingleEditable(
     offsetX: Float,
     offsetY: Float,
     layoutLimits: Rect,
+    isInvalid: Boolean = false,
     onPosUpdate: (offsetX: Float, offsetY: Float) -> Unit,
     onRemove: () -> Unit,
 ) {
+    var isDragging by remember { mutableStateOf(false) }
     var localOffSetX by remember { mutableStateOf(offsetX) }
     var localOffSetY by remember { mutableStateOf(offsetY) }
     var prevX by remember { mutableStateOf(0f) }
     var prevY by remember { mutableStateOf(0f) }
 
     LaunchedEffect(offsetX, offsetY) {
-        localOffSetX = offsetX
-        localOffSetY = offsetY
+        if (!isDragging) {
+            localOffSetX = offsetX
+            localOffSetY = offsetY
+        }
     }
 
     val size = 72.dp
     val sizeInFloat = LocalDensity.current.run { size.toPx() }
 
+    val containerBgColor = if (isInvalid) {
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val borderColor = if (isInvalid) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
+    }
+
+    val borderWidth = if (isInvalid) 2.dp else 1.dp
+
+    val currentDisplayX = if (isDragging) localOffSetX else offsetX
+    val currentDisplayY = if (isDragging) localOffSetY else offsetY
+
     Box(
         modifier =
         Modifier.offset(
-            x = with(LocalDensity.current) { localOffSetX.toDp() },
-            y = with(LocalDensity.current) { localOffSetY.toDp() },
+            x = with(LocalDensity.current) { currentDisplayX.toDp() },
+            y = with(LocalDensity.current) { currentDisplayY.toDp() },
         )
             .size(size)
             .padding(4.dp)
             .background(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = containerBgColor,
                 shape = RoundedCornerShape(20.dp),
             )
             .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.error.copy(alpha = 0.3f),
+                width = borderWidth,
+                color = borderColor,
                 shape = RoundedCornerShape(20.dp),
             ),
         contentAlignment = Alignment.Center,
@@ -123,12 +145,10 @@ fun RemoteButtonSingleEditable(
                 )
                 .pointerInteropFilter { event ->
                     when (event.action) {
-                        MotionEvent.ACTION_UP ->
-                            onPosUpdate(
-                                localOffSetX,
-                                localOffSetY,
-                            )
                         MotionEvent.ACTION_DOWN -> {
+                            isDragging = true
+                            localOffSetX = offsetX
+                            localOffSetY = offsetY
                             prevX = event.rawX
                             prevY = event.rawY
                         }
@@ -137,31 +157,32 @@ fun RemoteButtonSingleEditable(
                             val dy = event.rawY - prevY
 
                             val nextX = localOffSetX + dx
-                            if (nextX > 0f &&
-                                nextX <
-                                layoutLimits
-                                    .right -
-                                sizeInFloat -
-                                layoutLimits
-                                    .left
-                            ) {
-                                localOffSetX = nextX
+                            val maxX = layoutLimits.right - sizeInFloat - layoutLimits.left
+                            if (maxX > 0f) {
+                                localOffSetX = nextX.coerceIn(0f, maxX)
                             }
 
                             val nextY = localOffSetY + dy
-                            if (nextY > 0f &&
-                                nextY <
-                                layoutLimits
-                                    .bottom -
-                                sizeInFloat -
-                                layoutLimits
-                                    .top
-                            ) {
-                                localOffSetY = nextY
+                            val maxY = layoutLimits.bottom - sizeInFloat - layoutLimits.top
+                            if (maxY > 0f) {
+                                localOffSetY = nextY.coerceIn(0f, maxY)
                             }
 
                             prevX = event.rawX
                             prevY = event.rawY
+                        }
+                        MotionEvent.ACTION_UP -> {
+                            isDragging = false
+                            val releasedX = localOffSetX
+                            val releasedY = localOffSetY
+                            localOffSetX = offsetX
+                            localOffSetY = offsetY
+                            onPosUpdate(releasedX, releasedY)
+                        }
+                        MotionEvent.ACTION_CANCEL -> {
+                            isDragging = false
+                            localOffSetX = offsetX
+                            localOffSetY = offsetY
                         }
                     }
                     return@pointerInteropFilter true
@@ -208,6 +229,25 @@ fun RemoteButtonSingleEditable(
                 modifier = Modifier.padding(6.dp),
                 tint = MaterialTheme.colorScheme.onError,
             )
+        }
+
+        if (isInvalid) {
+            Surface(
+                modifier =
+                Modifier.align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .size(22.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.error,
+                shadowElevation = 4.dp,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.ErrorOutline,
+                    contentDescription = "Misaligned button",
+                    modifier = Modifier.padding(3.dp),
+                    tint = MaterialTheme.colorScheme.onError,
+                )
+            }
         }
     }
 }

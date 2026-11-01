@@ -407,6 +407,7 @@ class DatabaseMigrationTest {
                 RemoteDatabase.MIGRATION_3_4,
                 RemoteDatabase.MIGRATION_4_5,
                 RemoteDatabase.MIGRATION_5_6,
+                RemoteDatabase.MIGRATION_6_7,
             )
             .fallbackToDestructiveMigration(false)
             .build()
@@ -417,7 +418,72 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    fun testAllMigrationsSequentially_from2to6() {
+    fun testMigration_6_to_7_separately() {
+        val db = createDatabaseAtVersion(6) { database ->
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `remotes` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `brand` TEXT NOT NULL,
+                    `type` TEXT NOT NULL,
+                    `added` TEXT NOT NULL,
+                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
+                    `offScreenRemoteButtonDBS` TEXT NOT NULL,
+                    `preferCustomUi` INTEGER NOT NULL,
+                    `model` TEXT,
+                    `isCustom` INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `macros` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `macroUnits` TEXT NOT NULL
+                )
+                """.trimIndent(),
+            )
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `wifi_remotes` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `host` TEXT NOT NULL,
+                    `port` INTEGER NOT NULL DEFAULT 6466,
+                    `added` TEXT NOT NULL
+                )
+                """.trimIndent(),
+            )
+            database.execSQL(
+                """
+                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`, `model`, `isCustom`)
+                VALUES ('Living Room TV', 'Sony', 'TV', '2026-01-01', '[]', '[]', 1, NULL, 0)
+                """.trimIndent(),
+            )
+        }
+
+        RemoteDatabase.MIGRATION_6_7.migrate(db)
+
+        val columns = getTableColumns(db, "remotes")
+        assertTrue(columns.containsKey("gridHCount"))
+        assertTrue(columns.containsKey("gridVCount"))
+        assertEquals("INTEGER", columns["gridHCount"]!!.type)
+        assertEquals("INTEGER", columns["gridVCount"]!!.type)
+
+        val cursor = db.query(
+            "SELECT gridHCount, gridVCount FROM remotes WHERE name = 'Living Room TV'",
+        )
+        assertTrue(cursor.moveToFirst())
+        assertEquals(5, cursor.getInt(0))
+        assertEquals(10, cursor.getInt(1))
+        cursor.close()
+        db.close()
+    }
+
+    @Test
+    fun testAllMigrationsSequentially_from2to7() {
         val db = createDatabaseAtVersion(2) { database ->
             database.execSQL(
                 """
@@ -449,10 +515,10 @@ class DatabaseMigrationTest {
             )
         }
 
-        // Close initial DB at version 2. Room will execute all migrations (2 -> 3 -> 4 -> 5 -> 6)
+        // Close initial DB at version 2. Room will execute all migrations (2 -> 3 -> 4 -> 5 -> 6 -> 7)
         db.close()
 
-        // Open via Room to trigger full onValidateSchema() check for version 6
+        // Open via Room to trigger full onValidateSchema() check for version 7
         val roomDb = Room.databaseBuilder(
             context,
             RemoteDatabase::class.java,
@@ -463,6 +529,7 @@ class DatabaseMigrationTest {
                 RemoteDatabase.MIGRATION_3_4,
                 RemoteDatabase.MIGRATION_4_5,
                 RemoteDatabase.MIGRATION_5_6,
+                RemoteDatabase.MIGRATION_6_7,
             )
             .fallbackToDestructiveMigration(false)
             .build()
@@ -476,9 +543,13 @@ class DatabaseMigrationTest {
         val preferCustomUiIdx = cursor.getColumnIndex("preferCustomUi")
         val modelIdx = cursor.getColumnIndex("model")
         val isCustomIdx = cursor.getColumnIndex("isCustom")
+        val gridHCountIdx = cursor.getColumnIndex("gridHCount")
+        val gridVCountIdx = cursor.getColumnIndex("gridVCount")
         assertEquals(1, cursor.getInt(preferCustomUiIdx))
         assertTrue(cursor.isNull(modelIdx))
         assertEquals(0, cursor.getInt(isCustomIdx))
+        assertEquals(5, cursor.getInt(gridHCountIdx))
+        assertEquals(10, cursor.getInt(gridVCountIdx))
         cursor.close()
 
         roomDb.close()
@@ -540,7 +611,7 @@ class DatabaseMigrationTest {
 
         try {
             val brokenRoomDb = Room.databaseBuilder(context, RemoteDatabase::class.java, dbName)
-                .addMigrations(brokenMigration)
+                .addMigrations(brokenMigration, RemoteDatabase.MIGRATION_6_7)
                 .fallbackToDestructiveMigration(false)
                 .build()
             brokenRoomDb.openHelper.writableDatabase
@@ -575,6 +646,7 @@ class DatabaseMigrationTest {
                 RemoteDatabase.MIGRATION_3_4,
                 RemoteDatabase.MIGRATION_4_5,
                 RemoteDatabase.MIGRATION_5_6,
+                RemoteDatabase.MIGRATION_6_7,
             )
             .fallbackToDestructiveMigration(false)
             .build()

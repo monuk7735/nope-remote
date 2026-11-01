@@ -56,7 +56,13 @@ data class RemoteButtonDBModel(
     var offsetY: Float,
     val name: String,
     val irPattern: IRPattern,
+    var gridCol: Int? = null,
+    var gridRow: Int? = null,
 ) : Parcelable {
+    fun isPlacedInGrid(hCount: Int, vCount: Int): Boolean = gridCol != null &&
+        gridRow != null &&
+        gridCol!! in 0 until hCount &&
+        gridRow!! in 0 until vCount
     fun getDigitValue(): Int? {
         val n = name.uppercase().replace("_", " ").trim()
         return when {
