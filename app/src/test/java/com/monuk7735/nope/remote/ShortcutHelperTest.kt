@@ -116,6 +116,15 @@ class ShortcutHelperTest {
     }
 
     @Test
+    fun testCreateShortcutIconBitmap() {
+        val remote = createSampleRemote()
+        val bitmap = ShortcutHelper.createShortcutIconBitmap(remote.getIcon(), size = 120)
+        assertNotNull(bitmap)
+        assertEquals(120, bitmap.width)
+        assertEquals(120, bitmap.height)
+    }
+
+    @Test
     fun testIsPinShortcutSupportedReturnsBoolean() {
         val supported = ShortcutHelper.isPinShortcutSupported(context)
         assertTrue(supported || !supported)
