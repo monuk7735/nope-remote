@@ -18,7 +18,7 @@ import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
         SavedTvDeviceDBModel::class,
     ],
     version = 8,
-    exportSchema = false,
+    exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class RemoteDatabase : RoomDatabase() {

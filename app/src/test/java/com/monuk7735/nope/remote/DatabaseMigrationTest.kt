@@ -3,10 +3,12 @@ package com.monuk7735.nope.remote
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
 import androidx.room.Room
+import androidx.room.testing.MigrationTestHelper
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import com.monuk7735.nope.remote.database.RemoteDatabase
 import java.io.File
 import org.junit.After
@@ -16,6 +18,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,6 +27,12 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
 class DatabaseMigrationTest {
+
+    @get:Rule
+    val helper: MigrationTestHelper = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation(),
+        RemoteDatabase::class.java,
+    )
 
     private lateinit var context: Context
     private val dbName = "test-migration.db"
@@ -924,5 +933,78 @@ class DatabaseMigrationTest {
         rawVerifyCursor.close()
 
         roomDb.close()
+    }
+
+    @Test
+    fun testMigration_6_to_7_withSchemaValidation() {
+        val testDbName = "migration-test-helper-6-7.db"
+        helper.createDatabase(testDbName, 6).close()
+        helper.runMigrationsAndValidate(
+            testDbName,
+            7,
+            true,
+            RemoteDatabase.MIGRATION_6_7,
+        )
+    }
+
+    @Test
+    fun testMigration_7_to_8_withSchemaValidation() {
+        val testDbName = "migration-test-helper-7-8.db"
+        helper.createDatabase(testDbName, 7).close()
+        helper.runMigrationsAndValidate(
+            testDbName,
+            8,
+            true,
+            RemoteDatabase.MIGRATION_7_8,
+        )
+    }
+
+    @Test
+    fun testMigration_6_to_8_withSchemaValidation() {
+        val testDbName = "migration-test-helper-6-8.db"
+        val dateJson = com.monuk7735.nope.remote.database.Converters().fromDate(
+            java.util.Date(),
+        )
+
+        helper.createDatabase(testDbName, 6).apply {
+            execSQL(
+                """
+                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`, `model`, `isCustom`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf<Any>("Sony Bravia", "Sony", "TV", dateJson, "[]", "[]", 1, "KD-55", 0),
+            )
+            execSQL(
+                """
+                INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`)
+                VALUES (?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf<Any>("Living Room Shield", "192.168.1.75", 6466, dateJson),
+            )
+            close()
+        }
+
+        // Run migrations and validate strictly against 8.json
+        val migratedDb = helper.runMigrationsAndValidate(
+            testDbName,
+            8,
+            true,
+            RemoteDatabase.MIGRATION_6_7,
+            RemoteDatabase.MIGRATION_7_8,
+        )
+
+        // Verify data preserved and defaults applied
+        val remoteCursor = migratedDb.query("SELECT * FROM remotes WHERE name = 'Sony Bravia'")
+        assertTrue(remoteCursor.moveToFirst())
+        assertEquals(5, remoteCursor.getInt(remoteCursor.getColumnIndexOrThrow("gridHCount")))
+        assertEquals(10, remoteCursor.getInt(remoteCursor.getColumnIndexOrThrow("gridVCount")))
+        remoteCursor.close()
+
+        val wifiCursor = migratedDb.query("SELECT * FROM wifi_remotes WHERE host = '192.168.1.75'")
+        assertTrue(wifiCursor.moveToFirst())
+        assertEquals(5, wifiCursor.getInt(wifiCursor.getColumnIndexOrThrow("gridHCount")))
+        assertEquals(10, wifiCursor.getInt(wifiCursor.getColumnIndexOrThrow("gridVCount")))
+        assertTrue(wifiCursor.isNull(wifiCursor.getColumnIndexOrThrow("onScreenButtons")))
+        wifiCursor.close()
     }
 }
