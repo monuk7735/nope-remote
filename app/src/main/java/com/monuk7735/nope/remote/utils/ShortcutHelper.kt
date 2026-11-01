@@ -29,7 +29,6 @@ object ShortcutHelper {
         Intent(context, RemoteControlActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             putExtra("remote_id", remote.id)
-            putExtra("remote", remote)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 

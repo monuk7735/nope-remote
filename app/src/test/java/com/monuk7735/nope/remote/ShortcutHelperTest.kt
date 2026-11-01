@@ -2,7 +2,6 @@ package com.monuk7735.nope.remote
 
 import android.content.Context
 import android.content.Intent
-import androidx.core.content.IntentCompat
 import androidx.test.core.app.ApplicationProvider
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
@@ -60,14 +59,18 @@ class ShortcutHelperTest {
         assertEquals(Intent.ACTION_VIEW, intent.action)
         assertEquals(RemoteControlActivity::class.java.name, intent.component?.className)
         assertEquals(42, intent.getIntExtra("remote_id", -1))
-        val parcelableRemote = IntentCompat.getParcelableExtra(
-            intent,
-            "remote",
-            RemoteDataDBModel::class.java,
-        )
-        assertNotNull(parcelableRemote)
-        assertEquals(remote.name, parcelableRemote?.name)
         assertTrue(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
+    }
+
+    @Test
+    fun testCreateRemoteShortcutInfoCompatibleWithShortcutInfo() {
+        val remote = createSampleRemote()
+        val info = ShortcutHelper.createRemoteShortcutInfo(context, remote)
+
+        // Verifies toShortcutInfo() succeeds and intent extras are valid in PersistableBundle
+        val frameworkShortcutInfo = info.toShortcutInfo()
+        assertNotNull(frameworkShortcutInfo)
+        assertEquals("remote_42", frameworkShortcutInfo.id)
     }
 
     @Test
