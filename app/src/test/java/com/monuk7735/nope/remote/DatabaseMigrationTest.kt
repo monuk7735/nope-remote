@@ -408,6 +408,7 @@ class DatabaseMigrationTest {
                 RemoteDatabase.MIGRATION_4_5,
                 RemoteDatabase.MIGRATION_5_6,
                 RemoteDatabase.MIGRATION_6_7,
+                RemoteDatabase.MIGRATION_7_8,
             )
             .fallbackToDestructiveMigration(false)
             .build()
@@ -748,5 +749,180 @@ class DatabaseMigrationTest {
         wifiCursor.close()
 
         recoveredRoomDb.close()
+    }
+
+    @Test
+    fun testMigration_6_to_8_fullUpgradeWithDataAndDaoVerification() {
+        val db = createDatabaseAtVersion(6) { database ->
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `remotes` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `brand` TEXT NOT NULL,
+                    `type` TEXT NOT NULL,
+                    `added` TEXT NOT NULL,
+                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
+                    `offScreenRemoteButtonDBS` TEXT NOT NULL,
+                    `preferCustomUi` INTEGER NOT NULL,
+                    `model` TEXT,
+                    `isCustom` INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `macros` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `macroUnits` TEXT NOT NULL
+                )
+                """.trimIndent(),
+            )
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `wifi_remotes` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `host` TEXT NOT NULL,
+                    `port` INTEGER NOT NULL DEFAULT 6466,
+                    `added` TEXT NOT NULL
+                )
+                """.trimIndent(),
+            )
+            database.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_wifi_remotes_host` ON `wifi_remotes` (`host`)",
+            )
+            val dateJson = com.monuk7735.nope.remote.database.Converters().fromDate(
+                java.util.Date(),
+            )
+            database.execSQL(
+                """
+                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`, `model`, `isCustom`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf<Any>("IR TV", "Sony", "TV", dateJson, "[]", "[]", 1, "Bravia", 0),
+            )
+            database.execSQL(
+                """
+                INSERT INTO `macros` (`name`, `macroUnits`)
+                VALUES ('Power All', '[]')
+                """.trimIndent(),
+            )
+            database.execSQL(
+                """
+                INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`)
+                VALUES (?, ?, ?, ?)
+                """.trimIndent(),
+                arrayOf<Any>("Living Room Android TV", "192.168.1.50", 6466, dateJson),
+            )
+        }
+        db.close()
+
+        // Open database via Room directly from version 6 to version 8
+        val roomDb = Room.databaseBuilder(
+            context,
+            RemoteDatabase::class.java,
+            dbName,
+        )
+            .addMigrations(
+                RemoteDatabase.MIGRATION_6_7,
+                RemoteDatabase.MIGRATION_7_8,
+            )
+            .fallbackToDestructiveMigration(false)
+            .build()
+
+        val writableDb = roomDb.openHelper.writableDatabase
+        assertNotNull(writableDb)
+
+        // 1. Verify schema for remotes
+        val remoteColumns = getTableColumns(writableDb, "remotes")
+        assertEquals(12, remoteColumns.size)
+        assertTrue(remoteColumns.containsKey("gridHCount"))
+        assertTrue(remoteColumns.containsKey("gridVCount"))
+
+        val remoteCursor = writableDb.query("SELECT * FROM remotes WHERE name = 'IR TV'")
+        assertTrue(remoteCursor.moveToFirst())
+        assertEquals("Sony", remoteCursor.getString(remoteCursor.getColumnIndexOrThrow("brand")))
+        assertEquals(5, remoteCursor.getInt(remoteCursor.getColumnIndexOrThrow("gridHCount")))
+        assertEquals(10, remoteCursor.getInt(remoteCursor.getColumnIndexOrThrow("gridVCount")))
+        remoteCursor.close()
+
+        // 2. Verify schema for macros
+        val macroCursor = writableDb.query("SELECT * FROM macros WHERE name = 'Power All'")
+        assertTrue(macroCursor.moveToFirst())
+        assertEquals("[]", macroCursor.getString(macroCursor.getColumnIndexOrThrow("macroUnits")))
+        macroCursor.close()
+
+        // 3. Verify schema for wifi_remotes
+        val wifiColumns = getTableColumns(writableDb, "wifi_remotes")
+        assertEquals(9, wifiColumns.size)
+        assertTrue(wifiColumns.containsKey("onScreenButtons"))
+        assertTrue(wifiColumns.containsKey("offScreenButtons"))
+        assertTrue(wifiColumns.containsKey("gridHCount"))
+        assertTrue(wifiColumns.containsKey("gridVCount"))
+        assertTrue(hasIndex(writableDb, "wifi_remotes", "index_wifi_remotes_host"))
+
+        val wifiCursor = writableDb.query(
+            "SELECT * FROM wifi_remotes WHERE host = '192.168.1.50'",
+        )
+        assertTrue(wifiCursor.moveToFirst())
+        assertEquals(
+            "Living Room Android TV",
+            wifiCursor.getString(wifiCursor.getColumnIndexOrThrow("name")),
+        )
+        assertEquals(6466, wifiCursor.getInt(wifiCursor.getColumnIndexOrThrow("port")))
+        assertEquals(5, wifiCursor.getInt(wifiCursor.getColumnIndexOrThrow("gridHCount")))
+        assertEquals(10, wifiCursor.getInt(wifiCursor.getColumnIndexOrThrow("gridVCount")))
+        assertTrue(wifiCursor.isNull(wifiCursor.getColumnIndexOrThrow("onScreenButtons")))
+        assertTrue(wifiCursor.isNull(wifiCursor.getColumnIndexOrThrow("offScreenButtons")))
+        wifiCursor.close()
+
+        // 4. Verify DAO read and write operations on migrated database
+        val wifiDao = roomDb.wifiRemoteDao()
+        val device = kotlinx.coroutines.runBlocking { wifiDao.getWifiRemoteByHost("192.168.1.50") }
+        assertNotNull(device)
+        assertEquals("Living Room Android TV", device!!.name)
+        assertEquals(5, device.gridHCount)
+        assertEquals(10, device.gridVCount)
+        assertEquals(null, device.onScreenButtons)
+
+        // Test updating layout via DAO
+        val testButton = com.monuk7735.nope.remote.models.database.AndroidTvButtonDBModel(
+            id = "test_power",
+            name = "Power",
+            keyCodeName = "KEYCODE_POWER",
+            iconName = "power",
+            gridCol = 0,
+            gridRow = 0,
+        )
+        val updatedDevice = device.copy(
+            gridHCount = 6,
+            gridVCount = 12,
+            onScreenButtons = listOf(testButton),
+        )
+        kotlinx.coroutines.runBlocking { wifiDao.updateWifiRemote(updatedDevice) }
+
+        val reloadedDevice = checkNotNull(
+            kotlinx.coroutines.runBlocking {
+                wifiDao.getWifiRemoteByHost("192.168.1.50")
+            },
+        )
+        assertEquals(6, reloadedDevice.gridHCount)
+        assertEquals(12, reloadedDevice.gridVCount)
+        val reloadedButtons = checkNotNull(reloadedDevice.onScreenButtons)
+        assertEquals(1, reloadedButtons.size)
+        assertEquals("test_power", reloadedButtons[0].id)
+
+        // Verify underlying SQLite column received serialized JSON
+        val rawVerifyCursor = writableDb.query(
+            "SELECT onScreenButtons FROM wifi_remotes WHERE host = '192.168.1.50'",
+        )
+        assertTrue(rawVerifyCursor.moveToFirst())
+        val serializedJson = rawVerifyCursor.getString(0)
+        assertTrue(serializedJson.contains("test_power"))
+        rawVerifyCursor.close()
+
+        roomDb.close()
     }
 }
