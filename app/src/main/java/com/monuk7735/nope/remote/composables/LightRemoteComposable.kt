@@ -2,9 +2,6 @@ package com.monuk7735.nope.remote.composables
 
 import android.content.Context
 import android.hardware.ConsumerIrManager
-import android.os.Build
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,27 +40,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
+import com.monuk7735.nope.remote.utils.VibrationHelper
 
 @Composable
 fun LightRemote(remoteDataDBModel: RemoteDataDBModel?) {
-    val irController =
-        LocalContext.current.run {
-            val manager = getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
-            if (manager != null) IRController(manager) else null
-        }
-
-    val vibrator =
-        LocalContext.current.run {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager =
-                    getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                vibratorManager.defaultVibrator
-            } else {
-                getSystemService(Vibrator::class.java)!!
-            }
-        }
-
     val context = LocalContext.current
+    val irController = remember(context) {
+        val manager = context.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
+        if (manager != null) IRController(manager, context) else null
+    }
+
+    val vibrator = remember(context) {
+        VibrationHelper.getVibrator(context)
+    }
 
     fun transmit(name: String) {
         val button = remoteDataDBModel?.getByName(name)

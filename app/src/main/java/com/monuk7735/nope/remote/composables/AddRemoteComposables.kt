@@ -2,9 +2,6 @@ package com.monuk7735.nope.remote.composables
 
 import android.content.Context
 import android.hardware.ConsumerIrManager
-import android.os.Build
-import android.os.Vibrator
-import android.os.VibratorManager
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -82,6 +79,7 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceBrandsRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceCodesRetrofitModel
 import com.monuk7735.nope.remote.models.retrofit.DeviceTypesRetrofitModel
+import com.monuk7735.nope.remote.utils.VibrationHelper
 import java.util.Date
 
 @ExperimentalMaterial3Api
@@ -615,20 +613,12 @@ fun ListCodes(
 @Composable
 fun TestRemoteGrid(remoteDataDBModel: RemoteDataDBModel, showIcons: Boolean = true) {
     val context = LocalContext.current
-    val irController = remember {
-        IRController(
-            context.getSystemService(Context.CONSUMER_IR_SERVICE) as ConsumerIrManager,
-        )
+    val irController = remember(context) {
+        val manager = context.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
+        if (manager != null) IRController(manager, context) else null
     }
-    val vibrator = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager =
-                context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as
-                    VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            context.getSystemService(Vibrator::class.java)!!
-        }
+    val vibrator = remember(context) {
+        VibrationHelper.getVibrator(context)
     }
 
     val allButtons =

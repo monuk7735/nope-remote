@@ -34,7 +34,7 @@ class HomeActivityViewModel(application: Application) : AndroidViewModel(applica
     val hasIrBlaster = consumerIrManager?.hasIrEmitter() == true
 
     val irController = if (hasIrBlaster) {
-        IRController(consumerIrManager!!)
+        IRController(consumerIrManager!!, application)
     } else {
         null
     }

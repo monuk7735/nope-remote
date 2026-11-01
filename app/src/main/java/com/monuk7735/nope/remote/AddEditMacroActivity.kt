@@ -1,10 +1,6 @@
 package com.monuk7735.nope.remote
 
-import android.content.Context
-import android.os.Build
 import android.os.Bundle
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -74,6 +70,7 @@ import com.monuk7735.nope.remote.composables.utils.rememberReorderableState
 import com.monuk7735.nope.remote.models.database.MacroDataDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
+import com.monuk7735.nope.remote.utils.VibrationHelper
 import com.monuk7735.nope.remote.viewmodels.AddEditMacroViewModel
 import kotlinx.coroutines.launch
 
@@ -138,14 +135,7 @@ class AddEditMacroActivity : ComponentActivity() {
                 ) {
                     IconButton(onClick = {
                         scope.launch {
-                            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                val vibratorManager = context.getSystemService(
-                                    Context.VIBRATOR_MANAGER_SERVICE,
-                                ) as VibratorManager
-                                vibratorManager.defaultVibrator
-                            } else {
-                                context.getSystemService(Vibrator::class.java)!!
-                            }
+                            val vibrator = VibrationHelper.getVibrator(context)
                             MacroDataDBModel(0, macroName, macroUnits.toList())
                                 .execute(viewModel.irController, vibrator)
                         }

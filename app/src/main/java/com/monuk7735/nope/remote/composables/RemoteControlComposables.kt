@@ -2,9 +2,6 @@ package com.monuk7735.nope.remote.composables
 
 import android.content.Context
 import android.hardware.ConsumerIrManager
-import android.os.Build
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -80,6 +77,7 @@ import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.models.CustomRemoteLayout
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
+import com.monuk7735.nope.remote.utils.VibrationHelper
 
 @ExperimentalFoundationApi
 @ExperimentalMaterial3Api
@@ -380,18 +378,11 @@ fun RemoteControlEditLayout(
 
     val irController = remember(context) {
         val manager = context.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
-        if (manager != null) IRController(manager) else null
+        if (manager != null) IRController(manager, context) else null
     }
 
     val vibrator = remember(context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(
-                Context.VIBRATOR_MANAGER_SERVICE,
-            ) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            context.getSystemService(Vibrator::class.java)!!
-        }
+        VibrationHelper.getVibrator(context)
     }
 
     if (showAddKeyDialog) {

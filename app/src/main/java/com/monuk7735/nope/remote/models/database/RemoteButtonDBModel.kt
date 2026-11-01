@@ -189,7 +189,7 @@ data class RemoteButtonDBModel(
         }
     }
 
-    fun transmit(irController: IRController?, vibrator: Vibrator) {
+    fun transmit(irController: IRController?, vibrator: Vibrator? = null) {
         irController?.transmit(
             irPattern = irPattern,
             vibrator = vibrator,

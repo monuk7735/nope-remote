@@ -2,9 +2,6 @@ package com.monuk7735.nope.remote.composables
 
 import android.content.Context
 import android.hardware.ConsumerIrManager
-import android.os.Build
-import android.os.Vibrator
-import android.os.VibratorManager
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
@@ -25,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.monuk7735.nope.remote.infrared.IRController
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
+import com.monuk7735.nope.remote.utils.VibrationHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @ExperimentalFoundationApi
@@ -427,22 +425,15 @@ fun UniversalRemote(
     layoutLimits: Rect,
     textOnlyMode: Boolean = false,
 ) {
-    val irController =
-        LocalContext.current.run {
-            val manager = getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
-            if (manager != null) IRController(manager) else null
-        }
+    val context = LocalContext.current
+    val irController = remember(context) {
+        val manager = context.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager
+        if (manager != null) IRController(manager, context) else null
+    }
 
-    val vibrator =
-        LocalContext.current.run {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager =
-                    getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                vibratorManager.defaultVibrator
-            } else {
-                getSystemService(Vibrator::class.java)!!
-            }
-        }
+    val vibrator = remember(context) {
+        VibrationHelper.getVibrator(context)
+    }
 
     val hCount = remoteDataDBModel?.gridHCount ?: 5
     val vCount = remoteDataDBModel?.gridVCount ?: 10

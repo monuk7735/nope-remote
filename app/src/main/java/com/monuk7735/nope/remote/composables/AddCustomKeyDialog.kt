@@ -187,7 +187,7 @@ fun AddCustomKeyDialog(
     onDismissRequest: () -> Unit,
     onAddKey: (name: String, pattern: IRPattern) -> Unit,
     irController: IRController?,
-    vibrator: Vibrator,
+    vibrator: Vibrator? = null,
 ) {
     var keyName by remember { mutableStateOf("") }
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Protocol, 1: Frequency

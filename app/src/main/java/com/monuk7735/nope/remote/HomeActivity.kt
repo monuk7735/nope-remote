@@ -1,11 +1,7 @@
 package com.monuk7735.nope.remote
 
-import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -113,6 +109,7 @@ import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.utils.HomeSection
+import com.monuk7735.nope.remote.utils.VibrationHelper
 import com.monuk7735.nope.remote.viewmodels.HomeActivityViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -378,16 +375,8 @@ class HomeActivity : ComponentActivity() {
                 }
             },
         ) { innerPadding ->
-            val vibrator = remember {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    val vibratorManager =
-                        context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as
-                            VibratorManager
-                    vibratorManager.defaultVibrator
-                } else {
-                    @Suppress("DEPRECATION")
-                    context.getSystemService(Vibrator::class.java)!!
-                }
+            val vibrator = remember(context) {
+                VibrationHelper.getVibrator(context)
             }
 
             HorizontalPager(
