@@ -936,6 +936,54 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    fun testMigration_2_to_3_withSchemaValidation() {
+        val testDbName = "migration-test-helper-2-3.db"
+        helper.createDatabase(testDbName, 2).close()
+        helper.runMigrationsAndValidate(
+            testDbName,
+            3,
+            true,
+            RemoteDatabase.MIGRATION_2_3,
+        )
+    }
+
+    @Test
+    fun testMigration_3_to_4_withSchemaValidation() {
+        val testDbName = "migration-test-helper-3-4.db"
+        helper.createDatabase(testDbName, 3).close()
+        helper.runMigrationsAndValidate(
+            testDbName,
+            4,
+            true,
+            RemoteDatabase.MIGRATION_3_4,
+        )
+    }
+
+    @Test
+    fun testMigration_4_to_5_withSchemaValidation() {
+        val testDbName = "migration-test-helper-4-5.db"
+        helper.createDatabase(testDbName, 4).close()
+        helper.runMigrationsAndValidate(
+            testDbName,
+            5,
+            true,
+            RemoteDatabase.MIGRATION_4_5,
+        )
+    }
+
+    @Test
+    fun testMigration_5_to_6_withSchemaValidation() {
+        val testDbName = "migration-test-helper-5-6.db"
+        helper.createDatabase(testDbName, 5).close()
+        helper.runMigrationsAndValidate(
+            testDbName,
+            6,
+            true,
+            RemoteDatabase.MIGRATION_5_6,
+        )
+    }
+
+    @Test
     fun testMigration_6_to_7_withSchemaValidation() {
         val testDbName = "migration-test-helper-6-7.db"
         helper.createDatabase(testDbName, 6).close()
@@ -955,6 +1003,23 @@ class DatabaseMigrationTest {
             testDbName,
             8,
             true,
+            RemoteDatabase.MIGRATION_7_8,
+        )
+    }
+
+    @Test
+    fun testMigration_2_to_8_allCombinedWithSchemaValidation() {
+        val testDbName = "migration-test-helper-2-8.db"
+        helper.createDatabase(testDbName, 2).close()
+        helper.runMigrationsAndValidate(
+            testDbName,
+            8,
+            true,
+            RemoteDatabase.MIGRATION_2_3,
+            RemoteDatabase.MIGRATION_3_4,
+            RemoteDatabase.MIGRATION_4_5,
+            RemoteDatabase.MIGRATION_5_6,
+            RemoteDatabase.MIGRATION_6_7,
             RemoteDatabase.MIGRATION_7_8,
         )
     }

@@ -6,7 +6,7 @@
     "entities": [
       {
         "tableName": "remotes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `brand` TEXT NOT NULL, `type` TEXT NOT NULL, `added` TEXT NOT NULL, `remoteButtons` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `brand` TEXT NOT NULL, `type` TEXT NOT NULL, `added` TEXT NOT NULL, `onScreenRemoteButtonDBS` TEXT NOT NULL, `offScreenRemoteButtonDBS` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -39,24 +39,28 @@
             "notNull": true
           },
           {
-            "fieldPath": "remoteButtons",
-            "columnName": "remoteButtons",
+            "fieldPath": "onScreenRemoteButtonDBS",
+            "columnName": "onScreenRemoteButtonDBS",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "offScreenRemoteButtonDBS",
+            "columnName": "offScreenRemoteButtonDBS",
             "affinity": "TEXT",
             "notNull": true
           }
         ],
         "primaryKey": {
+          "autoGenerate": true,
           "columnNames": [
             "id"
-          ],
-          "autoGenerate": true
-        },
-        "indices": [],
-        "foreignKeys": []
+          ]
+        }
       },
       {
-        "tableName": "flows",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `flowUnits` TEXT NOT NULL)",
+        "tableName": "macros",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `macroUnits` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -71,23 +75,20 @@
             "notNull": true
           },
           {
-            "fieldPath": "flowUnits",
-            "columnName": "flowUnits",
+            "fieldPath": "macroUnits",
+            "columnName": "macroUnits",
             "affinity": "TEXT",
             "notNull": true
           }
         ],
         "primaryKey": {
+          "autoGenerate": true,
           "columnNames": [
             "id"
-          ],
-          "autoGenerate": true
-        },
-        "indices": [],
-        "foreignKeys": []
+          ]
+        }
       }
     ],
-    "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
       "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '08056218a89dc973dcd27ce937830301')"
