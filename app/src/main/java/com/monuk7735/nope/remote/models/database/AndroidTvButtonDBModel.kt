@@ -50,10 +50,15 @@ data class AndroidTvButtonDBModel(
     var offsetY: Float = 0f,
 ) : Parcelable {
 
+    fun isReservedCorner(hCount: Int, vCount: Int): Boolean =
+        (gridCol == 0 && gridRow == vCount - 1) ||
+            (gridCol == hCount - 1 && gridRow == vCount - 1)
+
     fun isPlacedInGrid(hCount: Int, vCount: Int): Boolean = gridCol != null &&
         gridRow != null &&
         gridCol!! in 0 until hCount &&
-        gridRow!! in 0 until vCount
+        gridRow!! in 0 until vCount &&
+        !isReservedCorner(hCount, vCount)
 
     fun getRemoteKeyCode(): Remotemessage.RemoteKeyCode? = try {
         Remotemessage.RemoteKeyCode.valueOf(keyCodeName)

@@ -88,6 +88,14 @@ class AndroidTvLayoutEditorTest {
         val slots = defaultButtons.map { it.gridCol to it.gridRow }
         assertEquals("No overlapping buttons in default layout", slots.size, slots.toSet().size)
 
+        // Verify no default buttons are placed in reserved bottom corners
+        for (btn in defaultButtons) {
+            assertFalse(
+                "Button ${btn.name} must not be in reserved corners",
+                btn.isReservedCorner(hCount, vCount),
+            )
+        }
+
         // Verify specific user layout: power top center, vol +/- vertical center
         val power = defaultButtons.first { it.keyCodeName == "KEYCODE_POWER" }
         assertEquals(2, power.gridCol)
@@ -107,18 +115,45 @@ class AndroidTvLayoutEditorTest {
         val inBounds = AndroidTvButtonDBModel(
             name = "Power",
             keyCodeName = "KEYCODE_POWER",
-            gridCol = 0,
+            gridCol = 1,
             gridRow = 0,
         )
         assertTrue(inBounds.isPlacedInGrid(5, 10))
 
-        val bottomRow = AndroidTvButtonDBModel(
+        val bottomRowNonCorner = AndroidTvButtonDBModel(
             name = "Vol Down",
             keyCodeName = "KEYCODE_VOLUME_DOWN",
+            gridCol = 2,
+            gridRow = 9,
+        )
+        assertTrue(
+            "Row 9 center is valid in 10-row grid (0..9)",
+            bottomRowNonCorner.isPlacedInGrid(5, 10),
+        )
+
+        val bottomLeftCorner = AndroidTvButtonDBModel(
+            name = "BottomLeft",
+            keyCodeName = "KEYCODE_INFO",
+            gridCol = 0,
+            gridRow = 9,
+        )
+        assertTrue(bottomLeftCorner.isReservedCorner(5, 10))
+        assertFalse(
+            "Bottom-left corner is reserved for Numbers",
+            bottomLeftCorner.isPlacedInGrid(5, 10),
+        )
+
+        val bottomRightCorner = AndroidTvButtonDBModel(
+            name = "BottomRight",
+            keyCodeName = "KEYCODE_INFO",
             gridCol = 4,
             gridRow = 9,
         )
-        assertTrue("Row 9 is valid in 10-row grid (0..9)", bottomRow.isPlacedInGrid(5, 10))
+        assertTrue(bottomRightCorner.isReservedCorner(5, 10))
+        assertFalse(
+            "Bottom-right corner is reserved for More Buttons",
+            bottomRightCorner.isPlacedInGrid(5, 10),
+        )
 
         val outOfBoundsRow = AndroidTvButtonDBModel(
             name = "Out",

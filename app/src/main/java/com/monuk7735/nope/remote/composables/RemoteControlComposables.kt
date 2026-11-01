@@ -629,7 +629,22 @@ fun RemoteControlEditLayout(
                                     it.gridRow in 0 until gridVCount
                             }.groupBy { it.gridCol to it.gridRow }.filter { it.value.size > 1 }
 
-                            if (outOfBoundsButtons.isNotEmpty() || collidingSlots.isNotEmpty()) {
+                            val reservedCornerButtons = onScreen.filter {
+                                it.gridCol != null &&
+                                    it.gridRow != null &&
+                                    (
+                                        (it.gridCol == 0 && it.gridRow == gridVCount - 1) ||
+                                            (
+                                                it.gridCol == gridHCount - 1 &&
+                                                    it.gridRow == gridVCount - 1
+                                                )
+                                        )
+                            }
+
+                            if (outOfBoundsButtons.isNotEmpty() ||
+                                collidingSlots.isNotEmpty() ||
+                                reservedCornerButtons.isNotEmpty()
+                            ) {
                                 val message = buildString {
                                     if (outOfBoundsButtons.isNotEmpty()) {
                                         val names =
@@ -649,6 +664,11 @@ fun RemoteControlEditLayout(
                                     if (collidingSlots.isNotEmpty()) {
                                         append(
                                             "Some buttons are overlapping in the same grid cell. ",
+                                        )
+                                    }
+                                    if (reservedCornerButtons.isNotEmpty()) {
+                                        append(
+                                            "Bottom-left and bottom-right corners are reserved for Number and More Buttons. ",
                                         )
                                     }
                                     append(

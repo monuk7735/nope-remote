@@ -9,13 +9,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -118,7 +116,9 @@ fun EditableRemote(
             } else {
                 false
             }
-            val isInvalid = isOutOfBounds || isColliding
+            val isReservedCorner = (col == 0 && row == vCount - 1) ||
+                (col == hCount - 1 && row == vCount - 1)
+            val isInvalid = isOutOfBounds || isColliding || isReservedCorner
 
             val effectiveCol = col ?: if (gridSizeXPx > 0) {
                 val cx = remoteButton.offsetX + buttonSize / 2f
@@ -168,88 +168,140 @@ fun EditableRemote(
                         val snappedX = gridSizeXPx * targetCol + (gridSizeXPx - buttonSize) / 2
                         val snappedY = gridSizeYPx * targetRow + (gridSizeYPx - buttonSize) / 2
 
-                        // Check if another button occupies targetCol, targetRow
-                        val otherIndex = onScreenRemotes.indexOfFirst { other ->
-                            other.id != remoteButton.id &&
-                                other.gridCol == targetCol &&
-                                other.gridRow == targetRow
-                        }
+                        val reservedSlots = setOf(0 to vCount - 1, hCount - 1 to vCount - 1)
+                        val isTargetReserved = (targetCol == 0 && targetRow == vCount - 1) ||
+                            (targetCol == hCount - 1 && targetRow == vCount - 1)
 
                         val prevCol = remoteButton.gridCol
                         val prevRow = remoteButton.gridRow
                         val prevWasValid = prevCol != null &&
                             prevRow != null &&
                             prevCol in 0 until hCount &&
-                            prevRow in 0 until vCount
+                            prevRow in 0 until vCount &&
+                            !reservedSlots.contains(prevCol to prevRow)
 
-                        if (otherIndex != -1) {
+                        if (isTargetReserved) {
                             if (prevWasValid) {
-                                // Swap positions with occupying button
-                                val swappedOtherX =
+                                val prevX =
                                     gridSizeXPx * prevCol + (gridSizeXPx - buttonSize) / 2
-                                val swappedOtherY =
+                                val prevY =
                                     gridSizeYPx * prevRow + (gridSizeYPx - buttonSize) / 2
-                                onScreenRemotes[otherIndex] = onScreenRemotes[otherIndex].copy(
+                                onScreenRemotes[index] = onScreenRemotes[index].copy(
                                     gridCol = prevCol,
                                     gridRow = prevRow,
-                                    offsetX = swappedOtherX,
-                                    offsetY = swappedOtherY,
+                                    offsetX = prevX,
+                                    offsetY = prevY,
                                 )
                             } else {
-                                // Dragged button was invalid:
-                                // find first unoccupied cell for the other button
                                 val occupiedSlots = onScreenRemotes.mapNotNull { b ->
                                     if (b.id != remoteButton.id &&
-                                        b.id != onScreenRemotes[otherIndex].id &&
                                         b.gridCol != null &&
-                                        b.gridRow != null
+                                        b.gridRow != null &&
+                                        b.gridCol!! in 0 until hCount &&
+                                        b.gridRow!! in 0 until vCount
                                     ) {
-                                        b.gridCol to b.gridRow
+                                        b.gridCol!! to b.gridRow!!
                                     } else {
                                         null
                                     }
-                                }.toSet() + setOf(targetCol to targetRow)
+                                }.toSet() + reservedSlots
 
-                                var emptySlot: Pair<Int, Int>? = null
+                                var fallbackSlot: Pair<Int, Int>? = null
                                 for (r in 0 until vCount) {
                                     for (c in 0 until hCount) {
                                         if (!occupiedSlots.contains(c to r)) {
-                                            emptySlot = c to r
+                                            fallbackSlot = c to r
                                             break
                                         }
                                     }
-                                    if (emptySlot != null) break
+                                    if (fallbackSlot != null) break
                                 }
 
-                                if (emptySlot != null) {
-                                    val (ec, er) = emptySlot
-                                    val otherX =
-                                        gridSizeXPx * ec + (gridSizeXPx - buttonSize) / 2
-                                    val otherY =
-                                        gridSizeYPx * er + (gridSizeYPx - buttonSize) / 2
-                                    onScreenRemotes[otherIndex] =
-                                        onScreenRemotes[otherIndex].copy(
-                                            gridCol = ec,
-                                            gridRow = er,
-                                            offsetX = otherX,
-                                            offsetY = otherY,
-                                        )
-                                } else {
-                                    onScreenRemotes[otherIndex] =
-                                        onScreenRemotes[otherIndex].copy(
-                                            gridCol = prevCol,
-                                            gridRow = prevRow,
-                                        )
+                                if (fallbackSlot != null) {
+                                    val (fc, fr) = fallbackSlot
+                                    val fbX = gridSizeXPx * fc + (gridSizeXPx - buttonSize) / 2
+                                    val fbY = gridSizeYPx * fr + (gridSizeYPx - buttonSize) / 2
+                                    onScreenRemotes[index] = onScreenRemotes[index].copy(
+                                        gridCol = fc,
+                                        gridRow = fr,
+                                        offsetX = fbX,
+                                        offsetY = fbY,
+                                    )
                                 }
                             }
-                        }
+                        } else {
+                            val otherIndex = onScreenRemotes.indexOfFirst { other ->
+                                other.id != remoteButton.id &&
+                                    other.gridCol == targetCol &&
+                                    other.gridRow == targetRow
+                            }
 
-                        onScreenRemotes[index] = onScreenRemotes[index].copy(
-                            gridCol = targetCol,
-                            gridRow = targetRow,
-                            offsetX = snappedX,
-                            offsetY = snappedY,
-                        )
+                            if (otherIndex != -1) {
+                                if (prevWasValid) {
+                                    val swappedOtherX =
+                                        gridSizeXPx * prevCol + (gridSizeXPx - buttonSize) / 2
+                                    val swappedOtherY =
+                                        gridSizeYPx * prevRow + (gridSizeYPx - buttonSize) / 2
+                                    onScreenRemotes[otherIndex] = onScreenRemotes[otherIndex].copy(
+                                        gridCol = prevCol,
+                                        gridRow = prevRow,
+                                        offsetX = swappedOtherX,
+                                        offsetY = swappedOtherY,
+                                    )
+                                } else {
+                                    val occupiedSlots = onScreenRemotes.mapNotNull { b ->
+                                        if (b.id != remoteButton.id &&
+                                            b.id != onScreenRemotes[otherIndex].id &&
+                                            b.gridCol != null &&
+                                            b.gridRow != null
+                                        ) {
+                                            b.gridCol to b.gridRow
+                                        } else {
+                                            null
+                                        }
+                                    }.toSet() + setOf(targetCol to targetRow) + reservedSlots
+
+                                    var emptySlot: Pair<Int, Int>? = null
+                                    for (r in 0 until vCount) {
+                                        for (c in 0 until hCount) {
+                                            if (!occupiedSlots.contains(c to r)) {
+                                                emptySlot = c to r
+                                                break
+                                            }
+                                        }
+                                        if (emptySlot != null) break
+                                    }
+
+                                    if (emptySlot != null) {
+                                        val (ec, er) = emptySlot
+                                        val otherX =
+                                            gridSizeXPx * ec + (gridSizeXPx - buttonSize) / 2
+                                        val otherY =
+                                            gridSizeYPx * er + (gridSizeYPx - buttonSize) / 2
+                                        onScreenRemotes[otherIndex] =
+                                            onScreenRemotes[otherIndex].copy(
+                                                gridCol = ec,
+                                                gridRow = er,
+                                                offsetX = otherX,
+                                                offsetY = otherY,
+                                            )
+                                    } else {
+                                        onScreenRemotes[otherIndex] =
+                                            onScreenRemotes[otherIndex].copy(
+                                                gridCol = prevCol,
+                                                gridRow = prevRow,
+                                            )
+                                    }
+                                }
+                            }
+
+                            onScreenRemotes[index] = onScreenRemotes[index].copy(
+                                gridCol = targetCol,
+                                gridRow = targetRow,
+                                offsetX = snappedX,
+                                offsetY = snappedY,
+                            )
+                        }
                     } else {
                         onScreenRemotes[index] = onScreenRemotes[index].copy(
                             offsetX = posX,
@@ -280,18 +332,29 @@ fun EditableRemote(
             )
         }
     }
+    val numberPosX = if (gridSizeXPx > 0) gridSizeXPx * 0 + (gridSizeXPx - buttonSize) / 2 else 0f
+    val numberPosY =
+        if (gridSizeYPx > 0) gridSizeYPx * (vCount - 1) + (gridSizeYPx - buttonSize) / 2 else 0f
+    val extraPosX =
+        if (gridSizeXPx > 0) gridSizeXPx * (hCount - 1) + (gridSizeXPx - buttonSize) / 2 else 0f
+    val extraPosY =
+        if (gridSizeYPx > 0) gridSizeYPx * (vCount - 1) + (gridSizeYPx - buttonSize) / 2 else 0f
+
+    RemoteButtonDigits(
+        digitButtons = remoteDataDBModel?.getAllDigits(),
+        offsetX = with(LocalDensity.current) { numberPosX.toDp() },
+        offsetY = with(LocalDensity.current) { numberPosY.toDp() },
+        size = 72.dp,
+        onClick = {},
+    )
+
     RemoteButtonExtra(
         extraButtons = offScreenRemotes,
-        offsetX =
-        LocalDensity.current.run {
-            (layoutLimits.right - layoutLimits.left).toDp() - 80.dp
-        },
-        offsetY =
-        LocalDensity.current.run {
-            (layoutLimits.bottom - layoutLimits.top).toDp() - 80.dp
-        },
-        size = 80.dp,
+        offsetX = with(LocalDensity.current) { extraPosX.toDp() },
+        offsetY = with(LocalDensity.current) { extraPosY.toDp() },
+        size = 72.dp,
         onClick = { buttonToAdd ->
+            val reservedSlots = setOf(0 to vCount - 1, hCount - 1 to vCount - 1)
             val occupiedSlots = onScreenRemotes.mapNotNull { b ->
                 if (b.gridCol != null &&
                     b.gridRow != null &&
@@ -302,7 +365,7 @@ fun EditableRemote(
                 } else {
                     null
                 }
-            }.toSet()
+            }.toSet() + reservedSlots
 
             // Find the first unoccupied slot from top-left
             var targetSlot: Pair<Int, Int>? = null
@@ -353,16 +416,6 @@ fun EditableRemote(
         } else {
             null
         },
-    )
-    RemoteButtonDigits(
-        digitButtons = remoteDataDBModel?.getAllDigits(),
-        offsetX = 0.dp,
-        offsetY =
-        LocalDensity.current.run {
-            (layoutLimits.bottom - layoutLimits.top).toDp() - 80.dp
-        },
-        size = 80.dp,
-        onClick = {},
     )
 }
 
@@ -433,15 +486,26 @@ fun UniversalRemote(
                 onClick = { it.transmit(irController, vibrator) },
             )
         }
-        RemoteButtonExtra(
-            extraButtons = remoteDataDBModel?.getAllOffScreen(),
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        val numberPosX =
+            if (gridSizeXPx > 0) gridSizeXPx * 0 + (gridSizeXPx - buttonSize) / 2 else 0f
+        val numberPosY =
+            if (gridSizeYPx > 0) gridSizeYPx * (vCount - 1) + (gridSizeYPx - buttonSize) / 2 else 0f
+        val extraPosX =
+            if (gridSizeXPx > 0) gridSizeXPx * (hCount - 1) + (gridSizeXPx - buttonSize) / 2 else 0f
+        val extraPosY =
+            if (gridSizeYPx > 0) gridSizeYPx * (vCount - 1) + (gridSizeYPx - buttonSize) / 2 else 0f
+
+        RemoteButtonDigits(
+            digitButtons = remoteDataDBModel?.getAllDigits(),
+            offsetX = with(LocalDensity.current) { numberPosX.toDp() },
+            offsetY = with(LocalDensity.current) { numberPosY.toDp() },
             size = 72.dp,
             onClick = { it.transmit(irController, vibrator) },
         )
-        RemoteButtonDigits(
-            digitButtons = remoteDataDBModel?.getAllDigits(),
-            modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+        RemoteButtonExtra(
+            extraButtons = remoteDataDBModel?.getAllOffScreen(),
+            offsetX = with(LocalDensity.current) { extraPosX.toDp() },
+            offsetY = with(LocalDensity.current) { extraPosY.toDp() },
             size = 72.dp,
             onClick = { it.transmit(irController, vibrator) },
         )
