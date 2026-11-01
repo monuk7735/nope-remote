@@ -17,7 +17,7 @@ data class MacroDataDBModel(
     val name: String,
     val macroUnits: List<MacroTransmit>,
 ) : Parcelable {
-    suspend fun execute(irController: IRController?, vibrator: Vibrator) {
+    suspend fun execute(irController: IRController?, vibrator: Vibrator? = null) {
         macroUnits.forEach {
             irController?.transmit(
                 it.irPattern,

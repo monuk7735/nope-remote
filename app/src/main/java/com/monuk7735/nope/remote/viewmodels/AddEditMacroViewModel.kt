@@ -25,7 +25,7 @@ class AddEditMacroViewModel(application: Application) : AndroidViewModel(applica
 
     val irController =
         (application.getSystemService(Context.CONSUMER_IR_SERVICE) as? ConsumerIrManager)?.let {
-            IRController(it)
+            IRController(it, application)
         }
 
     private val remoteDataRepository: RemoteDataRepository = RemoteDataRepository(

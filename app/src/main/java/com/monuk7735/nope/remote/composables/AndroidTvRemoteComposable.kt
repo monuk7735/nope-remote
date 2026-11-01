@@ -2,10 +2,6 @@ package com.monuk7735.nope.remote.composables
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.view.KeyEvent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -94,6 +90,7 @@ import com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient
 import com.monuk7735.nope.remote.androidtv.ssl.AndroidTvSslManager
 import com.monuk7735.nope.remote.database.RemoteDatabase
 import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
+import com.monuk7735.nope.remote.utils.VibrationHelper
 import kotlin.math.abs
 import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
@@ -262,38 +259,12 @@ private fun AndroidTvRemoteContent(
         }
     }
 
-    val vibrator = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(
-                Context.VIBRATOR_MANAGER_SERVICE,
-            ) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
+    val vibrator = remember(context) {
+        VibrationHelper.getVibrator(context)
     }
 
     fun vibrate() {
-        val shouldVibrate = prefs.getBoolean(
-            context.getString(R.string.pref_settings_vibration),
-            true,
-        )
-        if (!shouldVibrate) return
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(
-                    VibrationEffect.createOneShot(
-                        35,
-                        VibrationEffect.DEFAULT_AMPLITUDE,
-                    ),
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(35)
-            }
-        } catch (_: Exception) {}
+        VibrationHelper.vibrate(context, vibrator, 35)
     }
 
     fun sendKey(key: Remotemessage.RemoteKeyCode) {
