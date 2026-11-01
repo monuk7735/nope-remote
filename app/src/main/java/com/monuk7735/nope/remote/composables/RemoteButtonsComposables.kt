@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -24,19 +26,31 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.VolumeDown
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -57,6 +72,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.monuk7735.nope.remote.models.database.AndroidTvButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 
 fun formatButtonLabel(name: String): String = name.replace("_", " ").trim()
@@ -71,37 +87,58 @@ fun RemoteButtonSingleEditable(
     offsetX: Float,
     offsetY: Float,
     layoutLimits: Rect,
+    isInvalid: Boolean = false,
     onPosUpdate: (offsetX: Float, offsetY: Float) -> Unit,
     onRemove: () -> Unit,
 ) {
+    var isDragging by remember { mutableStateOf(false) }
     var localOffSetX by remember { mutableStateOf(offsetX) }
     var localOffSetY by remember { mutableStateOf(offsetY) }
     var prevX by remember { mutableStateOf(0f) }
     var prevY by remember { mutableStateOf(0f) }
 
     LaunchedEffect(offsetX, offsetY) {
-        localOffSetX = offsetX
-        localOffSetY = offsetY
+        if (!isDragging) {
+            localOffSetX = offsetX
+            localOffSetY = offsetY
+        }
     }
 
     val size = 72.dp
     val sizeInFloat = LocalDensity.current.run { size.toPx() }
 
+    val containerBgColor = if (isInvalid) {
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val borderColor = if (isInvalid) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
+    }
+
+    val borderWidth = if (isInvalid) 2.dp else 1.dp
+
+    val currentDisplayX = if (isDragging) localOffSetX else offsetX
+    val currentDisplayY = if (isDragging) localOffSetY else offsetY
+
     Box(
         modifier =
         Modifier.offset(
-            x = with(LocalDensity.current) { localOffSetX.toDp() },
-            y = with(LocalDensity.current) { localOffSetY.toDp() },
+            x = with(LocalDensity.current) { currentDisplayX.toDp() },
+            y = with(LocalDensity.current) { currentDisplayY.toDp() },
         )
             .size(size)
             .padding(4.dp)
             .background(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = containerBgColor,
                 shape = RoundedCornerShape(20.dp),
             )
             .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.error.copy(alpha = 0.3f),
+                width = borderWidth,
+                color = borderColor,
                 shape = RoundedCornerShape(20.dp),
             ),
         contentAlignment = Alignment.Center,
@@ -123,12 +160,10 @@ fun RemoteButtonSingleEditable(
                 )
                 .pointerInteropFilter { event ->
                     when (event.action) {
-                        MotionEvent.ACTION_UP ->
-                            onPosUpdate(
-                                localOffSetX,
-                                localOffSetY,
-                            )
                         MotionEvent.ACTION_DOWN -> {
+                            isDragging = true
+                            localOffSetX = offsetX
+                            localOffSetY = offsetY
                             prevX = event.rawX
                             prevY = event.rawY
                         }
@@ -137,31 +172,32 @@ fun RemoteButtonSingleEditable(
                             val dy = event.rawY - prevY
 
                             val nextX = localOffSetX + dx
-                            if (nextX > 0f &&
-                                nextX <
-                                layoutLimits
-                                    .right -
-                                sizeInFloat -
-                                layoutLimits
-                                    .left
-                            ) {
-                                localOffSetX = nextX
+                            val maxX = layoutLimits.right - sizeInFloat - layoutLimits.left
+                            if (maxX > 0f) {
+                                localOffSetX = nextX.coerceIn(0f, maxX)
                             }
 
                             val nextY = localOffSetY + dy
-                            if (nextY > 0f &&
-                                nextY <
-                                layoutLimits
-                                    .bottom -
-                                sizeInFloat -
-                                layoutLimits
-                                    .top
-                            ) {
-                                localOffSetY = nextY
+                            val maxY = layoutLimits.bottom - sizeInFloat - layoutLimits.top
+                            if (maxY > 0f) {
+                                localOffSetY = nextY.coerceIn(0f, maxY)
                             }
 
                             prevX = event.rawX
                             prevY = event.rawY
+                        }
+                        MotionEvent.ACTION_UP -> {
+                            isDragging = false
+                            val releasedX = localOffSetX
+                            val releasedY = localOffSetY
+                            localOffSetX = offsetX
+                            localOffSetY = offsetY
+                            onPosUpdate(releasedX, releasedY)
+                        }
+                        MotionEvent.ACTION_CANCEL -> {
+                            isDragging = false
+                            localOffSetX = offsetX
+                            localOffSetY = offsetY
                         }
                     }
                     return@pointerInteropFilter true
@@ -209,6 +245,25 @@ fun RemoteButtonSingleEditable(
                 tint = MaterialTheme.colorScheme.onError,
             )
         }
+
+        if (isInvalid) {
+            Surface(
+                modifier =
+                Modifier.align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .size(22.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.error,
+                shadowElevation = 4.dp,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.ErrorOutline,
+                    contentDescription = "Misaligned button",
+                    modifier = Modifier.padding(3.dp),
+                    tint = MaterialTheme.colorScheme.onError,
+                )
+            }
+        }
     }
 }
 
@@ -220,9 +275,13 @@ fun RemoteButtonSingle(
     forceTextOnly: Boolean = false,
     offsetX: Float,
     offsetY: Float,
+    containerColor: Color? = null,
+    contentColor: Color? = null,
     onClick: () -> Unit,
 ) {
     val size = 72.dp
+    val effectiveContainer = containerColor ?: MaterialTheme.colorScheme.surfaceContainerHigh
+    val effectiveContent = contentColor ?: MaterialTheme.colorScheme.primary
 
     Surface(
         modifier =
@@ -233,10 +292,10 @@ fun RemoteButtonSingle(
             .size(size)
             .padding(4.dp),
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = effectiveContainer,
         tonalElevation = 6.dp,
         shadowElevation = 2.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+        border = BorderStroke(1.dp, effectiveContent.copy(alpha = 0.15f)),
         onClick = onClick,
     ) {
         Box(
@@ -246,10 +305,9 @@ fun RemoteButtonSingle(
                     Brush.radialGradient(
                         colors =
                         listOf(
-                            MaterialTheme.colorScheme
-                                .primary.copy(
-                                    alpha = 0.05f,
-                                ),
+                            effectiveContent.copy(
+                                alpha = 0.05f,
+                            ),
                             Color.Transparent,
                         ),
                     ),
@@ -261,14 +319,14 @@ fun RemoteButtonSingle(
                     imageVector = icon,
                     contentDescription = name,
                     modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = effectiveContent,
                 )
             } else {
                 Text(
                     text = textIcon ?: formatButtonLabel(name),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = effectiveContent,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     modifier = Modifier.padding(4.dp),
@@ -283,28 +341,49 @@ fun RemoteButtonSingle(
 @Composable
 fun RemoteButtonExtra(
     extraButtons: List<RemoteButtonDBModel>?,
-    offsetX: Dp,
-    offsetY: Dp,
-    size: Dp,
+    offsetX: Dp = 0.dp,
+    offsetY: Dp = 0.dp,
+    size: Dp = 72.dp,
+    modifier: Modifier = Modifier,
     onClick: (remoteButtonDBModel: RemoteButtonDBModel) -> Unit,
     onDelete: ((remoteButtonDBModel: RemoteButtonDBModel) -> Unit)? = null,
 ) {
     var dialogVisible by remember { mutableStateOf(false) }
 
     if (extraButtons?.isNotEmpty() == true) {
+        val baseMod = if (offsetX != 0.dp || offsetY != 0.dp) {
+            modifier.offset(x = offsetX, y = offsetY)
+        } else {
+            modifier
+        }
+
         Surface(
-            modifier =
-            Modifier.offset(x = offsetX, y = offsetY).size(72.dp).padding(4.dp),
+            modifier = baseMod.size(size).padding(4.dp),
             shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            tonalElevation = 4.dp,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
             onClick = { dialogVisible = true },
         ) {
-            Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                                Color.Transparent,
+                            ),
+                        ),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
                     imageVector = Icons.Outlined.MoreVert,
                     contentDescription = "Extras",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp),
                 )
             }
         }
@@ -365,6 +444,21 @@ fun RemoteButtonOverflow(
     onClick: () -> Unit,
     onDelete: (() -> Unit)? = null,
 ) {
+    RemoteButtonOverflow(
+        modifier = modifier,
+        name = remoteButtonModel.name,
+        onClick = onClick,
+        onDelete = onDelete,
+    )
+}
+
+@Composable
+fun RemoteButtonOverflow(
+    modifier: Modifier = Modifier,
+    name: String,
+    onClick: () -> Unit,
+    onDelete: (() -> Unit)? = null,
+) {
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
@@ -383,7 +477,7 @@ fun RemoteButtonOverflow(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = formatButtonLabel(remoteButtonModel.name),
+                text = formatButtonLabel(name),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f),
@@ -410,27 +504,48 @@ fun RemoteButtonOverflow(
 @Composable
 fun RemoteButtonDigits(
     digitButtons: List<RemoteButtonDBModel>?,
-    offsetX: Dp,
-    offsetY: Dp,
-    size: Dp,
+    offsetX: Dp = 0.dp,
+    offsetY: Dp = 0.dp,
+    size: Dp = 72.dp,
+    modifier: Modifier = Modifier,
     onClick: (remoteButtonDBModel: RemoteButtonDBModel) -> Unit,
 ) {
     var dialogVisible by remember { mutableStateOf(false) }
 
     if (digitButtons?.isNotEmpty() == true) {
+        val baseMod = if (offsetX != 0.dp || offsetY != 0.dp) {
+            modifier.offset(x = offsetX, y = offsetY)
+        } else {
+            modifier
+        }
+
         Surface(
-            modifier =
-            Modifier.offset(x = offsetX, y = offsetY).size(72.dp).padding(4.dp),
+            modifier = baseMod.size(size).padding(4.dp),
             shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            tonalElevation = 4.dp,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
             onClick = { dialogVisible = true },
         ) {
-            Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                                Color.Transparent,
+                            ),
+                        ),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
                     imageVector = Icons.Outlined.Numbers,
                     contentDescription = "Digits",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp),
                 )
             }
         }
@@ -491,6 +606,489 @@ fun RemoteButtonDigits(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AndroidTvButtonExtra(
+    extraButtons: List<AndroidTvButtonDBModel>?,
+    offsetX: Dp = 0.dp,
+    offsetY: Dp = 0.dp,
+    size: Dp = 72.dp,
+    modifier: Modifier = Modifier,
+    onClick: (AndroidTvButtonDBModel) -> Unit,
+    onDelete: ((AndroidTvButtonDBModel) -> Unit)? = null,
+) {
+    var dialogVisible by remember { mutableStateOf(false) }
+
+    if (extraButtons?.isNotEmpty() == true) {
+        val baseMod = if (offsetX != 0.dp || offsetY != 0.dp) {
+            modifier.offset(x = offsetX, y = offsetY)
+        } else {
+            modifier
+        }
+
+        Surface(
+            modifier = baseMod.size(size).padding(4.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+            onClick = { dialogVisible = true },
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                                Color.Transparent,
+                            ),
+                        ),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.MoreVert,
+                    contentDescription = "Extras",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        }
+    }
+
+    if (dialogVisible) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(
+            onDismissRequest = { dialogVisible = false },
+            sheetState = sheetState,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ) {
+            Column(
+                modifier =
+                Modifier.fillMaxWidth()
+                    .padding(bottom = 32.dp),
+            ) {
+                Text(
+                    text = "Available Buttons",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(120.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .heightIn(max = 400.dp),
+                ) {
+                    extraButtons?.let { buttons ->
+                        items(buttons.size) { index ->
+                            RemoteButtonOverflow(
+                                name = buttons[index].name,
+                                onClick = {
+                                    dialogVisible = false
+                                    onClick(buttons[index])
+                                },
+                                onDelete = onDelete?.let { del ->
+                                    { del(buttons[index]) }
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AndroidTvButtonDigits(
+    digitButtons: List<AndroidTvButtonDBModel>?,
+    offsetX: Dp = 0.dp,
+    offsetY: Dp = 0.dp,
+    size: Dp = 72.dp,
+    modifier: Modifier = Modifier,
+    onClick: (AndroidTvButtonDBModel) -> Unit,
+) {
+    var dialogVisible by remember { mutableStateOf(false) }
+
+    if (digitButtons?.isNotEmpty() == true) {
+        val baseMod = if (offsetX != 0.dp || offsetY != 0.dp) {
+            modifier.offset(x = offsetX, y = offsetY)
+        } else {
+            modifier
+        }
+
+        Surface(
+            modifier = baseMod.size(size).padding(4.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+            onClick = { dialogVisible = true },
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                                Color.Transparent,
+                            ),
+                        ),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Numbers,
+                    contentDescription = "Digits",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        }
+    }
+
+    if (dialogVisible) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(
+            onDismissRequest = { dialogVisible = false },
+            sheetState = sheetState,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Numbers",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier =
+                    Modifier.widthIn(max = 300.dp)
+                        .padding(bottom = 16.dp),
+                ) {
+                    digitButtons?.let { buttons ->
+                        items(buttons.size - 1) { index ->
+                            RemoteButtonSingle(
+                                name = buttons[index + 1].name,
+                                icon = buttons[index + 1].getIcon(),
+                                textIcon = buttons[index + 1].getTextIcon(),
+                                offsetX = 0f,
+                                offsetY = 0f,
+                                onClick = {
+                                    onClick(buttons[index + 1])
+                                },
+                            )
+                        }
+                        item { }
+                        item {
+                            RemoteButtonSingle(
+                                name = buttons[0].name,
+                                icon = buttons[0].getIcon(),
+                                textIcon = buttons[0].getTextIcon(),
+                                offsetX = 0f,
+                                offsetY = 0f,
+                                onClick = { onClick(buttons[0]) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RemoteVolumePill(
+    onVolumeUp: () -> Unit,
+    onVolumeDown: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .width(68.dp)
+            .height(136.dp)
+            .padding(4.dp),
+        shape = RoundedCornerShape(32.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 6.dp,
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // Volume Up (Top Half)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clickable(onClick = onVolumeUp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.VolumeUp,
+                    contentDescription = "Volume Up",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(0.6f),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+            )
+
+            // Volume Down (Bottom Half)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clickable(onClick = onVolumeDown),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.VolumeDown,
+                    contentDescription = "Volume Down",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RemoteDPadCluster(
+    onUp: () -> Unit,
+    onDown: () -> Unit,
+    onLeft: () -> Unit,
+    onRight: () -> Unit,
+    onCenter: () -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp = 220.dp,
+) {
+    Surface(
+        modifier = modifier
+            .size(size)
+            .padding(4.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 6.dp,
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.04f),
+                            Color.Transparent,
+                        ),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            // Up
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .height(size * 0.35f)
+                    .clip(RoundedCornerShape(topStart = size / 2, topEnd = size / 2))
+                    .clickable(onClick = onUp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.KeyboardArrowUp,
+                    contentDescription = "Up",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+
+            // Down
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(size * 0.35f)
+                    .clip(RoundedCornerShape(bottomStart = size / 2, bottomEnd = size / 2))
+                    .clickable(onClick = onDown),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.KeyboardArrowDown,
+                    contentDescription = "Down",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+
+            // Left
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .width(size * 0.35f)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(topStart = size / 2, bottomStart = size / 2))
+                    .clickable(onClick = onLeft),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
+                    contentDescription = "Left",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+
+            // Right
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .width(size * 0.35f)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(topEnd = size / 2, bottomEnd = size / 2))
+                    .clickable(onClick = onRight),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = "Right",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+
+            // Center OK Button
+            Surface(
+                modifier = Modifier.size(size * 0.38f),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                tonalElevation = 4.dp,
+                shadowElevation = 2.dp,
+                onClick = onCenter,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "OK",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RemoteSystemButtonsRow(
+    onBack: () -> Unit,
+    onHome: () -> Unit,
+    onMenu: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .height(56.dp)
+            .padding(horizontal = 4.dp),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 6.dp,
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Back
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+
+            VerticalDivider(
+                modifier = Modifier.fillMaxHeight(0.5f),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+            )
+
+            // Home
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable(onClick = onHome),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Home,
+                    contentDescription = "Home",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+
+            VerticalDivider(
+                modifier = Modifier.fillMaxHeight(0.5f),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+            )
+
+            // Menu
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable(onClick = onMenu),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Menu,
+                    contentDescription = "Menu",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
             }
         }
     }

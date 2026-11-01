@@ -8,7 +8,9 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.KeyEvent
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -32,21 +34,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.VolumeDown
-import androidx.compose.material.icons.automirrored.outlined.VolumeOff
-import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Keyboard
+import androidx.compose.material.icons.outlined.GridOn
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -64,18 +64,23 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -87,6 +92,8 @@ import com.monuk7735.nope.remote.androidtv.pairing.AndroidTvPairingManager
 import com.monuk7735.nope.remote.androidtv.proto.remote.Remotemessage
 import com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient
 import com.monuk7735.nope.remote.androidtv.ssl.AndroidTvSslManager
+import com.monuk7735.nope.remote.database.RemoteDatabase
+import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
 import kotlin.math.abs
 import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
@@ -180,7 +187,11 @@ fun AndroidTvRemoteScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalFoundationApi::class,
+    ExperimentalComposeUiApi::class,
+)
 @Composable
 private fun AndroidTvRemoteContent(
     host: String,
@@ -192,6 +203,13 @@ private fun AndroidTvRemoteContent(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val db = remember(context) { RemoteDatabase.getDatabase(context) }
+    val tvDeviceState by db.wifiRemoteDao().getWifiRemoteByHostFlow(host).collectAsState(
+        initial = null,
+    )
+    val baseTvDevice = tvDeviceState ?: remember(host, deviceName) {
+        SavedTvDeviceDBModel(name = deviceName, host = host)
+    }
 
     val prefs = remember {
         context.getSharedPreferences(
@@ -202,6 +220,33 @@ private fun AndroidTvRemoteContent(
 
     var dpadMode by remember {
         mutableStateOf(prefs.getInt("pref_android_tv_dpad_mode", 0))
+    }
+
+    var isEditingLayout by remember { mutableStateOf(false) }
+    var localTvDevice by remember { mutableStateOf<SavedTvDeviceDBModel?>(null) }
+    var gridHCount by remember { mutableIntStateOf(baseTvDevice.gridHCount) }
+    var gridVCount by remember { mutableIntStateOf(baseTvDevice.gridVCount) }
+    var showGridSettings by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
+    var showValidationErrorDialog by remember { mutableStateOf(false) }
+    var validationErrorMessage by remember { mutableStateOf("") }
+    var layoutLimits by remember { mutableStateOf(Rect(Offset.Zero, 0f)) }
+    var showTouchpad by remember(dpadMode) { mutableStateOf(dpadMode == 1) }
+
+    val hasChanges = isEditingLayout &&
+        (
+            localTvDevice != baseTvDevice ||
+                gridHCount != baseTvDevice.gridHCount ||
+                gridVCount != baseTvDevice.gridVCount
+            )
+
+    BackHandler(enabled = isEditingLayout) {
+        if (hasChanges) {
+            showDiscardDialog = true
+        } else {
+            isEditingLayout = false
+            localTvDevice = null
+        }
     }
 
     DisposableEffect(prefs) {
@@ -379,12 +424,71 @@ private fun AndroidTvRemoteContent(
         }
     }
 
+    if (showGridSettings) {
+        AndroidTvGridSettingsDialog(
+            hCount = gridHCount,
+            vCount = gridVCount,
+            onHCountChange = { gridHCount = it },
+            onVCountChange = { gridVCount = it },
+            onDismissRequest = { showGridSettings = false },
+        )
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard Changes?") },
+            text = { Text("Are you sure? You'll lose all your unsaved layout changes.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDiscardDialog = false
+                        isEditingLayout = false
+                        localTvDevice = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
+                    Text("Discard")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("Keep Editing")
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+        )
+    }
+
+    if (showValidationErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showValidationErrorDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.ErrorOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            },
+            title = { Text("Cannot Save Layout") },
+            text = { Text(validationErrorMessage) },
+            confirmButton = {
+                TextButton(onClick = { showValidationErrorDialog = false }) {
+                    Text("OK")
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = deviceName,
+                        text = if (isEditingLayout) "Edit Layout" else deviceName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -392,7 +496,20 @@ private fun AndroidTvRemoteContent(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = {
+                            if (isEditingLayout) {
+                                if (hasChanges) {
+                                    showDiscardDialog = true
+                                } else {
+                                    isEditingLayout = false
+                                    localTvDevice = null
+                                }
+                            } else {
+                                onBack()
+                            }
+                        },
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Back",
@@ -400,87 +517,219 @@ private fun AndroidTvRemoteContent(
                     }
                 },
                 actions = {
-                    if (isPaired) {
-                        when (connectionState) {
-                            is AndroidTvClient.ConnectionState.Connected -> {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color(0xFF4CAF50).copy(alpha = 0.15f),
-                                    contentColor = Color(0xFF2E7D32),
-                                    modifier = Modifier.padding(end = 12.dp),
+                    if (isEditingLayout) {
+                        IconButton(onClick = { showGridSettings = true }) {
+                            Icon(
+                                imageVector = Icons.Outlined.GridOn,
+                                contentDescription = "Grid Settings",
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                val currentDevice = localTvDevice ?: baseTvDevice
+                                val onScreen = currentDevice.getEffectiveOnScreenButtons()
+
+                                val outOfBoundsButtons = onScreen.filter {
+                                    it.gridCol == null ||
+                                        it.gridCol !in 0 until gridHCount ||
+                                        it.gridRow == null ||
+                                        it.gridRow !in 0 until gridVCount
+                                }
+
+                                val collidingSlots = onScreen.filter {
+                                    it.gridCol != null &&
+                                        it.gridRow != null &&
+                                        it.gridCol in 0 until gridHCount &&
+                                        it.gridRow in 0 until gridVCount
+                                }.groupBy { it.gridCol to it.gridRow }
+                                    .filter { it.value.size > 1 }
+
+                                val reservedCornerButtons = onScreen.filter {
+                                    it.gridCol != null &&
+                                        it.gridRow != null &&
+                                        (
+                                            (it.gridCol == 0 && it.gridRow == gridVCount - 1) ||
+                                                (
+                                                    it.gridCol == gridHCount - 1 &&
+                                                        it.gridRow == gridVCount - 1
+                                                    )
+                                            )
+                                }
+
+                                if (outOfBoundsButtons.isNotEmpty() ||
+                                    collidingSlots.isNotEmpty() ||
+                                    reservedCornerButtons.isNotEmpty()
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(
-                                            horizontal = 10.dp,
-                                            vertical = 6.dp,
-                                        ),
-                                        verticalAlignment = Alignment.CenterVertically,
+                                    val message = buildString {
+                                        if (outOfBoundsButtons.isNotEmpty()) {
+                                            val names = outOfBoundsButtons.take(3)
+                                                .joinToString { it.name }
+                                            val extra = if (outOfBoundsButtons.size > 3) {
+                                                " and ${outOfBoundsButtons.size - 3} more"
+                                            } else {
+                                                ""
+                                            }
+                                            val btnCount = outOfBoundsButtons.size
+                                            append(
+                                                "$btnCount button(s) ($names$extra) " +
+                                                    "are outside the current " +
+                                                    "${gridHCount}x$gridVCount grid. ",
+                                            )
+                                        }
+                                        if (collidingSlots.isNotEmpty()) {
+                                            append(
+                                                "Some buttons are overlapping " +
+                                                    "in the same grid cell. ",
+                                            )
+                                        }
+                                        if (reservedCornerButtons.isNotEmpty()) {
+                                            append(
+                                                "Bottom-left and bottom-right corners are reserved for Number and More Buttons. ",
+                                            )
+                                        }
+                                        append(
+                                            "Please place all buttons into " +
+                                                "valid, empty grid cells or remove " +
+                                                "them before saving.",
+                                        )
+                                    }
+                                    validationErrorMessage = message
+                                    showValidationErrorDialog = true
+                                } else {
+                                    val deviceToSave = currentDevice.copy(
+                                        onScreenButtons =
+                                        currentDevice.getEffectiveOnScreenButtons(),
+                                        offScreenButtons =
+                                        currentDevice.getEffectiveOffScreenButtons(),
+                                        gridHCount = gridHCount,
+                                        gridVCount = gridVCount,
+                                    )
+                                    scope.launch(Dispatchers.IO) {
+                                        db.wifiRemoteDao().insertOrUpdate(deviceToSave)
+                                    }
+                                    isEditingLayout = false
+                                    localTvDevice = null
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Save,
+                                contentDescription = "Save",
+                            )
+                        }
+                    } else {
+                        if (dpadMode == 1) {
+                            IconButton(onClick = { showTouchpad = !showTouchpad }) {
+                                Icon(
+                                    imageVector = if (showTouchpad) {
+                                        Icons.Outlined.GridOn
+                                    } else {
+                                        Icons.Outlined.TouchApp
+                                    },
+                                    contentDescription = "Switch Layout",
+                                )
+                            }
+                        }
+                        if (isPaired) {
+                            IconButton(
+                                onClick = {
+                                    localTvDevice = baseTvDevice.copy(
+                                        onScreenButtons =
+                                        baseTvDevice.getEffectiveOnScreenButtons(),
+                                        offScreenButtons =
+                                        baseTvDevice.getEffectiveOffScreenButtons(),
+                                    )
+                                    gridHCount = baseTvDevice.gridHCount
+                                    gridVCount = baseTvDevice.gridVCount
+                                    isEditingLayout = true
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Edit,
+                                    contentDescription = "Edit Layout",
+                                )
+                            }
+                            when (connectionState) {
+                                is AndroidTvClient.ConnectionState.Connected -> {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(0xFF4CAF50).copy(alpha = 0.15f),
+                                        contentColor = Color(0xFF2E7D32),
+                                        modifier = Modifier.padding(end = 12.dp),
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(8.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(0xFF4CAF50)),
+                                        Row(
+                                            modifier = Modifier.padding(
+                                                horizontal = 10.dp,
+                                                vertical = 6.dp,
+                                            ),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFF4CAF50)),
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Connected",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                            )
+                                        }
+                                    }
+                                }
+                                is AndroidTvClient.ConnectionState.Connecting -> {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.secondaryContainer.copy(
+                                            alpha = 0.5f,
+                                        ),
+                                        modifier = Modifier.padding(end = 12.dp),
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(
+                                                horizontal = 10.dp,
+                                                vertical = 6.dp,
+                                            ),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(12.dp),
+                                                strokeWidth = 2.dp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Connecting...",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Medium,
+                                            )
+                                        }
+                                    }
+                                }
+                                else -> {
+                                    OutlinedButton(
+                                        onClick = { client.connect(host) },
+                                        contentPadding = PaddingValues(
+                                            horizontal = 12.dp,
+                                            vertical = 4.dp,
+                                        ),
+                                        shape = CircleShape,
+                                        modifier = Modifier.padding(end = 12.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Refresh,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "Connected",
+                                            text = "Reconnect",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.SemiBold,
                                         )
                                     }
-                                }
-                            }
-                            is AndroidTvClient.ConnectionState.Connecting -> {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(
-                                        alpha = 0.5f,
-                                    ),
-                                    modifier = Modifier.padding(end = 12.dp),
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(
-                                            horizontal = 10.dp,
-                                            vertical = 6.dp,
-                                        ),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(12.dp),
-                                            strokeWidth = 2.dp,
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "Connecting...",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Medium,
-                                        )
-                                    }
-                                }
-                            }
-                            else -> {
-                                OutlinedButton(
-                                    onClick = { client.connect(host) },
-                                    contentPadding = PaddingValues(
-                                        horizontal = 12.dp,
-                                        vertical = 4.dp,
-                                    ),
-                                    shape = CircleShape,
-                                    modifier = Modifier.padding(end = 12.dp),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Refresh,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Reconnect",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                    )
                                 }
                             }
                         }
@@ -490,187 +739,107 @@ private fun AndroidTvRemoteContent(
         },
     ) { paddingValues ->
         if (isPaired) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween,
+                    .onGloballyPositioned { coordinates ->
+                        layoutLimits = coordinates.boundsInWindow()
+                    },
             ) {
-                // Top Row: Power, Mode Toggle, & Keyboard
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    AndroidTvButton(
-                        icon = Icons.Outlined.PowerSettingsNew,
-                        contentDescription = "Power",
-                        tint = MaterialTheme.colorScheme.error,
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(
-                            alpha = 0.4f,
-                        ),
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_POWER) },
-                    )
-
-                    AndroidTvButton(
-                        icon = Icons.Outlined.Keyboard,
-                        contentDescription = "Text Input",
-                        tint = MaterialTheme.colorScheme.primary,
-                        onClick = { showKeyboardDialog = true },
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // D-Pad Navigation: Touchpad with Gestures or Traditional Buttons
-                if (dpadMode == 1) {
-                    AndroidTvTouchpad(
-                        onSendKey = { sendKey(it) },
-                    )
-                } else {
-                    // D-Pad Navigation Cluster (Buttons)
-                    Box(
+                if (isEditingLayout) {
+                    localTvDevice?.let { dev ->
+                        AndroidTvEditableRemote(
+                            tvDevice = dev,
+                            onUpdate = { updated -> localTvDevice = updated },
+                            layoutLimits = layoutLimits,
+                            hCount = gridHCount,
+                            vCount = gridVCount,
+                        )
+                    }
+                } else if (showTouchpad && dpadMode == 1) {
+                    Column(
                         modifier = Modifier
-                            .size(230.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
-                        contentAlignment = Alignment.Center,
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        // Up
-                        IconButton(
-                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_UP) },
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = 10.dp)
-                                .size(56.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.KeyboardArrowUp,
-                                contentDescription = "Up",
-                                modifier = Modifier.size(36.dp),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
+                        // Top: Power in top center
+                        RemoteButtonSingle(
+                            name = "Power",
+                            icon = Icons.Outlined.PowerSettingsNew,
+                            offsetX = 0f,
+                            offsetY = 0f,
+                            contentColor = MaterialTheme.colorScheme.error,
+                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_POWER) },
+                        )
 
-                        // Down
-                        IconButton(
-                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_DOWN) },
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 10.dp)
-                                .size(56.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.KeyboardArrowDown,
-                                contentDescription = "Down",
-                                modifier = Modifier.size(36.dp),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
+                        // Gesture Touchpad
+                        AndroidTvTouchpad(
+                            onSendKey = { sendKey(it) },
+                        )
 
-                        // Left
-                        IconButton(
-                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_LEFT) },
-                            modifier = Modifier
-                                .align(Alignment.CenterStart)
-                                .padding(start = 10.dp)
-                                .size(56.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft,
-                                contentDescription = "Left",
-                                modifier = Modifier.size(36.dp),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
+                        // System Row: Joined Back | Home | Menu
+                        RemoteSystemButtonsRow(
+                            onBack = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_BACK) },
+                            onHome = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_HOME) },
+                            onMenu = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_MENU) },
+                            modifier = Modifier.fillMaxWidth(0.92f),
+                        )
 
-                        // Right
-                        IconButton(
-                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_RIGHT) },
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .padding(end = 10.dp)
-                                .size(56.dp),
+                        // Bottom Controls: Numbers on left, Joined Volume in center, Extras on right
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                                contentDescription = "Right",
-                                modifier = Modifier.size(36.dp),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-
-                        // Center OK
-                        Surface(
-                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_CENTER) },
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(76.dp),
-                            tonalElevation = 4.dp,
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "OK",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary,
+                            val digits = baseTvDevice.getAllDigits()
+                            if (digits.isNotEmpty()) {
+                                AndroidTvButtonDigits(
+                                    digitButtons = digits,
+                                    size = 64.dp,
+                                    onClick = { button ->
+                                        button.getRemoteKeyCode()?.let { sendKey(it) }
+                                    },
                                 )
+                            } else {
+                                Spacer(modifier = Modifier.size(64.dp))
+                            }
+
+                            RemoteVolumePill(
+                                onVolumeUp = {
+                                    sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_UP)
+                                },
+                                onVolumeDown = {
+                                    sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_DOWN)
+                                },
+                            )
+
+                            val offScreenNonDigits = baseTvDevice.getAllOffScreenNonDigits()
+                            if (offScreenNonDigits.isNotEmpty()) {
+                                AndroidTvButtonExtra(
+                                    extraButtons = offScreenNonDigits,
+                                    size = 64.dp,
+                                    onClick = { button ->
+                                        if (button.isKeyboardAction()) {
+                                            showKeyboardDialog = true
+                                        } else {
+                                            button.getRemoteKeyCode()?.let { sendKey(it) }
+                                        }
+                                    },
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.size(64.dp))
                             }
                         }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // System Buttons: Back, Home, Menu
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    AndroidTvButton(
-                        icon = Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Back",
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_BACK) },
-                    )
-
-                    AndroidTvButton(
-                        icon = Icons.Outlined.Home,
-                        contentDescription = "Home",
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_HOME) },
-                    )
-
-                    AndroidTvButton(
-                        icon = Icons.Outlined.Menu,
-                        contentDescription = "Menu",
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_MENU) },
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Volume Controls
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    AndroidTvButton(
-                        icon = Icons.AutoMirrored.Outlined.VolumeUp,
-                        contentDescription = "Volume Up",
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_UP) },
-                    )
-
-                    AndroidTvButton(
-                        icon = Icons.AutoMirrored.Outlined.VolumeOff,
-                        contentDescription = "Mute",
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_MUTE) },
-                    )
-
-                    AndroidTvButton(
-                        icon = Icons.AutoMirrored.Outlined.VolumeDown,
-                        contentDescription = "Volume Down",
-                        onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_DOWN) },
+                } else {
+                    AndroidTvUniversalRemote(
+                        tvDevice = baseTvDevice,
+                        layoutLimits = layoutLimits,
+                        onSendKey = { sendKey(it) },
+                        onOpenKeyboard = { showKeyboardDialog = true },
                     )
                 }
             }

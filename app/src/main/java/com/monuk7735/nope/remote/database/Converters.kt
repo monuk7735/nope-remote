@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.monuk7735.nope.remote.models.custom.macros.MacroTransmit
+import com.monuk7735.nope.remote.models.database.AndroidTvButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 import java.util.*
 
@@ -17,6 +18,14 @@ class Converters {
     @TypeConverter
     fun toListRemoteButtonDBModel(data: String): List<RemoteButtonDBModel> =
         gson.fromJson(data, object : TypeToken<List<RemoteButtonDBModel>>() {}.type)
+
+    @TypeConverter
+    fun fromListAndroidTvButtonDBModel(data: List<AndroidTvButtonDBModel>?): String? =
+        data?.let { gson.toJson(it) }
+
+    @TypeConverter
+    fun toListAndroidTvButtonDBModel(data: String?): List<AndroidTvButtonDBModel>? =
+        data?.let { gson.fromJson(it, object : TypeToken<List<AndroidTvButtonDBModel>>() {}.type) }
 
     @TypeConverter
     fun fromListOfMacroTransmit(data: List<MacroTransmit>): String = gson.toJson(data)

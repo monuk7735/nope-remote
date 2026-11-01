@@ -30,6 +30,9 @@ class FakeWifiRemoteDao : WifiRemoteDao {
     override suspend fun getWifiRemoteByHost(host: String): SavedTvDeviceDBModel? =
         remotes.firstOrNull { it.host == host }
 
+    override fun getWifiRemoteByHostFlow(host: String): Flow<SavedTvDeviceDBModel?> =
+        flowOf(remotes.firstOrNull { it.host == host })
+
     override suspend fun updateWifiRemote(tv: SavedTvDeviceDBModel) {
         val index = remotes.indexOfFirst { it.id == tv.id }
         if (index >= 0) {

@@ -32,6 +32,8 @@ data class RemoteDataDBModel(
     val preferCustomUi: Boolean = true,
     val model: String? = null,
     val isCustom: Boolean = false,
+    val gridHCount: Int = 5,
+    val gridVCount: Int = 10,
 ) : Parcelable {
     fun getIcon(): ImageVector {
         val t = type.uppercase()
