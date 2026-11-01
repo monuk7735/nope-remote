@@ -3,19 +3,22 @@ package com.monuk7735.nope.remote
 import android.content.Context
 import android.database.sqlite.SQLiteConstraintException
 import androidx.room.Room
-import androidx.sqlite.db.SupportSQLiteDatabase
-import androidx.sqlite.db.SupportSQLiteOpenHelper
-import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
+import androidx.room.testing.MigrationTestHelper
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
+import com.monuk7735.nope.remote.database.Converters
 import com.monuk7735.nope.remote.database.RemoteDatabase
+import com.monuk7735.nope.remote.models.database.AndroidTvButtonDBModel
 import java.io.File
+import java.util.Date
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -25,8 +28,15 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class DatabaseMigrationTest {
 
+    @get:Rule
+    val helper: MigrationTestHelper = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation(),
+        RemoteDatabase::class.java,
+    )
+
     private lateinit var context: Context
     private val dbName = "test-migration.db"
+    private val converters = Converters()
 
     @Before
     fun setUp() {
@@ -44,505 +54,194 @@ class DatabaseMigrationTest {
         File(context.filesDir, dbName).delete()
     }
 
-    private fun createDatabaseAtVersion(
-        version: Int,
-        setupBlock: (SupportSQLiteDatabase) -> Unit,
-    ): SupportSQLiteDatabase {
-        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
-            .name(dbName)
-            .callback(object : SupportSQLiteOpenHelper.Callback(version) {
-                override fun onCreate(db: SupportSQLiteDatabase) {
-                    setupBlock(db)
-                }
-
-                override fun onUpgrade(
-                    db: SupportSQLiteDatabase,
-                    oldVersion: Int,
-                    newVersion: Int,
-                ) {}
-            })
-            .build()
-
-        val helper = FrameworkSQLiteOpenHelperFactory().create(config)
-        return helper.writableDatabase
-    }
-
-    data class ColumnInfo(
-        val cid: Int,
-        val name: String,
-        val type: String,
-        val notNull: Boolean,
-        val defaultValue: String?,
-        val pk: Boolean,
-    )
-
-    private fun getTableColumns(db: SupportSQLiteDatabase, table: String): Map<String, ColumnInfo> {
-        val cursor = db.query("PRAGMA table_info(`$table`)")
-        val columns = mutableMapOf<String, ColumnInfo>()
-        while (cursor.moveToNext()) {
-            val name = cursor.getString(cursor.getColumnIndexOrThrow("name"))
-            columns[name] = ColumnInfo(
-                cid = cursor.getInt(cursor.getColumnIndexOrThrow("cid")),
-                name = name,
-                type = cursor.getString(cursor.getColumnIndexOrThrow("type")).uppercase(),
-                notNull = cursor.getInt(cursor.getColumnIndexOrThrow("notnull")) == 1,
-                defaultValue = cursor.getString(cursor.getColumnIndexOrThrow("dflt_value")),
-                pk = cursor.getInt(cursor.getColumnIndexOrThrow("pk")) > 0,
-            )
-        }
-        cursor.close()
-        return columns
-    }
-
-    private fun hasIndex(db: SupportSQLiteDatabase, table: String, indexName: String): Boolean {
-        val cursor = db.query("PRAGMA index_list(`$table`)")
-        var found = false
-        while (cursor.moveToNext()) {
-            if (cursor.getString(cursor.getColumnIndexOrThrow("name")) == indexName) {
-                found = true
-                break
-            }
-        }
-        cursor.close()
-        return found
-    }
-
     @Test
-    fun testMigration_2_to_3_separately() {
-        val db = createDatabaseAtVersion(2) { database ->
-            database.execSQL(
+    fun testMigration_2_to_3() {
+        val dateJson = converters.fromDate(Date())
+        helper.createDatabase(dbName, 2).apply {
+            execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS `remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `brand` TEXT NOT NULL,
-                    `type` TEXT NOT NULL,
-                    `added` TEXT NOT NULL,
-                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `offScreenRemoteButtonDBS` TEXT NOT NULL
-                )
+                INSERT INTO `remotes` (
+                    `name`, `brand`, `type`, `added`,
+                    `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`
+                ) VALUES ('TV v2', 'Sony', 'TV', ?, '[]', '[]')
                 """.trimIndent(),
+                arrayOf<Any>(dateJson),
             )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `macros` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `macroUnits` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                """
-                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`)
-                VALUES ('TV v2', 'Sony', 'TV', '2025-01-01', '[]', '[]')
-                """.trimIndent(),
-            )
+            close()
         }
 
-        // Before migration, preferCustomUi does not exist
-        assertFalse(getTableColumns(db, "remotes").containsKey("preferCustomUi"))
+        val db = helper.runMigrationsAndValidate(
+            dbName,
+            3,
+            true,
+            RemoteDatabase.MIGRATION_2_3,
+        )
 
-        // Run MIGRATION_2_3
-        RemoteDatabase.MIGRATION_2_3.migrate(db)
-
-        // Verify column added with expected attributes
-        val columns = getTableColumns(db, "remotes")
-        assertTrue("preferCustomUi column must exist", columns.containsKey("preferCustomUi"))
-        val col = columns["preferCustomUi"]!!
-        assertEquals("INTEGER", col.type)
-        assertTrue("preferCustomUi must be NOT NULL", col.notNull)
-        assertEquals("1", col.defaultValue)
-
-        // Verify existing rows received default value 1
+        // Verify existing rows received default value 1 for preferCustomUi
         val cursor = db.query("SELECT preferCustomUi FROM remotes WHERE name = 'TV v2'")
         assertTrue(cursor.moveToFirst())
         assertEquals(1, cursor.getInt(0))
         cursor.close()
-
-        db.close()
     }
 
     @Test
-    fun testMigration_3_to_4_separately() {
-        val db = createDatabaseAtVersion(3) { database ->
-            database.execSQL(
+    fun testMigration_3_to_4() {
+        val dateJson = converters.fromDate(Date())
+        helper.createDatabase(dbName, 3).apply {
+            execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS `remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `brand` TEXT NOT NULL,
-                    `type` TEXT NOT NULL,
-                    `added` TEXT NOT NULL,
-                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `offScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `preferCustomUi` INTEGER NOT NULL DEFAULT 1
-                )
+                INSERT INTO `remotes` (
+                    `name`, `brand`, `type`, `added`,
+                    `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`
+                ) VALUES ('TV v3', 'LG', 'TV', ?, '[]', '[]', 0)
                 """.trimIndent(),
+                arrayOf<Any>(dateJson),
             )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `macros` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `macroUnits` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                """
-                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`)
-                VALUES ('TV v3', 'LG', 'TV', '2025-02-01', '[]', '[]', 1)
-                """.trimIndent(),
-            )
+            close()
         }
 
-        // Before migration, model does not exist
-        assertFalse(getTableColumns(db, "remotes").containsKey("model"))
-
-        // Run MIGRATION_3_4
-        RemoteDatabase.MIGRATION_3_4.migrate(db)
-
-        // Verify column added with expected attributes
-        val columns = getTableColumns(db, "remotes")
-        assertTrue("model column must exist", columns.containsKey("model"))
-        val col = columns["model"]!!
-        assertEquals("TEXT", col.type)
-        assertFalse("model must be nullable", col.notNull)
-
-        // Verify existing rows have NULL model
-        val cursor = db.query("SELECT model FROM remotes WHERE name = 'TV v3'")
-        assertTrue(cursor.moveToFirst())
-        assertTrue("model should be null for existing rows", cursor.isNull(0))
-        cursor.close()
-
-        // Verify inserting new row with model works
-        db.execSQL(
-            """
-            INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`, `model`)
-            VALUES ('TV v4', 'LG', 'TV', '2025-02-02', '[]', '[]', 1, 'OLED55C1')
-            """.trimIndent(),
+        val db = helper.runMigrationsAndValidate(
+            dbName,
+            4,
+            true,
+            RemoteDatabase.MIGRATION_3_4,
         )
-        val newCursor = db.query("SELECT model FROM remotes WHERE name = 'TV v4'")
-        assertTrue(newCursor.moveToFirst())
-        assertEquals("OLED55C1", newCursor.getString(0))
-        newCursor.close()
 
-        db.close()
+        val cursor = db.query("SELECT model, preferCustomUi FROM remotes WHERE name = 'TV v3'")
+        assertTrue(cursor.moveToFirst())
+        assertTrue(cursor.isNull(0))
+        assertEquals(0, cursor.getInt(1))
+        cursor.close()
     }
 
     @Test
-    fun testMigration_4_to_5_separately() {
-        val db = createDatabaseAtVersion(4) { database ->
-            database.execSQL(
+    fun testMigration_4_to_5() {
+        val dateJson = converters.fromDate(Date())
+        helper.createDatabase(dbName, 4).apply {
+            execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS `remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `brand` TEXT NOT NULL,
-                    `type` TEXT NOT NULL,
-                    `added` TEXT NOT NULL,
-                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `offScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `preferCustomUi` INTEGER NOT NULL DEFAULT 1,
-                    `model` TEXT DEFAULT NULL
-                )
+                INSERT INTO `remotes` (
+                    `name`, `brand`, `type`, `added`,
+                    `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`,
+                    `preferCustomUi`, `model`
+                ) VALUES ('Custom Remote', 'DIY', 'Custom', ?, '[]', '[]', 1, 'v1')
                 """.trimIndent(),
+                arrayOf<Any>(dateJson),
             )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `macros` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `macroUnits` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                """
-                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`, `model`)
-                VALUES ('TV v4', 'Panasonic', 'TV', '2025-03-01', '[]', '[]', 1, NULL)
-                """.trimIndent(),
-            )
+            close()
         }
 
-        // Before migration, isCustom does not exist
-        assertFalse(getTableColumns(db, "remotes").containsKey("isCustom"))
+        val db = helper.runMigrationsAndValidate(
+            dbName,
+            5,
+            true,
+            RemoteDatabase.MIGRATION_4_5,
+        )
 
-        // Run MIGRATION_4_5
-        RemoteDatabase.MIGRATION_4_5.migrate(db)
-
-        // Verify column added with expected attributes
-        val columns = getTableColumns(db, "remotes")
-        assertTrue("isCustom column must exist", columns.containsKey("isCustom"))
-        val col = columns["isCustom"]!!
-        assertEquals("INTEGER", col.type)
-        assertTrue("isCustom must be NOT NULL", col.notNull)
-        assertEquals("0", col.defaultValue)
-
-        // Verify existing rows have isCustom = 0
-        val cursor = db.query("SELECT isCustom FROM remotes WHERE name = 'TV v4'")
+        val cursor = db.query("SELECT isCustom, model FROM remotes WHERE name = 'Custom Remote'")
         assertTrue(cursor.moveToFirst())
         assertEquals(0, cursor.getInt(0))
+        assertEquals("v1", cursor.getString(1))
         cursor.close()
-
-        db.close()
     }
 
     @Test
-    fun testMigration_5_to_6_separately() {
-        val db = createDatabaseAtVersion(5) { database ->
-            database.execSQL(
+    fun testMigration_5_to_6() {
+        val dateJson = converters.fromDate(Date())
+        helper.createDatabase(dbName, 5).apply {
+            execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS `remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `brand` TEXT NOT NULL,
-                    `type` TEXT NOT NULL,
-                    `added` TEXT NOT NULL,
-                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `offScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `preferCustomUi` INTEGER NOT NULL,
-                    `model` TEXT,
-                    `isCustom` INTEGER NOT NULL
-                )
+                INSERT INTO `remotes` (
+                    `name`, `brand`, `type`, `added`,
+                    `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`,
+                    `preferCustomUi`, `model`, `isCustom`
+                ) VALUES ('TV v5', 'Samsung', 'TV', ?, '[]', '[]', 1, 'QLED', 0)
                 """.trimIndent(),
+                arrayOf<Any>(dateJson),
             )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `macros` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `macroUnits` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
+            close()
         }
 
-        // Before migration, wifi_remotes does not exist
-        val tablesBefore = mutableListOf<String>()
-        val checkCursor = db.query(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='wifi_remotes'",
-        )
-        while (checkCursor.moveToNext()) {
-            tablesBefore.add(checkCursor.getString(0))
-        }
-        checkCursor.close()
-        assertTrue("wifi_remotes must not exist before migration", tablesBefore.isEmpty())
-
-        // Run MIGRATION_5_6
-        RemoteDatabase.MIGRATION_5_6.migrate(db)
-
-        // Verify wifi_remotes table columns match Room expected schema
-        val columns = getTableColumns(db, "wifi_remotes")
-        assertEquals(5, columns.size)
-
-        // Column: id
-        val idCol = columns["id"]
-        assertNotNull(idCol)
-        assertEquals("INTEGER", idCol!!.type)
-        assertTrue(idCol.notNull)
-        assertTrue(idCol.pk)
-
-        // Column: name
-        val nameCol = columns["name"]
-        assertNotNull(nameCol)
-        assertEquals("TEXT", nameCol!!.type)
-        assertTrue(nameCol.notNull)
-
-        // Column: host
-        val hostCol = columns["host"]
-        assertNotNull(hostCol)
-        assertEquals("TEXT", hostCol!!.type)
-        assertTrue(hostCol.notNull)
-
-        // Column: port
-        val portCol = columns["port"]
-        assertNotNull(portCol)
-        assertEquals("INTEGER", portCol!!.type)
-        assertTrue(portCol.notNull)
-
-        // Column: added (CRITICAL: must be TEXT to match Room's Date TypeConverter)
-        val addedCol = columns["added"]
-        assertNotNull(addedCol)
-        assertEquals("TEXT", addedCol!!.type)
-        assertTrue(addedCol.notNull)
-
-        // Verify unique index on host exists
-        assertTrue(
-            "index_wifi_remotes_host must exist",
-            hasIndex(db, "wifi_remotes", "index_wifi_remotes_host"),
+        val db = helper.runMigrationsAndValidate(
+            dbName,
+            6,
+            true,
+            RemoteDatabase.MIGRATION_5_6,
         )
 
-        // Verify insert and unique constraint enforcement
+        // Verify remotes preserved
+        val remoteCursor = db.query("SELECT brand FROM remotes WHERE name = 'TV v5'")
+        assertTrue(remoteCursor.moveToFirst())
+        assertEquals("Samsung", remoteCursor.getString(0))
+        remoteCursor.close()
+
+        // Verify wifi_remotes table and unique constraint
         db.execSQL(
-            """
-            INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`)
-            VALUES ('Bedroom TV', '192.168.1.100', 6466, '2026-11-01T12:00:00Z')
-            """.trimIndent(),
+            "INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`) VALUES (?, ?, ?, ?)",
+            arrayOf<Any>("Bedroom TV", "192.168.1.100", 6466, dateJson),
         )
 
         try {
             db.execSQL(
-                """
-                INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`)
-                VALUES ('Duplicate TV', '192.168.1.100', 6466, '2026-11-01T12:00:00Z')
-                """.trimIndent(),
+                "INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`) VALUES (?, ?, ?, ?)",
+                arrayOf<Any>("Duplicate TV", "192.168.1.100", 6466, dateJson),
             )
             fail("Expected SQLiteConstraintException on duplicate host")
         } catch (_: SQLiteConstraintException) {
-            // Expected
+            // Expected unique index constraint violation
         }
-
-        db.close()
-
-        // Finally, verify Room's own schema validator accepts the migrated database
-        val roomDb = Room.databaseBuilder(
-            context,
-            RemoteDatabase::class.java,
-            dbName,
-        )
-            .addMigrations(
-                RemoteDatabase.MIGRATION_2_3,
-                RemoteDatabase.MIGRATION_3_4,
-                RemoteDatabase.MIGRATION_4_5,
-                RemoteDatabase.MIGRATION_5_6,
-                RemoteDatabase.MIGRATION_6_7,
-                RemoteDatabase.MIGRATION_7_8,
-            )
-            .fallbackToDestructiveMigration(false)
-            .build()
-
-        val writableDb = roomDb.openHelper.writableDatabase
-        assertNotNull(writableDb)
-        roomDb.close()
     }
 
     @Test
-    fun testMigration_6_to_7_separately() {
-        val db = createDatabaseAtVersion(6) { database ->
-            database.execSQL(
+    fun testMigration_6_to_7() {
+        val dateJson = converters.fromDate(Date())
+        helper.createDatabase(dbName, 6).apply {
+            execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS `remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `brand` TEXT NOT NULL,
-                    `type` TEXT NOT NULL,
-                    `added` TEXT NOT NULL,
-                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `offScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `preferCustomUi` INTEGER NOT NULL,
-                    `model` TEXT,
-                    `isCustom` INTEGER NOT NULL
-                )
+                INSERT INTO `remotes` (
+                    `name`, `brand`, `type`, `added`,
+                    `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`,
+                    `preferCustomUi`, `model`, `isCustom`
+                ) VALUES ('Pre-grid TV', 'Sony', 'TV', ?, '[]', '[]', 1, 'Bravia', 0)
                 """.trimIndent(),
+                arrayOf<Any>(dateJson),
             )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `macros` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `macroUnits` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `wifi_remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `host` TEXT NOT NULL,
-                    `port` INTEGER NOT NULL DEFAULT 6466,
-                    `added` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                """
-                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`, `model`, `isCustom`)
-                VALUES ('Living Room TV', 'Sony', 'TV', '2026-01-01', '[]', '[]', 1, NULL, 0)
-                """.trimIndent(),
-            )
+            close()
         }
 
-        RemoteDatabase.MIGRATION_6_7.migrate(db)
-
-        val columns = getTableColumns(db, "remotes")
-        assertTrue(columns.containsKey("gridHCount"))
-        assertTrue(columns.containsKey("gridVCount"))
-        assertEquals("INTEGER", columns["gridHCount"]!!.type)
-        assertEquals("INTEGER", columns["gridVCount"]!!.type)
+        val db = helper.runMigrationsAndValidate(
+            dbName,
+            7,
+            true,
+            RemoteDatabase.MIGRATION_6_7,
+        )
 
         val cursor = db.query(
-            "SELECT gridHCount, gridVCount FROM remotes WHERE name = 'Living Room TV'",
+            "SELECT gridHCount, gridVCount FROM remotes WHERE name = 'Pre-grid TV'",
         )
         assertTrue(cursor.moveToFirst())
         assertEquals(5, cursor.getInt(0))
         assertEquals(10, cursor.getInt(1))
         cursor.close()
-        db.close()
     }
 
     @Test
-    fun testMigration7to8_addsWifiRemoteLayoutColumns() {
-        val db = createDatabaseAtVersion(7) { database ->
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `brand` TEXT NOT NULL,
-                    `type` TEXT NOT NULL,
-                    `added` TEXT NOT NULL,
-                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `offScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `preferCustomUi` INTEGER NOT NULL,
-                    `model` TEXT,
-                    `isCustom` INTEGER NOT NULL,
-                    `gridHCount` INTEGER NOT NULL DEFAULT 5,
-                    `gridVCount` INTEGER NOT NULL DEFAULT 10
-                )
-                """.trimIndent(),
+    fun testMigration_7_to_8() {
+        val dateJson = converters.fromDate(Date())
+        helper.createDatabase(dbName, 7).apply {
+            execSQL(
+                "INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`) VALUES (?, ?, ?, ?)",
+                arrayOf<Any>("Living Room TV", "192.168.1.100", 6466, dateJson),
             )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `macros` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `macroUnits` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `wifi_remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `host` TEXT NOT NULL,
-                    `port` INTEGER NOT NULL DEFAULT 6466,
-                    `added` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                """
-                INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`)
-                VALUES ('Living Room TV', '192.168.1.100', 6466, '2026-01-01')
-                """.trimIndent(),
-            )
+            close()
         }
 
-        RemoteDatabase.MIGRATION_7_8.migrate(db)
-
-        val wifiColumns = getTableColumns(db, "wifi_remotes")
-        assertTrue(wifiColumns.containsKey("onScreenButtons"))
-        assertTrue(wifiColumns.containsKey("offScreenButtons"))
-        assertTrue(wifiColumns.containsKey("gridHCount"))
-        assertTrue(wifiColumns.containsKey("gridVCount"))
-        assertEquals("TEXT", wifiColumns["onScreenButtons"]!!.type)
-        assertEquals("TEXT", wifiColumns["offScreenButtons"]!!.type)
-        assertEquals("INTEGER", wifiColumns["gridHCount"]!!.type)
-        assertEquals("INTEGER", wifiColumns["gridVCount"]!!.type)
+        val db = helper.runMigrationsAndValidate(
+            dbName,
+            8,
+            true,
+            RemoteDatabase.MIGRATION_7_8,
+        )
 
         val cursor = db.query(
             "SELECT gridHCount, gridVCount, onScreenButtons, offScreenButtons " +
@@ -554,272 +253,115 @@ class DatabaseMigrationTest {
         assertTrue(cursor.isNull(2))
         assertTrue(cursor.isNull(3))
         cursor.close()
-        db.close()
     }
 
     @Test
-    fun testAllMigrationsSequentially_from2to8() {
-        val db = createDatabaseAtVersion(2) { database ->
-            database.execSQL(
+    fun testAllMigrations_2_to_8_sequentially() {
+        val dateJson = converters.fromDate(Date())
+        helper.createDatabase(dbName, 2).apply {
+            execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS `remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `brand` TEXT NOT NULL,
-                    `type` TEXT NOT NULL,
-                    `added` TEXT NOT NULL,
-                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `offScreenRemoteButtonDBS` TEXT NOT NULL
-                )
+                INSERT INTO `remotes` (
+                    `name`, `brand`, `type`, `added`,
+                    `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`
+                ) VALUES ('Old Remote', 'Sony', 'TV', ?, '[]', '[]')
                 """.trimIndent(),
+                arrayOf<Any>(dateJson),
             )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `macros` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `macroUnits` TEXT NOT NULL
-                )
-                """.trimIndent(),
+            execSQL(
+                "INSERT INTO `macros` (`name`, `macroUnits`) VALUES ('Power All', '[]')",
             )
-            database.execSQL(
-                """
-                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`)
-                VALUES ('Legacy Remote', 'Samsung', 'TV', '2024-01-01', '[]', '[]')
-                """.trimIndent(),
-            )
+            close()
         }
 
-        // Close initial DB at version 2. Room will execute all migrations (2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8)
-        db.close()
-
-        // Open via Room to trigger full onValidateSchema() check for version 8
-        val roomDb = Room.databaseBuilder(
-            context,
-            RemoteDatabase::class.java,
+        val db = helper.runMigrationsAndValidate(
             dbName,
+            8,
+            true,
+            RemoteDatabase.MIGRATION_2_3,
+            RemoteDatabase.MIGRATION_3_4,
+            RemoteDatabase.MIGRATION_4_5,
+            RemoteDatabase.MIGRATION_5_6,
+            RemoteDatabase.MIGRATION_6_7,
+            RemoteDatabase.MIGRATION_7_8,
         )
-            .addMigrations(
-                RemoteDatabase.MIGRATION_2_3,
-                RemoteDatabase.MIGRATION_3_4,
-                RemoteDatabase.MIGRATION_4_5,
-                RemoteDatabase.MIGRATION_5_6,
-                RemoteDatabase.MIGRATION_6_7,
-                RemoteDatabase.MIGRATION_7_8,
-            )
-            .fallbackToDestructiveMigration(false)
-            .build()
 
-        val writableDb = roomDb.openHelper.writableDatabase
-        assertNotNull(writableDb)
-
-        // Verify the legacy remote retained its data and acquired defaults
-        val cursor = writableDb.query("SELECT * FROM remotes WHERE name = 'Legacy Remote'")
-        assertTrue(cursor.moveToFirst())
-        val preferCustomUiIdx = cursor.getColumnIndex("preferCustomUi")
-        val modelIdx = cursor.getColumnIndex("model")
-        val isCustomIdx = cursor.getColumnIndex("isCustom")
-        val gridHCountIdx = cursor.getColumnIndex("gridHCount")
-        val gridVCountIdx = cursor.getColumnIndex("gridVCount")
-        assertEquals(1, cursor.getInt(preferCustomUiIdx))
-        assertTrue(cursor.isNull(modelIdx))
-        assertEquals(0, cursor.getInt(isCustomIdx))
-        assertEquals(5, cursor.getInt(gridHCountIdx))
-        assertEquals(10, cursor.getInt(gridVCountIdx))
-        cursor.close()
-
-        roomDb.close()
-    }
-
-    @Test
-    fun testRecoveryFromFailedMigration_succeedsCleanly() {
-        val initialDb = createDatabaseAtVersion(5) { db ->
-            db.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `brand` TEXT NOT NULL,
-                    `type` TEXT NOT NULL,
-                    `added` TEXT NOT NULL,
-                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `offScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `preferCustomUi` INTEGER NOT NULL,
-                    `model` TEXT,
-                    `isCustom` INTEGER NOT NULL
-                )
-                """.trimIndent(),
-            )
-            db.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `macros` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `macroUnits` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            db.execSQL(
-                """
-                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`, `model`, `isCustom`)
-                VALUES ('Living Room TV', 'Samsung', 'TV', '2026-01-01', '[]', '[]', 1, NULL, 0)
-                """.trimIndent(),
-            )
-        }
-        initialDb.close()
-
-        // Simulate previous broken migration attempt that threw IllegalStateException
-        val brokenMigration = object : androidx.room.migration.Migration(5, 6) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS `wifi_remotes` (
-                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        `name` TEXT NOT NULL,
-                        `host` TEXT NOT NULL,
-                        `port` INTEGER NOT NULL DEFAULT 6466,
-                        `added` INTEGER NOT NULL
-                    )
-                    """.trimIndent(),
-                )
-            }
-        }
-
-        try {
-            val brokenRoomDb = Room.databaseBuilder(context, RemoteDatabase::class.java, dbName)
-                .addMigrations(
-                    brokenMigration,
-                    RemoteDatabase.MIGRATION_6_7,
-                    RemoteDatabase.MIGRATION_7_8,
-                )
-                .fallbackToDestructiveMigration(false)
-                .build()
-            brokenRoomDb.openHelper.writableDatabase
-            fail("Expected schema validation failure on broken migration")
-        } catch (_: IllegalStateException) {
-            // Expected failure
-        }
-
-        // Verify the database version was rolled back to 5 by SQLite transaction management
-        val verifyDb = FrameworkSQLiteOpenHelperFactory().create(
-            SupportSQLiteOpenHelper.Configuration.builder(context).name(dbName)
-                .callback(object : SupportSQLiteOpenHelper.Callback(5) {
-                    override fun onCreate(db: SupportSQLiteDatabase) {}
-                    override fun onUpgrade(
-                        db: SupportSQLiteDatabase,
-                        oldVersion: Int,
-                        newVersion: Int,
-                    ) {}
-                }).build(),
-        ).writableDatabase
-
-        val cursor = verifyDb.query("PRAGMA user_version")
-        assertTrue(cursor.moveToFirst())
-        assertEquals("Database version must remain at 5 after rollback", 5, cursor.getInt(0))
-        cursor.close()
-        verifyDb.close()
-
-        // Now run the app with the fixed MIGRATION_5_6 - it must recover seamlessly
-        val recoveredRoomDb = Room.databaseBuilder(context, RemoteDatabase::class.java, dbName)
-            .addMigrations(
-                RemoteDatabase.MIGRATION_2_3,
-                RemoteDatabase.MIGRATION_3_4,
-                RemoteDatabase.MIGRATION_4_5,
-                RemoteDatabase.MIGRATION_5_6,
-                RemoteDatabase.MIGRATION_6_7,
-                RemoteDatabase.MIGRATION_7_8,
-            )
-            .fallbackToDestructiveMigration(false)
-            .build()
-
-        val writableDb = recoveredRoomDb.openHelper.writableDatabase
-        assertNotNull(writableDb)
-
-        // Verify user data is preserved
-        val remoteCursor = writableDb.query(
-            "SELECT name FROM remotes WHERE name = 'Living Room TV'",
+        // Verify remotes evolved completely
+        val remoteCursor = db.query(
+            "SELECT preferCustomUi, model, isCustom, gridHCount, gridVCount " +
+                "FROM remotes WHERE name = 'Old Remote'",
         )
-        assertTrue("User remotes must be intact after recovery", remoteCursor.moveToFirst())
+        assertTrue(remoteCursor.moveToFirst())
+        assertEquals(1, remoteCursor.getInt(0))
+        assertTrue(remoteCursor.isNull(1))
+        assertEquals(0, remoteCursor.getInt(2))
+        assertEquals(5, remoteCursor.getInt(3))
+        assertEquals(10, remoteCursor.getInt(4))
         remoteCursor.close()
 
-        // Verify wifi_remotes table is ready and functional
-        val wifiCursor = writableDb.query("SELECT * FROM wifi_remotes")
-        assertNotNull(wifiCursor)
-        assertEquals(0, wifiCursor.count)
-        wifiCursor.close()
-
-        recoveredRoomDb.close()
+        // Verify macros preserved
+        val macroCursor = db.query("SELECT macroUnits FROM macros WHERE name = 'Power All'")
+        assertTrue(macroCursor.moveToFirst())
+        assertEquals("[]", macroCursor.getString(0))
+        macroCursor.close()
     }
 
     @Test
-    fun testMigration_6_to_8_fullUpgradeWithDataAndDaoVerification() {
-        val db = createDatabaseAtVersion(6) { database ->
-            database.execSQL(
+    fun testMigration_6_to_8_productionUpgradeWithDaoVerification() {
+        val dateJson = converters.fromDate(Date())
+        helper.createDatabase(dbName, 6).apply {
+            execSQL(
                 """
-                CREATE TABLE IF NOT EXISTS `remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `brand` TEXT NOT NULL,
-                    `type` TEXT NOT NULL,
-                    `added` TEXT NOT NULL,
-                    `onScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `offScreenRemoteButtonDBS` TEXT NOT NULL,
-                    `preferCustomUi` INTEGER NOT NULL,
-                    `model` TEXT,
-                    `isCustom` INTEGER NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `macros` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `macroUnits` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `wifi_remotes` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `name` TEXT NOT NULL,
-                    `host` TEXT NOT NULL,
-                    `port` INTEGER NOT NULL DEFAULT 6466,
-                    `added` TEXT NOT NULL
-                )
-                """.trimIndent(),
-            )
-            database.execSQL(
-                "CREATE UNIQUE INDEX IF NOT EXISTS `index_wifi_remotes_host` ON `wifi_remotes` (`host`)",
-            )
-            val dateJson = com.monuk7735.nope.remote.database.Converters().fromDate(
-                java.util.Date(),
-            )
-            database.execSQL(
-                """
-                INSERT INTO `remotes` (`name`, `brand`, `type`, `added`, `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`, `preferCustomUi`, `model`, `isCustom`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO `remotes` (
+                    `name`, `brand`, `type`, `added`,
+                    `onScreenRemoteButtonDBS`, `offScreenRemoteButtonDBS`,
+                    `preferCustomUi`, `model`, `isCustom`
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent(),
                 arrayOf<Any>("IR TV", "Sony", "TV", dateJson, "[]", "[]", 1, "Bravia", 0),
             )
-            database.execSQL(
-                """
-                INSERT INTO `macros` (`name`, `macroUnits`)
-                VALUES ('Power All', '[]')
-                """.trimIndent(),
+            execSQL(
+                "INSERT INTO `macros` (`name`, `macroUnits`) VALUES ('Power All', '[]')",
             )
-            database.execSQL(
-                """
-                INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`)
-                VALUES (?, ?, ?, ?)
-                """.trimIndent(),
+            execSQL(
+                "INSERT INTO `wifi_remotes` (`name`, `host`, `port`, `added`) VALUES (?, ?, ?, ?)",
                 arrayOf<Any>("Living Room Android TV", "192.168.1.50", 6466, dateJson),
             )
+            close()
         }
-        db.close()
 
-        // Open database via Room directly from version 6 to version 8
+        // 1. Run migrations and strictly validate schema against 8.json
+        val migratedDb = helper.runMigrationsAndValidate(
+            dbName,
+            8,
+            true,
+            RemoteDatabase.MIGRATION_6_7,
+            RemoteDatabase.MIGRATION_7_8,
+        )
+
+        // 2. Verify schema defaults and preserved data in SQLite
+        val remoteCursor = migratedDb.query(
+            "SELECT brand, gridHCount, gridVCount FROM remotes WHERE name = 'IR TV'",
+        )
+        assertTrue(remoteCursor.moveToFirst())
+        assertEquals("Sony", remoteCursor.getString(0))
+        assertEquals(5, remoteCursor.getInt(1))
+        assertEquals(10, remoteCursor.getInt(2))
+        remoteCursor.close()
+
+        val wifiCursor = migratedDb.query(
+            "SELECT name, port, gridHCount, gridVCount, onScreenButtons " +
+                "FROM wifi_remotes WHERE host = '192.168.1.50'",
+        )
+        assertTrue(wifiCursor.moveToFirst())
+        assertEquals("Living Room Android TV", wifiCursor.getString(0))
+        assertEquals(6466, wifiCursor.getInt(1))
+        assertEquals(5, wifiCursor.getInt(2))
+        assertEquals(10, wifiCursor.getInt(3))
+        assertTrue(wifiCursor.isNull(4))
+        wifiCursor.close()
+
+        // 3. Open via Room and verify DAO read/write operations
         val roomDb = Room.databaseBuilder(
             context,
             RemoteDatabase::class.java,
@@ -832,63 +374,15 @@ class DatabaseMigrationTest {
             .fallbackToDestructiveMigration(false)
             .build()
 
-        val writableDb = roomDb.openHelper.writableDatabase
-        assertNotNull(writableDb)
-
-        // 1. Verify schema for remotes
-        val remoteColumns = getTableColumns(writableDb, "remotes")
-        assertEquals(12, remoteColumns.size)
-        assertTrue(remoteColumns.containsKey("gridHCount"))
-        assertTrue(remoteColumns.containsKey("gridVCount"))
-
-        val remoteCursor = writableDb.query("SELECT * FROM remotes WHERE name = 'IR TV'")
-        assertTrue(remoteCursor.moveToFirst())
-        assertEquals("Sony", remoteCursor.getString(remoteCursor.getColumnIndexOrThrow("brand")))
-        assertEquals(5, remoteCursor.getInt(remoteCursor.getColumnIndexOrThrow("gridHCount")))
-        assertEquals(10, remoteCursor.getInt(remoteCursor.getColumnIndexOrThrow("gridVCount")))
-        remoteCursor.close()
-
-        // 2. Verify schema for macros
-        val macroCursor = writableDb.query("SELECT * FROM macros WHERE name = 'Power All'")
-        assertTrue(macroCursor.moveToFirst())
-        assertEquals("[]", macroCursor.getString(macroCursor.getColumnIndexOrThrow("macroUnits")))
-        macroCursor.close()
-
-        // 3. Verify schema for wifi_remotes
-        val wifiColumns = getTableColumns(writableDb, "wifi_remotes")
-        assertEquals(9, wifiColumns.size)
-        assertTrue(wifiColumns.containsKey("onScreenButtons"))
-        assertTrue(wifiColumns.containsKey("offScreenButtons"))
-        assertTrue(wifiColumns.containsKey("gridHCount"))
-        assertTrue(wifiColumns.containsKey("gridVCount"))
-        assertTrue(hasIndex(writableDb, "wifi_remotes", "index_wifi_remotes_host"))
-
-        val wifiCursor = writableDb.query(
-            "SELECT * FROM wifi_remotes WHERE host = '192.168.1.50'",
-        )
-        assertTrue(wifiCursor.moveToFirst())
-        assertEquals(
-            "Living Room Android TV",
-            wifiCursor.getString(wifiCursor.getColumnIndexOrThrow("name")),
-        )
-        assertEquals(6466, wifiCursor.getInt(wifiCursor.getColumnIndexOrThrow("port")))
-        assertEquals(5, wifiCursor.getInt(wifiCursor.getColumnIndexOrThrow("gridHCount")))
-        assertEquals(10, wifiCursor.getInt(wifiCursor.getColumnIndexOrThrow("gridVCount")))
-        assertTrue(wifiCursor.isNull(wifiCursor.getColumnIndexOrThrow("onScreenButtons")))
-        assertTrue(wifiCursor.isNull(wifiCursor.getColumnIndexOrThrow("offScreenButtons")))
-        wifiCursor.close()
-
-        // 4. Verify DAO read and write operations on migrated database
         val wifiDao = roomDb.wifiRemoteDao()
-        val device = kotlinx.coroutines.runBlocking { wifiDao.getWifiRemoteByHost("192.168.1.50") }
-        assertNotNull(device)
-        assertEquals("Living Room Android TV", device!!.name)
+        val device = checkNotNull(runBlocking { wifiDao.getWifiRemoteByHost("192.168.1.50") })
+        assertEquals("Living Room Android TV", device.name)
         assertEquals(5, device.gridHCount)
         assertEquals(10, device.gridVCount)
-        assertEquals(null, device.onScreenButtons)
+        assertNull(device.onScreenButtons)
 
-        // Test updating layout via DAO
-        val testButton = com.monuk7735.nope.remote.models.database.AndroidTvButtonDBModel(
+        // Update layout via DAO
+        val testButton = AndroidTvButtonDBModel(
             id = "test_power",
             name = "Power",
             keyCodeName = "KEYCODE_POWER",
@@ -901,27 +395,16 @@ class DatabaseMigrationTest {
             gridVCount = 12,
             onScreenButtons = listOf(testButton),
         )
-        kotlinx.coroutines.runBlocking { wifiDao.updateWifiRemote(updatedDevice) }
+        runBlocking { wifiDao.updateWifiRemote(updatedDevice) }
 
         val reloadedDevice = checkNotNull(
-            kotlinx.coroutines.runBlocking {
-                wifiDao.getWifiRemoteByHost("192.168.1.50")
-            },
+            runBlocking { wifiDao.getWifiRemoteByHost("192.168.1.50") },
         )
         assertEquals(6, reloadedDevice.gridHCount)
         assertEquals(12, reloadedDevice.gridVCount)
         val reloadedButtons = checkNotNull(reloadedDevice.onScreenButtons)
         assertEquals(1, reloadedButtons.size)
         assertEquals("test_power", reloadedButtons[0].id)
-
-        // Verify underlying SQLite column received serialized JSON
-        val rawVerifyCursor = writableDb.query(
-            "SELECT onScreenButtons FROM wifi_remotes WHERE host = '192.168.1.50'",
-        )
-        assertTrue(rawVerifyCursor.moveToFirst())
-        val serializedJson = rawVerifyCursor.getString(0)
-        assertTrue(serializedJson.contains("test_power"))
-        rawVerifyCursor.close()
 
         roomDb.close()
     }

@@ -44,6 +44,19 @@ android {
     kapt {
         correctErrorTypes = true
     }
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
+    sourceSets {
+        getByName("debug") {
+            assets.srcDirs(files("$projectDir/schemas"))
+        }
+    }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -85,6 +98,7 @@ dependencies {
     implementation("androidx.room:room-runtime:2.8.4")
     implementation("androidx.room:room-ktx:2.8.4")
     ksp("androidx.room:room-compiler:2.8.4")
+    testImplementation("androidx.room:room-testing:2.8.4")
 
     // Dependency Injection - Dagger Hilt
     implementation("com.google.dagger:hilt-android:2.57.2")
