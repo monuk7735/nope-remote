@@ -48,7 +48,6 @@ import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -56,7 +55,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -66,7 +64,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -100,8 +97,10 @@ import com.monuk7735.nope.remote.androidtv.discovery.AndroidTvDiscoveryManager
 import com.monuk7735.nope.remote.androidtv.discovery.DiscoveredTvDevice
 import com.monuk7735.nope.remote.androidtv.ssl.AndroidTvSslManager
 import com.monuk7735.nope.remote.composables.AppBar
+import com.monuk7735.nope.remote.composables.DeleteConfirmationBottomSheet
 import com.monuk7735.nope.remote.composables.EmptyState
 import com.monuk7735.nope.remote.composables.MacroSequenceCard
+import com.monuk7735.nope.remote.composables.RemoteOptionsBottomSheet
 import com.monuk7735.nope.remote.composables.RemoteTile
 import com.monuk7735.nope.remote.composables.ReorderHomeSectionsDialog
 import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
@@ -109,6 +108,7 @@ import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
 import com.monuk7735.nope.remote.utils.HomeSection
+import com.monuk7735.nope.remote.utils.ShortcutHelper
 import com.monuk7735.nope.remote.utils.VibrationHelper
 import com.monuk7735.nope.remote.viewmodels.HomeActivityViewModel
 import kotlinx.coroutines.Dispatchers
@@ -207,10 +207,12 @@ class HomeActivity : ComponentActivity() {
 
         var showManualIpDialog by remember { mutableStateOf(false) }
         var showReorderSectionsDialog by remember { mutableStateOf(false) }
-        var selectedRemoteForDeletion by remember { mutableStateOf<RemoteDataDBModel?>(null) }
-        var selectedWifiRemoteForDeletion by remember {
+        var selectedRemoteForOptions by remember { mutableStateOf<RemoteDataDBModel?>(null) }
+        var selectedWifiRemoteForOptions by remember {
             mutableStateOf<SavedTvDeviceDBModel?>(null)
         }
+        var remoteToDelete by remember { mutableStateOf<RemoteDataDBModel?>(null) }
+        var wifiRemoteToDelete by remember { mutableStateOf<SavedTvDeviceDBModel?>(null) }
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -431,8 +433,8 @@ class HomeActivity : ComponentActivity() {
                                                         },
                                                     )
                                                 },
-                                                onDeleteSavedTv = { tv ->
-                                                    selectedWifiRemoteForDeletion = tv
+                                                onTvLongClick = { tv ->
+                                                    selectedWifiRemoteForOptions = tv
                                                 },
                                             )
                                         }
@@ -492,13 +494,14 @@ class HomeActivity : ComponentActivity() {
                                                                 context,
                                                                 RemoteControlActivity::class.java,
                                                             ).apply {
+                                                                putExtra("remote_id", remote.id)
                                                                 putExtra("remote", remote)
                                                             }
                                                             startActivity(intent)
                                                         }
                                                     },
                                                     onLongClick = {
-                                                        selectedRemoteForDeletion = remote
+                                                        selectedRemoteForOptions = remote
                                                     },
                                                     modifier = Modifier.height(140.dp),
                                                 )
@@ -586,106 +589,94 @@ class HomeActivity : ComponentActivity() {
                 )
             }
 
-            if (selectedRemoteForDeletion != null) {
-                ModalBottomSheet(
-                    onDismissRequest = { selectedRemoteForDeletion = null },
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    sheetState = rememberModalBottomSheetState(),
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp)
-                            .padding(bottom = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = "Delete Remote?",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Are you sure you want to delete " +
-                                "\"${selectedRemoteForDeletion?.name}\"? " +
-                                "This action cannot be undone.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(
-                            onClick = {
-                                selectedRemoteForDeletion?.let { remote ->
-                                    viewModel.deleteRemote(remote)
-                                }
-                                selectedRemoteForDeletion = null
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError,
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Delete") }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedButton(
-                            onClick = { selectedRemoteForDeletion = null },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Cancel") }
-                    }
-                }
+            selectedRemoteForOptions?.let { remote ->
+                RemoteOptionsBottomSheet(
+                    name = remote.name,
+                    subtitle = "${remote.brand} ${remote.type}",
+                    icon = remote.getIcon(),
+                    onDismissRequest = { selectedRemoteForOptions = null },
+                    onAddToHomeScreen = {
+                        selectedRemoteForOptions = null
+                        val success = ShortcutHelper.pinRemoteShortcut(context, remote)
+                        if (success) {
+                            Toast.makeText(
+                                context,
+                                "Shortcut added to Home screen",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Launcher does not support pinning shortcuts",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    },
+                    onDelete = {
+                        selectedRemoteForOptions = null
+                        remoteToDelete = remote
+                    },
+                )
             }
 
-            if (selectedWifiRemoteForDeletion != null) {
-                ModalBottomSheet(
-                    onDismissRequest = { selectedWifiRemoteForDeletion = null },
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    sheetState = rememberModalBottomSheetState(),
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp)
-                            .padding(bottom = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = "Remove Saved TV?",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Are you sure you want to remove " +
-                                "\"${selectedWifiRemoteForDeletion?.name}\" " +
-                                "(${selectedWifiRemoteForDeletion?.host}) from saved TVs?",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(
-                            onClick = {
-                                selectedWifiRemoteForDeletion?.let { tv ->
-                                    viewModel.deleteWifiRemote(tv)
-                                }
-                                selectedWifiRemoteForDeletion = null
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError,
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Remove") }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedButton(
-                            onClick = { selectedWifiRemoteForDeletion = null },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Cancel") }
-                    }
-                }
+            remoteToDelete?.let { remote ->
+                DeleteConfirmationBottomSheet(
+                    title = "Delete Remote?",
+                    message = "Are you sure you want to delete \"${remote.name}\"? " +
+                        "This action cannot be undone.",
+                    confirmButtonText = "Delete",
+                    onDismissRequest = { remoteToDelete = null },
+                    onConfirm = {
+                        viewModel.deleteRemote(remote)
+                        ShortcutHelper.disableRemoteShortcut(context, remote.id)
+                        remoteToDelete = null
+                    },
+                )
+            }
+
+            selectedWifiRemoteForOptions?.let { tv ->
+                RemoteOptionsBottomSheet(
+                    name = tv.name,
+                    subtitle = tv.host,
+                    icon = Icons.Outlined.Tv,
+                    onDismissRequest = { selectedWifiRemoteForOptions = null },
+                    onAddToHomeScreen = {
+                        selectedWifiRemoteForOptions = null
+                        val success = ShortcutHelper.pinWifiRemoteShortcut(context, tv)
+                        if (success) {
+                            Toast.makeText(
+                                context,
+                                "Shortcut added to Home screen",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Launcher does not support pinning shortcuts",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    },
+                    onDelete = {
+                        selectedWifiRemoteForOptions = null
+                        wifiRemoteToDelete = tv
+                    },
+                )
+            }
+
+            wifiRemoteToDelete?.let { tv ->
+                DeleteConfirmationBottomSheet(
+                    title = "Remove Saved TV?",
+                    message = "Are you sure you want to remove \"${tv.name}\" " +
+                        "(${tv.host}) from saved TVs?",
+                    confirmButtonText = "Remove",
+                    onDismissRequest = { wifiRemoteToDelete = null },
+                    onConfirm = {
+                        viewModel.deleteWifiRemote(tv)
+                        ShortcutHelper.disableWifiRemoteShortcut(context, tv.id)
+                        wifiRemoteToDelete = null
+                    },
+                )
             }
 
             if (showReorderSectionsDialog) {
@@ -781,7 +772,7 @@ private fun AndroidTvSection(
     onAddManual: () -> Unit,
     openingTvHost: String? = null,
     onTvClick: (host: String, name: String) -> Unit,
-    onDeleteSavedTv: (SavedTvDeviceDBModel) -> Unit,
+    onTvLongClick: (SavedTvDeviceDBModel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isRescanTriggered by remember { mutableStateOf(false) }
@@ -870,7 +861,7 @@ private fun AndroidTvSection(
                         isOnline = isOnline,
                         isOpening = tv.host == openingTvHost,
                         onClick = { onTvClick(tv.host, tv.name) },
-                        onLongClick = { onDeleteSavedTv(tv) },
+                        onLongClick = { onTvLongClick(tv) },
                     )
                 }
                 items(unSavedDiscoveredTvs.size) { i ->

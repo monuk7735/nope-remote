@@ -1,18 +1,24 @@
 package com.monuk7735.nope.remote
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
@@ -25,11 +31,14 @@ import com.monuk7735.nope.remote.models.database.RemoteDataDBModel
 import com.monuk7735.nope.remote.navigation.RemoteControlNavigation
 import com.monuk7735.nope.remote.ui.theme.NopeRemoteTheme
 import com.monuk7735.nope.remote.ui.theme.rememberThemeSettings
+import com.monuk7735.nope.remote.utils.ShortcutHelper
 import com.monuk7735.nope.remote.viewmodels.RemoteControlViewModel
 
-@ExperimentalFoundationApi
-@ExperimentalMaterial3Api
-@ExperimentalComposeUiApi
+@OptIn(
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3Api::class,
+    ExperimentalComposeUiApi::class,
+)
 class RemoteControlActivity : ComponentActivity() {
 
     lateinit var viewModel: RemoteControlViewModel
@@ -51,23 +60,50 @@ class RemoteControlActivity : ComponentActivity() {
 
     @Composable
     fun Root() {
-        val (remoteData, setRemoteData) =
-            remember {
-                mutableStateOf(
-                    IntentCompat.getParcelableExtra(
-                        intent,
-                        "remote",
-                        RemoteDataDBModel::class.java,
-                    ),
-                )
-            }
+        val initialRemote = remember {
+            IntentCompat.getParcelableExtra(
+                intent,
+                "remote",
+                RemoteDataDBModel::class.java,
+            )
+        }
+        val remoteId = remember {
+            val fromParcelable = initialRemote?.id ?: -1
+            if (fromParcelable != -1) fromParcelable else intent.getIntExtra("remote_id", -1)
+        }
 
-        if (remoteData == null) {
+        if (remoteId == -1) {
             finish()
             return
         }
 
-        val liveRemote = viewModel.getLiveRemote(remoteData.id).observeAsState(initial = remoteData)
+        val liveRemote = viewModel.getLiveRemote(remoteId).observeAsState(initial = initialRemote)
+        val currentRemote = liveRemote.value
+
+        LaunchedEffect(remoteId) {
+            if (initialRemote == null) {
+                val remote = viewModel.getRemote(remoteId)
+                if (remote == null) {
+                    Toast.makeText(
+                        this@RemoteControlActivity,
+                        "Remote not found",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    finish()
+                }
+            }
+        }
+
+        if (currentRemote == null) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+            return
+        }
+
         val navController = rememberNavController()
 
         NavHost(
@@ -90,7 +126,7 @@ class RemoteControlActivity : ComponentActivity() {
                 },
             ) {
                 RemoteControl(
-                    remoteDataModel = liveRemote.value,
+                    remoteDataModel = currentRemote,
                     onEditRemoteSettings = {
                         navController.navigate(
                             RemoteControlNavigation.RemoteControlSettings.route,
@@ -121,7 +157,7 @@ class RemoteControlActivity : ComponentActivity() {
                 },
             ) {
                 RemoteControlSettings(
-                    remoteDataModel = liveRemote.value,
+                    remoteDataModel = currentRemote,
                     onSave = {
                         viewModel.updateRemote(it)
                         navController.popBackStack()
@@ -133,6 +169,7 @@ class RemoteControlActivity : ComponentActivity() {
                     },
                     onDelete = {
                         viewModel.deleteRemote(it)
+                        ShortcutHelper.disableRemoteShortcut(this@RemoteControlActivity, it.id)
                         finish()
                     },
                     onBack = { navController.popBackStack() },
@@ -155,7 +192,7 @@ class RemoteControlActivity : ComponentActivity() {
                 },
             ) {
                 RemoteControlEditLayout(
-                    remoteDataModel = liveRemote.value,
+                    remoteDataModel = currentRemote,
                     onSaveLayout = {
                         viewModel.updateRemote(it)
                         navController.popBackStack()

@@ -24,6 +24,9 @@ interface RemoteDao {
     @Query("SELECT * FROM remotes WHERE id = :id")
     fun getLiveRemote(id: Int): LiveData<RemoteDataDBModel>
 
+    @Query("SELECT * FROM remotes WHERE id = :id")
+    suspend fun getRemote(id: Int): RemoteDataDBModel?
+
     @Update
     suspend fun updateRemote(remoteDB: RemoteDataDBModel)
 

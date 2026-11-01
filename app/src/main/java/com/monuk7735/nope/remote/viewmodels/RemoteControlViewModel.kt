@@ -20,6 +20,8 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
 
     fun getLiveRemote(id: Int): LiveData<RemoteDataDBModel> = remoteDataRepository.getLiveRemote(id)
 
+    suspend fun getRemote(id: Int): RemoteDataDBModel? = remoteDataRepository.getRemote(id)
+
     fun updateRemote(remoteDataDBModel: RemoteDataDBModel) {
         viewModelScope.launch(Dispatchers.IO) {
             remoteDataRepository.updateRemote(remoteDataDBModel)
