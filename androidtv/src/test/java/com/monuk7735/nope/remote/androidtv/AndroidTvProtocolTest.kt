@@ -154,4 +154,39 @@ class AndroidTvProtocolTest {
         assertEquals(6, fullPin.length)
         assertEquals(expectedFirstByte, fullPin.substring(0, 2).toInt(16))
     }
+
+    @Test
+    fun testSupportedFeaturesIncludesPing() {
+        assertEquals(1, com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.FEATURE_PING)
+        assertEquals(
+            com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.FEATURE_PING,
+            com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.SUPPORTED_FEATURES and
+                com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.FEATURE_PING,
+        )
+        assertEquals(
+            623,
+            com.monuk7735.nope.remote.androidtv.protocol.AndroidTvClient.SUPPORTED_FEATURES,
+        )
+    }
+
+    @Test
+    fun testPingRequestAndResponseSerialization() {
+        val pingReq = Remotemessage.RemoteMessage.newBuilder()
+            .setRemotePingRequest(
+                Remotemessage.RemotePingRequest.newBuilder().setVal1(42),
+            )
+            .build()
+        val parsedReq = Remotemessage.RemoteMessage.parseFrom(pingReq.toByteArray())
+        assertTrue(parsedReq.hasRemotePingRequest())
+        assertEquals(42, parsedReq.remotePingRequest.val1)
+
+        val pingResp = Remotemessage.RemoteMessage.newBuilder()
+            .setRemotePingResponse(
+                Remotemessage.RemotePingResponse.newBuilder().setVal1(42),
+            )
+            .build()
+        val parsedResp = Remotemessage.RemoteMessage.parseFrom(pingResp.toByteArray())
+        assertTrue(parsedResp.hasRemotePingResponse())
+        assertEquals(42, parsedResp.remotePingResponse.val1)
+    }
 }
