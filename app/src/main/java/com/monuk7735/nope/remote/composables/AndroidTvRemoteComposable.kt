@@ -34,15 +34,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.VolumeDown
-import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.GridOn
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Save
@@ -747,78 +743,77 @@ private fun AndroidTvRemoteContent(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        // Top Row: Power in top center
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            AndroidTvButton(
-                                icon = Icons.Outlined.PowerSettingsNew,
-                                contentDescription = "Power",
-                                tint = MaterialTheme.colorScheme.error,
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_POWER) },
-                            )
-                        }
+                        // Top: Power in top center
+                        RemoteButtonSingle(
+                            name = "Power",
+                            icon = Icons.Outlined.PowerSettingsNew,
+                            offsetX = 0f,
+                            offsetY = 0f,
+                            contentColor = MaterialTheme.colorScheme.error,
+                            onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_POWER) },
+                        )
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
+                        // Gesture Touchpad
                         AndroidTvTouchpad(
                             onSendKey = { sendKey(it) },
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        // System Row: Joined Back | Home | Menu
+                        RemoteSystemButtonsRow(
+                            onBack = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_BACK) },
+                            onHome = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_HOME) },
+                            onMenu = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_MENU) },
+                            modifier = Modifier.fillMaxWidth(0.92f),
+                        )
 
-                        // System Buttons: Back, Home, Menu
+                        // Bottom Controls: Numbers on left, Joined Volume in center, Extras on right
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            AndroidTvButton(
-                                icon = Icons.AutoMirrored.Outlined.ArrowBack,
-                                contentDescription = "Back",
-                                onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_BACK) },
-                            )
+                            val digits = baseTvDevice.getAllDigits()
+                            if (digits.isNotEmpty()) {
+                                AndroidTvButtonDigits(
+                                    digitButtons = digits,
+                                    size = 64.dp,
+                                    onClick = { button ->
+                                        button.getRemoteKeyCode()?.let { sendKey(it) }
+                                    },
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.size(64.dp))
+                            }
 
-                            AndroidTvButton(
-                                icon = Icons.Outlined.Home,
-                                contentDescription = "Home",
-                                onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_HOME) },
-                            )
-
-                            AndroidTvButton(
-                                icon = Icons.Outlined.Menu,
-                                contentDescription = "Menu",
-                                onClick = { sendKey(Remotemessage.RemoteKeyCode.KEYCODE_MENU) },
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Volume Controls: Vol + and Vol - in vertical layout in center
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            AndroidTvButton(
-                                icon = Icons.AutoMirrored.Outlined.VolumeUp,
-                                contentDescription = "Volume Up",
-                                onClick = {
+                            RemoteVolumePill(
+                                onVolumeUp = {
                                     sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_UP)
                                 },
-                            )
-
-                            AndroidTvButton(
-                                icon = Icons.AutoMirrored.Outlined.VolumeDown,
-                                contentDescription = "Volume Down",
-                                onClick = {
+                                onVolumeDown = {
                                     sendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_DOWN)
                                 },
                             )
+
+                            val offScreenNonDigits = baseTvDevice.getAllOffScreenNonDigits()
+                            if (offScreenNonDigits.isNotEmpty()) {
+                                AndroidTvButtonExtra(
+                                    extraButtons = offScreenNonDigits,
+                                    size = 64.dp,
+                                    onClick = { button ->
+                                        if (button.isKeyboardAction()) {
+                                            showKeyboardDialog = true
+                                        } else {
+                                            button.getRemoteKeyCode()?.let { sendKey(it) }
+                                        }
+                                    },
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.size(64.dp))
+                            }
                         }
                     }
                 } else {

@@ -5,9 +5,15 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -387,102 +393,207 @@ fun AndroidTvEditableRemote(
 }
 
 @Composable
+fun AndroidTvDefaultRemote(
+    tvDevice: SavedTvDeviceDBModel,
+    onSendKey: (Remotemessage.RemoteKeyCode) -> Unit,
+    onOpenKeyboard: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val offScreenNonDigits = tvDevice.getAllOffScreenNonDigits()
+    val digits = tvDevice.getAllDigits()
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+        // 1. Top Section: Power in top center
+        RemoteButtonSingle(
+            name = "Power",
+            icon = Icons.Outlined.PowerSettingsNew,
+            offsetX = 0f,
+            offsetY = 0f,
+            contentColor = MaterialTheme.colorScheme.error,
+            onClick = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_POWER) },
+        )
+
+        // 2. Navigation Section: Joined Modern D-Pad
+        RemoteDPadCluster(
+            onUp = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_UP) },
+            onDown = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_DOWN) },
+            onLeft = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_LEFT) },
+            onRight = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_RIGHT) },
+            onCenter = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_DPAD_CENTER) },
+        )
+
+        // 3. System Section: Joined System Row (Back | Home | Menu)
+        RemoteSystemButtonsRow(
+            onBack = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_BACK) },
+            onHome = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_HOME) },
+            onMenu = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_MENU) },
+            modifier = Modifier.fillMaxWidth(0.92f),
+        )
+
+        // 4. Bottom Controls: Numbers on left, Joined Volume in center, Extras on right
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (digits.isNotEmpty()) {
+                AndroidTvButtonDigits(
+                    digitButtons = digits,
+                    size = 64.dp,
+                    onClick = { button ->
+                        button.getRemoteKeyCode()?.let { onSendKey(it) }
+                    },
+                )
+            } else {
+                Spacer(modifier = Modifier.size(64.dp))
+            }
+
+            RemoteVolumePill(
+                onVolumeUp = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_UP) },
+                onVolumeDown = { onSendKey(Remotemessage.RemoteKeyCode.KEYCODE_VOLUME_DOWN) },
+            )
+
+            if (offScreenNonDigits.isNotEmpty()) {
+                AndroidTvButtonExtra(
+                    extraButtons = offScreenNonDigits,
+                    size = 64.dp,
+                    onClick = { button ->
+                        if (button.isKeyboardAction()) {
+                            onOpenKeyboard()
+                        } else {
+                            button.getRemoteKeyCode()?.let { onSendKey(it) }
+                        }
+                    },
+                )
+            } else {
+                Spacer(modifier = Modifier.size(64.dp))
+            }
+        }
+    }
+}
+
+@Composable
 fun AndroidTvUniversalRemote(
     tvDevice: SavedTvDeviceDBModel,
     layoutLimits: Rect,
     onSendKey: (Remotemessage.RemoteKeyCode) -> Unit,
     onOpenKeyboard: () -> Unit,
 ) {
-    val hCount = tvDevice.gridHCount
-    val vCount = tvDevice.gridVCount
-    val gridSizeXPx = if (layoutLimits.width > 0) layoutLimits.width / hCount.toFloat() else 0f
-    val gridSizeYPx = if (layoutLimits.height > 0) layoutLimits.height / vCount.toFloat() else 0f
-    val buttonSize = LocalDensity.current.run { 72.dp.toPx() }
+    if (tvDevice.onScreenButtons == null) {
+        AndroidTvDefaultRemote(
+            tvDevice = tvDevice,
+            onSendKey = onSendKey,
+            onOpenKeyboard = onOpenKeyboard,
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        ) {
+            val hCount = tvDevice.gridHCount
+            val vCount = tvDevice.gridVCount
+            val padPx = LocalDensity.current.run { 32.dp.toPx() }
+            val effectiveWidth = if (layoutLimits.width >
+                padPx
+            ) {
+                layoutLimits.width - padPx
+            } else {
+                layoutLimits.width
+            }
+            val effectiveHeight = if (layoutLimits.height >
+                padPx
+            ) {
+                layoutLimits.height - padPx
+            } else {
+                layoutLimits.height
+            }
+            val gridSizeXPx = if (effectiveWidth > 0) effectiveWidth / hCount.toFloat() else 0f
+            val gridSizeYPx = if (effectiveHeight > 0) effectiveHeight / vCount.toFloat() else 0f
+            val buttonSize = LocalDensity.current.run { 72.dp.toPx() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        tvDevice.getEffectiveOnScreenButtons().forEach { button ->
-            val col = button.gridCol ?: if (gridSizeXPx > 0) {
-                val cx = button.offsetX + buttonSize / 2f
-                (cx / gridSizeXPx).toInt().coerceIn(0, hCount - 1)
-            } else {
-                0
-            }
-            val row = button.gridRow ?: if (gridSizeYPx > 0) {
-                val cy = button.offsetY + buttonSize / 2f
-                (cy / gridSizeYPx).toInt().coerceIn(0, vCount - 1)
-            } else {
-                0
+            tvDevice.getEffectiveOnScreenButtons().forEach { button ->
+                val col = button.gridCol ?: if (gridSizeXPx > 0) {
+                    val cx = button.offsetX + buttonSize / 2f
+                    (cx / gridSizeXPx).toInt().coerceIn(0, hCount - 1)
+                } else {
+                    0
+                }
+                val row = button.gridRow ?: if (gridSizeYPx > 0) {
+                    val cy = button.offsetY + buttonSize / 2f
+                    (cy / gridSizeYPx).toInt().coerceIn(0, vCount - 1)
+                } else {
+                    0
+                }
+
+                val posX = if (gridSizeXPx > 0) {
+                    gridSizeXPx * col + (gridSizeXPx - buttonSize) / 2
+                } else {
+                    button.offsetX
+                }
+                val posY = if (gridSizeYPx > 0) {
+                    gridSizeYPx * row + (gridSizeYPx - buttonSize) / 2
+                } else {
+                    button.offsetY
+                }
+
+                val isPower = button.keyCodeName.contains("POWER")
+                val contentColor = if (isPower) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    null
+                }
+
+                RemoteButtonSingle(
+                    name = button.name,
+                    icon = button.getIcon(),
+                    textIcon = button.getTextIcon(),
+                    offsetX = posX,
+                    offsetY = posY,
+                    contentColor = contentColor,
+                    onClick = {
+                        if (button.isKeyboardAction()) {
+                            onOpenKeyboard()
+                        } else {
+                            button.getRemoteKeyCode()?.let { onSendKey(it) }
+                        }
+                    },
+                )
             }
 
-            val posX = if (gridSizeXPx > 0) {
-                gridSizeXPx * col + (gridSizeXPx - buttonSize) / 2
-            } else {
-                button.offsetX
-            }
-            val posY = if (gridSizeYPx > 0) {
-                gridSizeYPx * row + (gridSizeYPx - buttonSize) / 2
-            } else {
-                button.offsetY
-            }
-
-            val isPower = button.keyCodeName.contains("POWER")
-            val contentColor = if (isPower) {
-                MaterialTheme.colorScheme.error
-            } else {
-                null
+            val offScreenNonDigits = tvDevice.getAllOffScreenNonDigits()
+            if (offScreenNonDigits.isNotEmpty()) {
+                AndroidTvButtonExtra(
+                    extraButtons = offScreenNonDigits,
+                    modifier = Modifier.align(Alignment.BottomEnd),
+                    size = 72.dp,
+                    onClick = { button ->
+                        if (button.isKeyboardAction()) {
+                            onOpenKeyboard()
+                        } else {
+                            button.getRemoteKeyCode()?.let { onSendKey(it) }
+                        }
+                    },
+                )
             }
 
-            RemoteButtonSingle(
-                name = button.name,
-                icon = button.getIcon(),
-                textIcon = button.getTextIcon(),
-                offsetX = posX,
-                offsetY = posY,
-                contentColor = contentColor,
-                onClick = {
-                    if (button.isKeyboardAction()) {
-                        onOpenKeyboard()
-                    } else {
+            val digits = tvDevice.getAllDigits()
+            if (digits.isNotEmpty()) {
+                AndroidTvButtonDigits(
+                    digitButtons = digits,
+                    modifier = Modifier.align(Alignment.BottomStart),
+                    size = 72.dp,
+                    onClick = { button ->
                         button.getRemoteKeyCode()?.let { onSendKey(it) }
-                    }
-                },
-            )
-        }
-
-        val offScreenNonDigits = tvDevice.getAllOffScreenNonDigits()
-        if (offScreenNonDigits.isNotEmpty()) {
-            AndroidTvButtonExtra(
-                extraButtons = offScreenNonDigits,
-                offsetX = LocalDensity.current.run {
-                    (layoutLimits.right - layoutLimits.left).toDp() - 80.dp
-                },
-                offsetY = LocalDensity.current.run {
-                    (layoutLimits.bottom - layoutLimits.top).toDp() - 80.dp
-                },
-                size = 80.dp,
-                onClick = { button ->
-                    if (button.isKeyboardAction()) {
-                        onOpenKeyboard()
-                    } else {
-                        button.getRemoteKeyCode()?.let { onSendKey(it) }
-                    }
-                },
-            )
-        }
-
-        val digits = tvDevice.getAllDigits()
-        if (digits.isNotEmpty()) {
-            AndroidTvButtonDigits(
-                digitButtons = digits,
-                offsetX = 0.dp,
-                offsetY = LocalDensity.current.run {
-                    (layoutLimits.bottom - layoutLimits.top).toDp() - 80.dp
-                },
-                size = 80.dp,
-                onClick = { button ->
-                    button.getRemoteKeyCode()?.let { onSendKey(it) }
-                },
-            )
+                    },
+                )
+            }
         }
     }
 }

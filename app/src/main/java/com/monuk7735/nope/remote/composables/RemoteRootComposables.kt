@@ -9,11 +9,13 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -433,25 +435,14 @@ fun UniversalRemote(
         }
         RemoteButtonExtra(
             extraButtons = remoteDataDBModel?.getAllOffScreen(),
-            offsetX =
-            LocalDensity.current.run {
-                (layoutLimits.right - layoutLimits.left).toDp() - 80.dp
-            },
-            offsetY =
-            LocalDensity.current.run {
-                (layoutLimits.bottom - layoutLimits.top).toDp() - 80.dp
-            },
-            size = 80.dp,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            size = 72.dp,
             onClick = { it.transmit(irController, vibrator) },
         )
         RemoteButtonDigits(
             digitButtons = remoteDataDBModel?.getAllDigits(),
-            offsetX = 0.dp,
-            offsetY =
-            LocalDensity.current.run {
-                (layoutLimits.bottom - layoutLimits.top).toDp() - 80.dp
-            },
-            size = 80.dp,
+            modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+            size = 72.dp,
             onClick = { it.transmit(irController, vibrator) },
         )
     }
