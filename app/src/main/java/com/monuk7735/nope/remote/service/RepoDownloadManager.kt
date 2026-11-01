@@ -43,7 +43,7 @@ object RepoDownloadManager {
         IREXT(
             "IRDB by IREXT",
             "irdb_irext",
-            "https://github.com/irext/database/raw/master/db/irext_db_20260519_sqlite3.db",
+            "https://github.com/irext/database/raw/master/db/irext_db_20260929_sqlite3.db",
             "https://github.com/irext/database",
             DownloadMode.DIRECT_FILE,
         ),

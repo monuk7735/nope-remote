@@ -9,14 +9,17 @@ import android.os.PowerManager
 import androidx.core.app.ServiceCompat
 import com.monuk7735.nope.remote.utils.NotificationHelper
 import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.zip.ZipInputStream
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
+import okhttp3.Request
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 
@@ -30,7 +33,7 @@ class RepoDownloadService : Service() {
         const val EXTRA_DIRECTORY = "EXTRA_DIRECTORY"
     }
 
-    private val activeThreads = java.util.concurrent.ConcurrentHashMap<String, Thread>()
+    private val activeThreads = ConcurrentHashMap<String, Thread>()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -166,8 +169,16 @@ class RepoDownloadService : Service() {
                 RepoState(DownloadState.DOWNLOADING, 0f, "Connecting...", true),
             )
 
-            val fileName = originalUrl.substringAfterLast("/")
-            val downloadUrl = repoInfo.url // Use the trusted URL from Enum
+            val downloadUrl = if (repoInfo == RepoDownloadManager.RepositoryInfo.IREXT) {
+                RepoDownloadManager.log("[$name] Resolving latest database URL...")
+                val resolved = RepoUrlResolver.resolveLatestIrextDbUrl(client, repoInfo.url)
+                RepoDownloadManager.log("[$name] Target database URL: $resolved")
+                resolved
+            } else {
+                repoInfo.url
+            }
+
+            val fileName = downloadUrl.substringAfterLast("/")
             val targetFile = File(targetDir, fileName)
 
             downloadFile(downloadUrl, targetFile, name, directory)
@@ -242,7 +253,7 @@ class RepoDownloadService : Service() {
 
     private fun downloadFile(urlStr: String, outputFile: File, name: String, directory: String) {
         RepoDownloadManager.log("Starting download (stream) for $name")
-        val request = okhttp3.Request.Builder()
+        val request = Request.Builder()
             .url(urlStr)
             .header("User-Agent", "Mozilla/5.0 (Android) NopeRemote/1.0")
             .build()
@@ -261,7 +272,7 @@ class RepoDownloadService : Service() {
         outputFile.createNewFile()
 
         // Use BufferedOutputStream for better disk IO performance
-        val output = java.io.BufferedOutputStream(FileOutputStream(outputFile))
+        val output = BufferedOutputStream(FileOutputStream(outputFile))
 
         val data = ByteArray(32 * 1024)
         var total = 0L
@@ -313,7 +324,7 @@ class RepoDownloadService : Service() {
     }
 
     private fun unzip(zipFile: File, targetDir: File) {
-        ZipInputStream(BufferedInputStream(java.io.FileInputStream(zipFile))).use { zis ->
+        ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
             var zipEntry = zis.nextEntry
             while (zipEntry != null) {
                 val fileName = zipEntry.name
