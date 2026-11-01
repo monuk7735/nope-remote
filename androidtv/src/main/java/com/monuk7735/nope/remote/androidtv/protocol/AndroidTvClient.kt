@@ -3,8 +3,15 @@ package com.monuk7735.nope.remote.androidtv.protocol
 import android.util.Log
 import com.monuk7735.nope.remote.androidtv.proto.remote.Remotemessage
 import com.monuk7735.nope.remote.androidtv.ssl.AndroidTvSslManager
+import java.io.EOFException
 import java.io.OutputStream
+import java.net.ConnectException
 import java.net.InetSocketAddress
+import java.net.NoRouteToHostException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,9 +53,9 @@ class AndroidTvClient(private val sslManager: AndroidTvSslManager) {
                         msg.contains("out of range", ignoreCase = true)
                     )
 
-            val isNotFound = e is java.net.NoRouteToHostException ||
-                e is java.net.UnknownHostException ||
-                e is java.net.SocketTimeoutException ||
+            val isNotFound = e is NoRouteToHostException ||
+                e is UnknownHostException ||
+                e is SocketTimeoutException ||
                 msg.contains("EHOSTUNREACH", ignoreCase = true) ||
                 msg.contains("No route to host", ignoreCase = true) ||
                 msg.contains("ENETUNREACH", ignoreCase = true) ||
@@ -56,7 +63,7 @@ class AndroidTvClient(private val sslManager: AndroidTvSslManager) {
                 msg.contains("ETIMEDOUT", ignoreCase = true) ||
                 msg.contains("UnknownHost", ignoreCase = true)
 
-            val isRefused = e is java.net.ConnectException ||
+            val isRefused = e is ConnectException ||
                 msg.contains("ECONNREFUSED", ignoreCase = true) ||
                 msg.contains("Connection refused", ignoreCase = true)
 
@@ -178,11 +185,11 @@ class AndroidTvClient(private val sslManager: AndroidTvSslManager) {
                 } catch (e: Exception) {
                     lastException = e
                     Log.e(TAG, "Connection failed for $host:$port", e)
-                    val isPairingIssue = e is javax.net.ssl.SSLException ||
-                        e.cause is javax.net.ssl.SSLException ||
-                        e is java.io.EOFException ||
+                    val isPairingIssue = e is SSLException ||
+                        e.cause is SSLException ||
+                        e is EOFException ||
                         (
-                            e is java.net.SocketException &&
+                            e is SocketException &&
                                 (
                                     e.message?.contains("reset", ignoreCase = true) == true ||
                                         e.message?.contains("closed", ignoreCase = true) == true

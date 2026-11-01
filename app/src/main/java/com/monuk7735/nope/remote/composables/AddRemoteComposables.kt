@@ -679,7 +679,7 @@ private fun DeviceCodesRetrofitModel.toDBModel(): RemoteDataDBModel {
         name = defaultName,
         type = type,
         brand = brand,
-        added = java.util.Date(),
+        added = Date(),
         offScreenRemoteButtonDBS = listOfRemoteButtons,
         onScreenRemoteButtonDBS =
         if (powerCode.isNotEmpty()) {
