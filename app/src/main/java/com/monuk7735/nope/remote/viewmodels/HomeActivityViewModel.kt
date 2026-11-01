@@ -14,8 +14,13 @@ import com.monuk7735.nope.remote.models.database.SavedTvDeviceDBModel
 import com.monuk7735.nope.remote.repository.MacroDataRepository
 import com.monuk7735.nope.remote.repository.RemoteDataRepository
 import com.monuk7735.nope.remote.repository.WifiRemoteRepository
+import com.monuk7735.nope.remote.utils.HomeSectionItem
+import com.monuk7735.nope.remote.utils.HomeSectionsManager
 import java.util.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HomeActivityViewModel(application: Application) : AndroidViewModel(application) {
@@ -50,6 +55,23 @@ class HomeActivityViewModel(application: Application) : AndroidViewModel(applica
     val allRemotesInfo: LiveData<List<RemoteDataDBModel>> = remoteDataRepository.allRemotesShortInfo
 
     val allWifiRemotes: LiveData<List<SavedTvDeviceDBModel>> = wifiRemoteRepository.allWifiRemotes
+
+    private val _homeSections =
+        MutableStateFlow(HomeSectionsManager.getSections(application))
+    val homeSections: StateFlow<List<HomeSectionItem>> = _homeSections.asStateFlow()
+
+    fun refreshSections() {
+        _homeSections.value = HomeSectionsManager.getSections(getApplication())
+    }
+
+    fun updateSections(newSections: List<HomeSectionItem>) {
+        _homeSections.value = newSections
+        HomeSectionsManager.saveSections(getApplication(), newSections)
+    }
+
+    fun resetSections() {
+        _homeSections.value = HomeSectionsManager.resetToDefault(getApplication())
+    }
 
     fun deleteRemote(remote: RemoteDataDBModel) {
         viewModelScope.launch(Dispatchers.IO) { remoteDataRepository.deleteRemote(remote) }
