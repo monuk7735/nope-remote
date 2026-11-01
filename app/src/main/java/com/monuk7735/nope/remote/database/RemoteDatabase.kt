@@ -34,7 +34,7 @@ abstract class RemoteDatabase : RoomDatabase() {
         @Volatile
         private var instance: RemoteDatabase? = null
 
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
+        internal val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "ALTER TABLE remotes ADD COLUMN preferCustomUi INTEGER NOT NULL DEFAULT 1",
@@ -42,19 +42,19 @@ abstract class RemoteDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_3_4 = object : Migration(3, 4) {
+        internal val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE remotes ADD COLUMN model TEXT DEFAULT NULL")
             }
         }
 
-        private val MIGRATION_4_5 = object : Migration(4, 5) {
+        internal val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE remotes ADD COLUMN isCustom INTEGER NOT NULL DEFAULT 0")
             }
         }
 
-        private val MIGRATION_5_6 = object : Migration(5, 6) {
+        internal val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     """
@@ -63,7 +63,7 @@ abstract class RemoteDatabase : RoomDatabase() {
                         `name` TEXT NOT NULL,
                         `host` TEXT NOT NULL,
                         `port` INTEGER NOT NULL DEFAULT 6466,
-                        `added` INTEGER NOT NULL
+                        `added` TEXT NOT NULL
                     )
                     """.trimIndent(),
                 )
