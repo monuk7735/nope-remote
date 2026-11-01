@@ -25,6 +25,9 @@ interface WifiRemoteDao {
     @Query("SELECT * FROM wifi_remotes WHERE host = :host LIMIT 1")
     suspend fun getWifiRemoteByHost(host: String): SavedTvDeviceDBModel?
 
+    @Query("SELECT * FROM wifi_remotes WHERE host = :host LIMIT 1")
+    fun getWifiRemoteByHostFlow(host: String): Flow<SavedTvDeviceDBModel?>
+
     @Update
     suspend fun updateWifiRemote(tv: SavedTvDeviceDBModel)
 

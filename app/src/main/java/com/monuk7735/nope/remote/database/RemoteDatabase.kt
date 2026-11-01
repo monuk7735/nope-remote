@@ -81,6 +81,18 @@ abstract class RemoteDatabase : RoomDatabase() {
                 db.execSQL(
                     "ALTER TABLE remotes ADD COLUMN gridVCount INTEGER NOT NULL DEFAULT 10",
                 )
+                db.execSQL(
+                    "ALTER TABLE wifi_remotes ADD COLUMN onScreenButtons TEXT DEFAULT NULL",
+                )
+                db.execSQL(
+                    "ALTER TABLE wifi_remotes ADD COLUMN offScreenButtons TEXT DEFAULT NULL",
+                )
+                db.execSQL(
+                    "ALTER TABLE wifi_remotes ADD COLUMN gridHCount INTEGER NOT NULL DEFAULT 5",
+                )
+                db.execSQL(
+                    "ALTER TABLE wifi_remotes ADD COLUMN gridVCount INTEGER NOT NULL DEFAULT 10",
+                )
             }
         }
 

@@ -479,6 +479,17 @@ class DatabaseMigrationTest {
         assertEquals(5, cursor.getInt(0))
         assertEquals(10, cursor.getInt(1))
         cursor.close()
+
+        val wifiColumns = getTableColumns(db, "wifi_remotes")
+        assertTrue(wifiColumns.containsKey("onScreenButtons"))
+        assertTrue(wifiColumns.containsKey("offScreenButtons"))
+        assertTrue(wifiColumns.containsKey("gridHCount"))
+        assertTrue(wifiColumns.containsKey("gridVCount"))
+        assertEquals("TEXT", wifiColumns["onScreenButtons"]!!.type)
+        assertEquals("TEXT", wifiColumns["offScreenButtons"]!!.type)
+        assertEquals("INTEGER", wifiColumns["gridHCount"]!!.type)
+        assertEquals("INTEGER", wifiColumns["gridVCount"]!!.type)
+
         db.close()
     }
 

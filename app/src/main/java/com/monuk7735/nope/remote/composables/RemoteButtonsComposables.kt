@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.monuk7735.nope.remote.models.database.AndroidTvButtonDBModel
 import com.monuk7735.nope.remote.models.database.RemoteButtonDBModel
 
 fun formatButtonLabel(name: String): String = name.replace("_", " ").trim()
@@ -260,9 +261,13 @@ fun RemoteButtonSingle(
     forceTextOnly: Boolean = false,
     offsetX: Float,
     offsetY: Float,
+    containerColor: Color? = null,
+    contentColor: Color? = null,
     onClick: () -> Unit,
 ) {
     val size = 72.dp
+    val effectiveContainer = containerColor ?: MaterialTheme.colorScheme.surfaceContainerHigh
+    val effectiveContent = contentColor ?: MaterialTheme.colorScheme.primary
 
     Surface(
         modifier =
@@ -273,10 +278,10 @@ fun RemoteButtonSingle(
             .size(size)
             .padding(4.dp),
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = effectiveContainer,
         tonalElevation = 6.dp,
         shadowElevation = 2.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+        border = BorderStroke(1.dp, effectiveContent.copy(alpha = 0.15f)),
         onClick = onClick,
     ) {
         Box(
@@ -286,10 +291,9 @@ fun RemoteButtonSingle(
                     Brush.radialGradient(
                         colors =
                         listOf(
-                            MaterialTheme.colorScheme
-                                .primary.copy(
-                                    alpha = 0.05f,
-                                ),
+                            effectiveContent.copy(
+                                alpha = 0.05f,
+                            ),
                             Color.Transparent,
                         ),
                     ),
@@ -301,14 +305,14 @@ fun RemoteButtonSingle(
                     imageVector = icon,
                     contentDescription = name,
                     modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = effectiveContent,
                 )
             } else {
                 Text(
                     text = textIcon ?: formatButtonLabel(name),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = effectiveContent,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     modifier = Modifier.padding(4.dp),
@@ -405,6 +409,21 @@ fun RemoteButtonOverflow(
     onClick: () -> Unit,
     onDelete: (() -> Unit)? = null,
 ) {
+    RemoteButtonOverflow(
+        modifier = modifier,
+        name = remoteButtonModel.name,
+        onClick = onClick,
+        onDelete = onDelete,
+    )
+}
+
+@Composable
+fun RemoteButtonOverflow(
+    modifier: Modifier = Modifier,
+    name: String,
+    onClick: () -> Unit,
+    onDelete: (() -> Unit)? = null,
+) {
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
@@ -423,7 +442,7 @@ fun RemoteButtonOverflow(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = formatButtonLabel(remoteButtonModel.name),
+                text = formatButtonLabel(name),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f),
@@ -511,6 +530,174 @@ fun RemoteButtonDigits(
                                 textIcon =
                                 buttons[index + 1]
                                     .getTextIcon(),
+                                offsetX = 0f,
+                                offsetY = 0f,
+                                onClick = {
+                                    onClick(buttons[index + 1])
+                                },
+                            )
+                        }
+                        item { }
+                        item {
+                            RemoteButtonSingle(
+                                name = buttons[0].name,
+                                icon = buttons[0].getIcon(),
+                                textIcon = buttons[0].getTextIcon(),
+                                offsetX = 0f,
+                                offsetY = 0f,
+                                onClick = { onClick(buttons[0]) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AndroidTvButtonExtra(
+    extraButtons: List<AndroidTvButtonDBModel>?,
+    offsetX: Dp,
+    offsetY: Dp,
+    size: Dp = 72.dp,
+    onClick: (AndroidTvButtonDBModel) -> Unit,
+    onDelete: ((AndroidTvButtonDBModel) -> Unit)? = null,
+) {
+    var dialogVisible by remember { mutableStateOf(false) }
+
+    if (extraButtons?.isNotEmpty() == true) {
+        Surface(
+            modifier =
+            Modifier.offset(x = offsetX, y = offsetY).size(size).padding(4.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            tonalElevation = 4.dp,
+            onClick = { dialogVisible = true },
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Outlined.MoreVert,
+                    contentDescription = "Extras",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+        }
+    }
+
+    if (dialogVisible) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(
+            onDismissRequest = { dialogVisible = false },
+            sheetState = sheetState,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ) {
+            Column(
+                modifier =
+                Modifier.fillMaxWidth()
+                    .padding(bottom = 32.dp),
+            ) {
+                Text(
+                    text = "Available Buttons",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(120.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .heightIn(max = 400.dp),
+                ) {
+                    extraButtons?.let { buttons ->
+                        items(buttons.size) { index ->
+                            RemoteButtonOverflow(
+                                name = buttons[index].name,
+                                onClick = {
+                                    dialogVisible = false
+                                    onClick(buttons[index])
+                                },
+                                onDelete = onDelete?.let { del ->
+                                    { del(buttons[index]) }
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AndroidTvButtonDigits(
+    digitButtons: List<AndroidTvButtonDBModel>?,
+    offsetX: Dp,
+    offsetY: Dp,
+    size: Dp = 72.dp,
+    onClick: (AndroidTvButtonDBModel) -> Unit,
+) {
+    var dialogVisible by remember { mutableStateOf(false) }
+
+    if (digitButtons?.isNotEmpty() == true) {
+        Surface(
+            modifier =
+            Modifier.offset(x = offsetX, y = offsetY).size(size).padding(4.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            tonalElevation = 4.dp,
+            onClick = { dialogVisible = true },
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Outlined.Numbers,
+                    contentDescription = "Digits",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+        }
+    }
+
+    if (dialogVisible) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(
+            onDismissRequest = { dialogVisible = false },
+            sheetState = sheetState,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Numbers",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier =
+                    Modifier.widthIn(max = 300.dp)
+                        .padding(bottom = 16.dp),
+                ) {
+                    digitButtons?.let { buttons ->
+                        items(buttons.size - 1) { index ->
+                            RemoteButtonSingle(
+                                name = buttons[index + 1].name,
+                                icon = buttons[index + 1].getIcon(),
+                                textIcon = buttons[index + 1].getTextIcon(),
                                 offsetX = 0f,
                                 offsetY = 0f,
                                 onClick = {
