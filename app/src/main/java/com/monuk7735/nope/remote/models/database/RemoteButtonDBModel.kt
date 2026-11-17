@@ -69,6 +69,55 @@ data class RemoteButtonDBModel(
         gridCol!! in 0 until hCount &&
         gridRow!! in 0 until vCount &&
         !isReservedCorner(hCount, vCount)
+
+    fun resolveGridCoordinates(
+        gridSizeXPx: Float,
+        gridSizeYPx: Float,
+        buttonSizePx: Float = 72f,
+        hCount: Int = 5,
+        vCount: Int = 10,
+    ): Pair<Int, Int> {
+        val col = gridCol ?: if (gridSizeXPx > 0) {
+            val cx = offsetX + buttonSizePx / 2f
+            (cx / gridSizeXPx).toInt().coerceIn(0, hCount - 1)
+        } else {
+            0
+        }
+        val row = gridRow ?: if (gridSizeYPx > 0) {
+            val cy = offsetY + buttonSizePx / 2f
+            (cy / gridSizeYPx).toInt().coerceIn(0, vCount - 1)
+        } else {
+            0
+        }
+        return Pair(col, row)
+    }
+
+    fun getRenderPosition(
+        gridSizeXPx: Float,
+        gridSizeYPx: Float,
+        buttonSizePx: Float = 72f,
+        hCount: Int = 5,
+        vCount: Int = 10,
+    ): Pair<Float, Float> {
+        val (col, row) = resolveGridCoordinates(
+            gridSizeXPx,
+            gridSizeYPx,
+            buttonSizePx,
+            hCount,
+            vCount,
+        )
+        val posX = if (gridSizeXPx > 0) {
+            gridSizeXPx * col + (gridSizeXPx - buttonSizePx) / 2
+        } else {
+            offsetX
+        }
+        val posY = if (gridSizeYPx > 0) {
+            gridSizeYPx * row + (gridSizeYPx - buttonSizePx) / 2
+        } else {
+            offsetY
+        }
+        return Pair(posX, posY)
+    }
     fun getDigitValue(): Int? {
         val n = name.uppercase().replace("_", " ").trim()
         return when {

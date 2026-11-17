@@ -45,18 +45,13 @@ fun EditableRemote(
             if (remoteDataDBModel != null) {
                 val buttons = remoteDataDBModel.onScreenRemoteButtonDBS.map { btn ->
                     if (btn.gridCol == null || btn.gridRow == null) {
-                        val cx = btn.offsetX + buttonSize / 2f
-                        val cy = btn.offsetY + buttonSize / 2f
-                        val col = if (gridSizeXPx > 0) {
-                            (cx / gridSizeXPx).toInt().coerceIn(0, hCount - 1)
-                        } else {
-                            0
-                        }
-                        val row = if (gridSizeYPx > 0) {
-                            (cy / gridSizeYPx).toInt().coerceIn(0, vCount - 1)
-                        } else {
-                            0
-                        }
+                        val (col, row) = btn.resolveGridCoordinates(
+                            gridSizeXPx = gridSizeXPx,
+                            gridSizeYPx = gridSizeYPx,
+                            buttonSizePx = buttonSize,
+                            hCount = hCount,
+                            vCount = vCount,
+                        )
                         btn.copy(gridCol = col, gridRow = row)
                     } else {
                         btn
@@ -443,29 +438,13 @@ fun UniversalRemote(
 
     Box(modifier = Modifier.fillMaxSize()) {
         remoteDataDBModel?.onScreenRemoteButtonDBS?.forEach {
-            val col = it.gridCol ?: if (gridSizeXPx > 0) {
-                val cx = it.offsetX + buttonSize / 2f
-                (cx / gridSizeXPx).toInt().coerceIn(0, hCount - 1)
-            } else {
-                0
-            }
-            val row = it.gridRow ?: if (gridSizeYPx > 0) {
-                val cy = it.offsetY + buttonSize / 2f
-                (cy / gridSizeYPx).toInt().coerceIn(0, vCount - 1)
-            } else {
-                0
-            }
-
-            val posX = if (gridSizeXPx > 0) {
-                gridSizeXPx * col + (gridSizeXPx - buttonSize) / 2
-            } else {
-                it.offsetX
-            }
-            val posY = if (gridSizeYPx > 0) {
-                gridSizeYPx * row + (gridSizeYPx - buttonSize) / 2
-            } else {
-                it.offsetY
-            }
+            val (posX, posY) = it.getRenderPosition(
+                gridSizeXPx = gridSizeXPx,
+                gridSizeYPx = gridSizeYPx,
+                buttonSizePx = buttonSize,
+                hCount = hCount,
+                vCount = vCount,
+            )
 
             RemoteButtonSingle(
                 name = it.name,

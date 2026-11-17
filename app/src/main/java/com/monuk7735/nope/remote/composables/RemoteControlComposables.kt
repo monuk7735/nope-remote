@@ -411,10 +411,13 @@ fun RemoteControlEditLayout(
                     ) {
                         b.gridCol!! to b.gridRow!!
                     } else if (gridSizeXPx > 0 && gridSizeYPx > 0) {
-                        val cx = b.offsetX + buttonSizePx / 2f
-                        val cy = b.offsetY + buttonSizePx / 2f
-                        (cx / gridSizeXPx).toInt().coerceIn(0, gridHCount - 1) to
-                            (cy / gridSizeYPx).toInt().coerceIn(0, gridVCount - 1)
+                        b.resolveGridCoordinates(
+                            gridSizeXPx = gridSizeXPx,
+                            gridSizeYPx = gridSizeYPx,
+                            buttonSizePx = buttonSizePx,
+                            hCount = gridHCount,
+                            vCount = gridVCount,
+                        )
                     } else {
                         null
                     }
