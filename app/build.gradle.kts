@@ -16,8 +16,8 @@ android {
         applicationId = "com.monuk7735.nope.remote"
         minSdk = 23
         targetSdk = 35
-        versionCode = 26
-        versionName = "2.6"
+        versionCode = 27
+        versionName = "2.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -49,6 +49,9 @@ android {
     }
     sourceSets {
         getByName("debug") {
+            assets.srcDirs(files("$projectDir/schemas"))
+        }
+        getByName("release") {
             assets.srcDirs(files("$projectDir/schemas"))
         }
     }

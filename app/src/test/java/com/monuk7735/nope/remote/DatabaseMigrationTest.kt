@@ -309,6 +309,9 @@ class DatabaseMigrationTest {
     @Test
     fun testMigration_6_to_8_productionUpgradeWithDaoVerification() {
         val dateJson = converters.fromDate(Date())
+        val legacyButtonsJson = """
+            [{"id":"legacy_btn_power","name":"POWER","offsetX":250.0,"offsetY":400.0,"irPattern":{"type":"Intervals","frequency":38000,"pattern":[100,100]}}]
+        """.trimIndent()
         helper.createDatabase(dbName, 6).apply {
             execSQL(
                 """
@@ -318,7 +321,17 @@ class DatabaseMigrationTest {
                     `preferCustomUi`, `model`, `isCustom`
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent(),
-                arrayOf<Any>("IR TV", "Sony", "TV", dateJson, "[]", "[]", 1, "Bravia", 0),
+                arrayOf<Any>(
+                    "IR TV",
+                    "Sony",
+                    "TV",
+                    dateJson,
+                    legacyButtonsJson,
+                    "[]",
+                    1,
+                    "Bravia",
+                    0,
+                ),
             )
             execSQL(
                 "INSERT INTO `macros` (`name`, `macroUnits`) VALUES ('Power All', '[]')",
@@ -341,12 +354,29 @@ class DatabaseMigrationTest {
 
         // 2. Verify schema defaults and preserved data in SQLite
         val remoteCursor = migratedDb.query(
-            "SELECT brand, gridHCount, gridVCount FROM remotes WHERE name = 'IR TV'",
+            "SELECT brand, gridHCount, gridVCount, onScreenRemoteButtonDBS FROM remotes WHERE name = 'IR TV'",
         )
         assertTrue(remoteCursor.moveToFirst())
         assertEquals("Sony", remoteCursor.getString(0))
         assertEquals(5, remoteCursor.getInt(1))
         assertEquals(10, remoteCursor.getInt(2))
+        val rawButtonsJson = remoteCursor.getString(3)
+        val deserializedButtons = converters.toListRemoteButtonDBModel(rawButtonsJson)
+        assertEquals(1, deserializedButtons.size)
+        assertEquals("POWER", deserializedButtons[0].name)
+        assertNull(deserializedButtons[0].gridCol)
+        assertNull(deserializedButtons[0].gridRow)
+        assertEquals(250.0f, deserializedButtons[0].offsetX, 0.01f)
+        assertEquals(400.0f, deserializedButtons[0].offsetY, 0.01f)
+        val (col, row) = deserializedButtons[0].resolveGridCoordinates(
+            gridSizeXPx = 200f,
+            gridSizeYPx = 200f,
+            buttonSizePx = 72f,
+            hCount = 5,
+            vCount = 10,
+        )
+        assertEquals(1, col)
+        assertEquals(2, row)
         remoteCursor.close()
 
         val wifiCursor = migratedDb.query(

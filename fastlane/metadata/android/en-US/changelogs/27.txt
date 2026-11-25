@@ -1,0 +1,6 @@
+- Remote Layout Editor: Customize button layout, resize grid dimensions, and organize buttons to match your setup.
+- Home Screen Customization: Reorder and toggle sections on your home screen to match your workflow.
+- Reliable TV Connection: Improved Android & Google TV connection stability with seamless auto-reconnect.
+- Vibration Settings: Button presses now accurately respect your system and app haptic feedback settings.
+- Automatic IR Updates: Universal remote database stays up to date with the latest remote definitions.
+- Bug fixes and performance improvements.

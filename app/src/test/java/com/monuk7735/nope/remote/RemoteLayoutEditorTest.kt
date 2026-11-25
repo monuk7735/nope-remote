@@ -193,4 +193,292 @@ class RemoteLayoutEditorTest {
         assertEquals(5, remote.gridHCount)
         assertEquals(10, remote.gridVCount)
     }
+
+    @Test
+    fun `legacy button with null coordinates maps correctly to grid based on pixel center`() {
+        // Screen width = 1000f, height = 2000f, grid 5x10 -> cell width = 200f, height = 200f
+        val cellWidth = 200f
+        val cellHeight = 200f
+        val buttonSize = 72f
+
+        // Top-left button: center = (10 + 36, 10 + 36) = (46, 46) -> cell (0, 0)
+        val topLeftButton = RemoteButtonDBModel(
+            name = "POWER",
+            offsetX = 10f,
+            offsetY = 10f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+        val (col0, row0) = topLeftButton.resolveGridCoordinates(
+            gridSizeXPx = cellWidth,
+            gridSizeYPx = cellHeight,
+            buttonSizePx = buttonSize,
+            hCount = 5,
+            vCount = 10,
+        )
+        assertEquals(0, col0)
+        assertEquals(0, row0)
+
+        // Middle button: center = (450 + 36, 650 + 36) = (486, 686)
+        // 486 / 200 = 2, 686 / 200 = 3 -> cell (2, 3)
+        val middleButton = RemoteButtonDBModel(
+            name = "OK",
+            offsetX = 450f,
+            offsetY = 650f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+        val (colMiddle, rowMiddle) = middleButton.resolveGridCoordinates(
+            gridSizeXPx = cellWidth,
+            gridSizeYPx = cellHeight,
+            buttonSizePx = buttonSize,
+            hCount = 5,
+            vCount = 10,
+        )
+        assertEquals(2, colMiddle)
+        assertEquals(3, rowMiddle)
+
+        // Bottom-right button: center = (850 + 36, 1850 + 36) = (886, 1886)
+        // 886 / 200 = 4, 1886 / 200 = 9 -> cell (4, 9)
+        val bottomRightButton = RemoteButtonDBModel(
+            name = "INFO",
+            offsetX = 850f,
+            offsetY = 1850f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+        val (colBR, rowBR) = bottomRightButton.resolveGridCoordinates(
+            gridSizeXPx = cellWidth,
+            gridSizeYPx = cellHeight,
+            buttonSizePx = buttonSize,
+            hCount = 5,
+            vCount = 10,
+        )
+        assertEquals(4, colBR)
+        assertEquals(9, rowBR)
+
+        // Negative offsets clamp to (0, 0)
+        val negativeButton = RemoteButtonDBModel(
+            name = "NEGATIVE",
+            offsetX = -50f,
+            offsetY = -20f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+        val (colNeg, rowNeg) = negativeButton.resolveGridCoordinates(
+            gridSizeXPx = cellWidth,
+            gridSizeYPx = cellHeight,
+            buttonSizePx = buttonSize,
+            hCount = 5,
+            vCount = 10,
+        )
+        assertEquals(0, colNeg)
+        assertEquals(0, rowNeg)
+
+        // Out-of-bounds large offsets clamp to (hCount - 1, vCount - 1)
+        val oobButton = RemoteButtonDBModel(
+            name = "OOB",
+            offsetX = 1500f,
+            offsetY = 3000f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+        val (colOob, rowOob) = oobButton.resolveGridCoordinates(
+            gridSizeXPx = cellWidth,
+            gridSizeYPx = cellHeight,
+            buttonSizePx = buttonSize,
+            hCount = 5,
+            vCount = 10,
+        )
+        assertEquals(4, colOob)
+        assertEquals(9, rowOob)
+    }
+
+    @Test
+    fun `legacy button center-based grid mapping renders button centered in grid cell`() {
+        val cellWidth = 200f
+        val cellHeight = 200f
+        val buttonSize = 72f
+
+        // A button at offset (450f, 650f) maps to col 2, row 3
+        val button = RemoteButtonDBModel(
+            name = "OK",
+            offsetX = 450f,
+            offsetY = 650f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+
+        // Expected centered position in cell (2, 3):
+        // posX = 200 * 2 + (200 - 72) / 2 = 400 + 64 = 464f
+        // posY = 200 * 3 + (200 - 72) / 2 = 600 + 64 = 664f
+        val (posX, posY) = button.getRenderPosition(
+            gridSizeXPx = cellWidth,
+            gridSizeYPx = cellHeight,
+            buttonSizePx = buttonSize,
+            hCount = 5,
+            vCount = 10,
+        )
+
+        assertEquals(464f, posX, 0.01f)
+        assertEquals(664f, posY, 0.01f)
+    }
+
+    @Test
+    fun `button with explicit grid coordinates ignores legacy pixel offsets`() {
+        val button = RemoteButtonDBModel(
+            name = "EXPLICIT",
+            offsetX = 9999f,
+            offsetY = 9999f,
+            irPattern = dummyPattern,
+            gridCol = 1,
+            gridRow = 2,
+        )
+
+        val (col, row) = button.resolveGridCoordinates(
+            gridSizeXPx = 200f,
+            gridSizeYPx = 200f,
+            buttonSizePx = 72f,
+            hCount = 5,
+            vCount = 10,
+        )
+        assertEquals(1, col)
+        assertEquals(2, row)
+
+        val (posX, posY) = button.getRenderPosition(
+            gridSizeXPx = 200f,
+            gridSizeYPx = 200f,
+            buttonSizePx = 72f,
+            hCount = 5,
+            vCount = 10,
+        )
+        // posX = 200 * 1 + (200 - 72) / 2 = 264f
+        // posY = 200 * 2 + (200 - 72) / 2 = 464f
+        assertEquals(264f, posX, 0.01f)
+        assertEquals(464f, posY, 0.01f)
+    }
+
+    @Test
+    fun `isReservedCorner correctly identifies bottom-left and bottom-right grid corners`() {
+        val bottomLeft = RemoteButtonDBModel(
+            name = "DIGITS",
+            offsetX = 0f,
+            offsetY = 0f,
+            irPattern = dummyPattern,
+            gridCol = 0,
+            gridRow = 9,
+        )
+        assertTrue(bottomLeft.isReservedCorner(hCount = 5, vCount = 10))
+
+        val bottomRight = RemoteButtonDBModel(
+            name = "MORE",
+            offsetX = 0f,
+            offsetY = 0f,
+            irPattern = dummyPattern,
+            gridCol = 4,
+            gridRow = 9,
+        )
+        assertTrue(bottomRight.isReservedCorner(hCount = 5, vCount = 10))
+
+        val topLeft = RemoteButtonDBModel(
+            name = "POWER",
+            offsetX = 0f,
+            offsetY = 0f,
+            irPattern = dummyPattern,
+            gridCol = 0,
+            gridRow = 0,
+        )
+        assertFalse(topLeft.isReservedCorner(hCount = 5, vCount = 10))
+
+        val middle = RemoteButtonDBModel(
+            name = "CENTER",
+            offsetX = 0f,
+            offsetY = 0f,
+            irPattern = dummyPattern,
+            gridCol = 2,
+            gridRow = 5,
+        )
+        assertFalse(middle.isReservedCorner(hCount = 5, vCount = 10))
+
+        val bottomCenter = RemoteButtonDBModel(
+            name = "BOTTOM_MID",
+            offsetX = 0f,
+            offsetY = 0f,
+            irPattern = dummyPattern,
+            gridCol = 2,
+            gridRow = 9,
+        )
+        assertFalse(bottomCenter.isReservedCorner(hCount = 5, vCount = 10))
+    }
+
+    @Test
+    fun `collision detection catches legacy buttons mapping to the same grid cell`() {
+        val cellWidth = 200f
+        val cellHeight = 200f
+        val buttonSize = 72f
+
+        // Two legacy buttons placed close to each other in pixel space
+        val button1 = RemoteButtonDBModel(
+            name = "POWER",
+            offsetX = 10f,
+            offsetY = 10f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+        val button2 = RemoteButtonDBModel(
+            name = "MUTE",
+            offsetX = 60f,
+            offsetY = 40f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+        val button3 = RemoteButtonDBModel(
+            name = "VOL+",
+            offsetX = 250f,
+            offsetY = 10f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+
+        val buttons = listOf(button1, button2, button3)
+        val mappedSlots = buttons.groupBy {
+            it.resolveGridCoordinates(cellWidth, cellHeight, buttonSize, 5, 10)
+        }
+
+        val collidingSlots = mappedSlots.filter { it.value.size > 1 }
+        assertEquals(1, collidingSlots.size)
+        assertEquals(0 to 0, collidingSlots.keys.first())
+        assertEquals(2, collidingSlots.values.first().size)
+    }
+
+    @Test
+    fun `fallback to raw offsets when grid dimensions are zero or invalid`() {
+        val button = RemoteButtonDBModel(
+            name = "RAW",
+            offsetX = 123.4f,
+            offsetY = 567.8f,
+            irPattern = dummyPattern,
+            gridCol = null,
+            gridRow = null,
+        )
+
+        val (posX, posY) = button.getRenderPosition(
+            gridSizeXPx = 0f,
+            gridSizeYPx = 0f,
+            buttonSizePx = 72f,
+            hCount = 5,
+            vCount = 10,
+        )
+        assertEquals(123.4f, posX, 0.01f)
+        assertEquals(567.8f, posY, 0.01f)
+    }
 }
