@@ -164,6 +164,14 @@ class AndroidTvClient(private val sslManager: AndroidTvSslManager) {
                         val messageBytes = try {
                             VarintFraming.readFramedMessage(input)
                         } catch (e: Exception) {
+                            // With TLS 1.3 the TV rejects an unpaired client certificate
+                            // (e.g. CERTIFICATE_UNKNOWN) on the first read, not during the
+                            // handshake. If the session never started, rethrow so the outer
+                            // handler switches to NeedsPairing instead of "Connection Lost".
+                            if (!wasConnected && (e is SSLException || e.cause is SSLException)) {
+                                Log.w(TAG, "TLS rejected before session start; needs pairing", e)
+                                throw e
+                            }
                             if (isActive && !isExplicitDisconnect) {
                                 Log.w(TAG, "Connection lost during read", e)
                             }
